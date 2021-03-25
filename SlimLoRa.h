@@ -5,13 +5,17 @@
 #include <stdint.h>
 #include <util/atomic.h>
 
-// LoRaWAN ADR
-#define LORAWAN_ADR_ACK_LIMIT   48
-#define LORAWAN_ADR_ACK_DELAY   16
+// Debug SlimLoRa library. 0 to disable
+#define DEBUG_SLIM   0  // Enabled this only to check values / registers. Probably it breaks timing!
+#define DEBUG_TIMING 0  // Only to check YOUR version of timing. DON'T enabled unless you know what you are doing.
 
 // Enable LoRaWAN Over-The-Air Activation
 #define LORAWAN_OTAA_ENABLED    1
-#define LORAWAN_KEEP_SESSION    1
+#define LORAWAN_KEEP_SESSION    0
+
+// LoRaWAN ADR
+#define LORAWAN_ADR_ACK_LIMIT   48
+#define LORAWAN_ADR_ACK_DELAY   16
 
 #define MICROS_PER_SECOND               1000000
 
@@ -21,7 +25,8 @@
 #define RFM_REG_FR_MSB                  0x06
 #define RFM_REG_FR_MID                  0x07
 #define RFM_REG_FR_LSB                  0x08
-#define RFM_REG_PA_CONFIG               0x09
+#define RFM_REG_PA_CONFIG               0x09 
+#define RFM_REG_PA_DAC                  0x4D ///<PA Higher Power Settings
 #define RFM_REG_FIFO_ADDR_PTR           0x0D
 #define RFM_REG_FIFO_TX_BASE_ADDR       0x0E
 #define RFM_REG_FIFO_RX_BASE_ADDR       0x0F
@@ -163,16 +168,24 @@ class SlimLoRa {
     SlimLoRa(uint8_t pin_nss);
     void Begin(void);
     bool HasJoined(void);
+    void ForceTxFrameCounter(uint16_t t_cf);
+    void ForceRxFrameCounter(uint16_t r_cf);
     int8_t Join();
     void SendData(uint8_t fport, uint8_t *payload, uint8_t payload_length);
     void SetAdrEnabled(bool enabled);
+    void SetDataRate(uint8_t dr);
+    void SetPower(int8_t power);
+    bool GetHasJoined();
+#if DEBUG_SLIM
+    void DEBUG_MAC(void);
+#endif
 
   private:
     uint8_t pin_nss_;
     uint8_t channel_ = 0;
-    uint8_t data_rate_ = SF10BW125;
+    uint8_t data_rate_ = SF7BW125;
     uint8_t rx1_data_rate_offset_ = 0;
-    uint8_t rx2_data_rate_;
+    uint8_t rx2_data_rate_ = SF9BW125; // TVN V3
     uint32_t rx1_delay_micros_;
     bool has_joined_ = false;
     bool adr_enabled_ = true;
@@ -229,7 +242,6 @@ class SlimLoRa {
     void SetRx1Delay(uint8_t value);
 
 #if LORAWAN_KEEP_SESSION
-    bool GetHasJoined();
     void SetHasJoined(bool value);
 #endif // LORAWAN_KEEP_SESSION
     void GetDevAddr(uint8_t *dev_addr);

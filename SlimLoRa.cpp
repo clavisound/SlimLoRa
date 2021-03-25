@@ -25,13 +25,15 @@
 #if LORAWAN_OTAA_ENABLED
 extern const uint8_t DevEUI[8];
 extern const uint8_t JoinEUI[8];
-extern const uint8_t NwkKey[16]; // For LoRaWAN-1.1
+#if LORAWAN_V1_1_ENABLED
+extern const uint8_t NwkKey[16];
+#endif // LORAWAN_V1_1_ENABLED
 extern const uint8_t AppKey[16];
 #else
 extern const uint8_t NwkSKey[16];
 extern const uint8_t AppSKey[16];
 extern const uint8_t DevAddr[4];
-#endif
+#endif // LORAWAN_OTAA_ENABLED
 
 static SPISettings RFM_spisettings = SPISettings(4000000, MSBFIRST, SPI_MODE0);
 
@@ -62,9 +64,9 @@ const uint8_t PROGMEM SlimLoRa::kDataRateTable[7][3] = {
 
 // Half symbol times
 const uint32_t PROGMEM SlimLoRa::kDRMicrosPerHalfSymbol[7] = {
-    ((128 << 7) * MICROS_PER_SECOND + 500000) / 1000000, // SF12BW125 BUG with overflow.
-    ((128 << 6) * MICROS_PER_SECOND + 500000) / 1000000, // SF11BW125 BUG with overflow.
-    ((128 << 5) * MICROS_PER_SECOND + 500000) / 1000000, // SF10BW125 BUG with overflow.
+    ((128 << 7) * MICROS_PER_SECOND + 500000) / 1000000, // SF12BW125
+    ((128 << 6) * MICROS_PER_SECOND + 500000) / 1000000, // SF11BW125
+    ((128 << 5) * MICROS_PER_SECOND + 500000) / 1000000, // SF10BW125
     ((128 << 4) * MICROS_PER_SECOND + 500000) / 1000000, // SF9BW125
     ((128 << 3) * MICROS_PER_SECOND + 500000) / 1000000, // SF8BW125
     ((128 << 2) * MICROS_PER_SECOND + 500000) / 1000000, // SF7BW125
@@ -95,6 +97,57 @@ SlimLoRa::SlimLoRa(uint8_t pin_nss) {
     pin_nss_ = pin_nss;
 }
 
+#if DEBUG_SLIM == 1
+void addZeroIfMissing(uint8_t value){ 
+	if (value <= 0xF ) {
+		Serial.print("0"); 
+	}
+}
+
+void SlimLoRa::DEBUG_MAC(){
+#if LORAWAN_OTAA_ENABLED
+    Serial.println(F("\n\nMAC STATE: DEBUG SLIM\n\nJn Stat, T_fc, R_fc, Rx1delay, Rx2DR"));
+    Serial.print(has_joined_);Serial.print(", ");
+
+    uint8_t  dev_addrDEB[4], nwk_k_keyDEB[16], app_s_keyDEB[16];
+    //uint16_t dev_nonceDEB;
+    GetDevAddr(dev_addrDEB);
+    //GetDevNonce(dev_nonceDEB);
+    for (uint8_t i = 0; i < 4; i++ ) {
+      Serial.print(F(" 0x"));addZeroIfMissing(dev_addrDEB[i]);
+      Serial.print(dev_addrDEB[i], HEX);
+    }
+    Serial.print(", ");
+    Serial.println(GetDevNonce());
+    //Serial.println(F("FnwkSIntKey, SNwkSIntkey, NwkSEncKey, AppsKey"));
+    Serial.print(F("NwkSEncKey: "));
+    GetNwkSEncKey(nwk_k_keyDEB);
+    GetAppSKey(app_s_keyDEB);
+    for (uint8_t i = 0; i < 16; i++ ) {
+      Serial.print(F(" 0x"));addZeroIfMissing(nwk_k_keyDEB[i]);
+      Serial.print(nwk_k_keyDEB[i], HEX);
+    }
+    Serial.print(F("\n\nAppsKey: "));
+    for (uint8_t i = 0; i < 16; i++ ) {
+      Serial.print(F(" 0x"));addZeroIfMissing(app_s_keyDEB[i]);
+      Serial.print(app_s_keyDEB[i], HEX);
+    }
+    Serial.println();
+    //Serial.println(F("Adr_ACK_cnt, DevAdd, DevNonce"));
+#else
+    Serial.println(F("\n\nMAC STATE: DEBUG_SLIM\nT_fc, R_fc, Rx1delay, Rx2DR"));
+#endif // LORAWAN_OTAA_ENABLED
+    Serial.print(tx_frame_counter_);Serial.print(", ");
+    Serial.print(rx_frame_counter_);Serial.print(", ");
+    Serial.print(GetRx1Delay());Serial.print(": ");
+    Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print("s, ");
+    Serial.println(rx2_data_rate_);
+
+    Serial.println(F("Adr_ACK_cnt, DevAdd, DevNonce"));
+    Serial.print(adr_ack_counter_);Serial.println(",");
+}
+#endif // DEBUG_SLIM
+
 void SlimLoRa::Begin() {
     uint8_t detect_optimize;
 
@@ -109,7 +162,7 @@ void SlimLoRa::Begin() {
     RfmWrite(RFM_REG_OP_MODE, 0x80);
 
     // PA_BOOST pin / +16 dBm output power
-    RfmWrite(RFM_REG_PA_CONFIG, 0xFE);
+    SetPower(16);
 
     // Preamble length: 8 symbols
     // 0x0008 + 4 = 12
@@ -131,12 +184,17 @@ void SlimLoRa::Begin() {
 
     // Init MAC state
 #if LORAWAN_KEEP_SESSION
-    has_joined_ = GetHasJoined();
-#endif
+    has_joined_       = GetHasJoined();
     tx_frame_counter_ = GetTxFrameCounter();
     rx_frame_counter_ = GetRxFrameCounter();
-    rx2_data_rate_ = GetRx2DataRate();
+    rx2_data_rate_    = GetRx2DataRate();
     rx1_delay_micros_ = GetRx1Delay() * MICROS_PER_SECOND;
+#endif
+
+#if DEBUG_SLIM == 1
+    Serial.println(F("Begin. "));
+    DEBUG_MAC();
+#endif
 }
 
 void wait_until(unsigned long microsstamp) {
@@ -144,12 +202,88 @@ void wait_until(unsigned long microsstamp) {
 	
 	while (1) {
 		ATOMIC_BLOCK(ATOMIC_FORCEON) {
-		delta = microsstamp - micros();
+			delta = microsstamp - micros();
 		}
 		if (delta <= 0) {
-		break;
+			break;
 		}
 	}
+}
+
+void SlimLoRa::SetDataRate(uint8_t dr) {
+	data_rate_ = dr;
+}
+
+void SlimLoRa::ForceTxFrameCounter(uint16_t t_fc) {
+	tx_frame_counter_ = t_fc;
+}
+
+void SlimLoRa::ForceRxFrameCounter(uint16_t r_fc) {
+	tx_frame_counter_ = r_fc;
+}
+
+/**************************************************************************/
+/*! 
+    @brief Sets the TX power
+    @param power How much TX power in dBm
+*/
+/**************************************************************************/
+// Valid values in dBm are: -80, +1 to +17 and +20.
+//
+// 18-19dBm are undefined in doc but maybe possible. Here are ignored.
+// Chip works with three modes. This function offer granularity of 1dBm
+// but the chips is capable of more.
+//
+// -4.2 to 0 is in reality -84 to -80dBm
+
+void SlimLoRa::SetPower(int8_t power) {
+
+  // values to be packed in one byte
+  bool PaBoost;
+  int8_t OutputPower; // 0-15
+  int8_t MaxPower; // 0-7
+
+  // this value goes to the register (packed bytes)
+  uint8_t DataPower;
+
+  // 1st possibility -80
+  if ( power == -80 ) { // force -80dBm (lower power)
+    PaBoost = 0;
+    MaxPower = 0;
+    OutputPower = 0;
+  // 2nd possibility: range 1 to 17dBm 
+  } else if ( power >= 0 && power < 2 ) { // assume 1 db is given.
+    PaBoost = 1;
+    MaxPower = 7;
+    OutputPower = 1;
+  } else if ( power >= 2 && power <=17 ) {
+    PaBoost = 1;
+    MaxPower = 7;
+    // formula to find the OutputPower.
+    OutputPower = power - 2;
+  }
+
+  // 3rd possibility. 20dBm. Special case
+  // Max Antenna VSWR 3:1, Duty Cycle <1% or destroyed(?) chip
+  if ( power == 20 ) {
+    PaBoost = 1;
+    OutputPower = 15;
+    MaxPower = 7;
+    RfmWrite(RFM_REG_PA_DAC, 0x87); // only for +20dBm probably with 0x86,0x85 = 19,18dBm
+  } else {
+    // Setting for non +20dBm power
+    RfmWrite(RFM_REG_PA_DAC, 0x84);
+  }
+
+  // Pack the above data to one byte and send it to HOPE RFM9x
+  DataPower = (PaBoost << 7) + (MaxPower << 4) + OutputPower;
+  	
+  //PA pin. Default value is 0x4F (DEC 79, 3dBm) from HOPE, 0xFF (DEC 255 / 17dBm) from adafruit.
+  RfmWrite(RFM_REG_PA_CONFIG,DataPower);
+
+#if DEBUG_SLIM == 1
+  Serial.print(F("Power (dBm): "));Serial.println(power);
+#endif // DEBUG_SLIM
 }
 
 /**
@@ -166,7 +300,11 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
     uint8_t modem_config_3, irq_flags, packet_length, read_length;
 
     // Wait for start time
+#if DEBUG_TIMING == 1
     wait_until(rx_microsstamp - LORAWAN_RX_SETUP_MICROS);
+#else
+    wait_until(rx_microsstamp - LORAWAN_RX_SETUP_MICROS);
+#endif
 
     // Switch RFM to standby
     RfmWrite(RFM_REG_OP_MODE, 0x81);
@@ -187,7 +325,13 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
     RfmWrite(RFM_REG_MODEM_CONFIG_1, pgm_read_byte(&(kDataRateTable[dri][0])));
 
     // Spreading Factor / Tx Continuous Mode / Crc
+#if DEBUG_TIMING == 1
+    // maximize RX timeout with 2 on LSB
+    //RfmWrite(RFM_REG_MODEM_CONFIG_2, pgm_read_byte(&(kDataRateTable[dri][1])) | 0x02 );
     RfmWrite(RFM_REG_MODEM_CONFIG_2, pgm_read_byte(&(kDataRateTable[dri][1])));
+#else
+    RfmWrite(RFM_REG_MODEM_CONFIG_2, pgm_read_byte(&(kDataRateTable[dri][1])));
+#endif
 
     // Automatic Gain Control / Low Data Rate Optimize
     modem_config_3 = pgm_read_byte(&(kDataRateTable[dri][2]));
@@ -197,13 +341,23 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
     RfmWrite(RFM_REG_MODEM_CONFIG_3, modem_config_3);
 
     // Rx timeout
+#if DEBUG_TIMING == 1
+    //RfmWrite(RFM_REG_SYMB_TIMEOUT_LSB, 0xFF); // maximize wait
     RfmWrite(RFM_REG_SYMB_TIMEOUT_LSB, rx_symbols_);
+#else
+    RfmWrite(RFM_REG_SYMB_TIMEOUT_LSB, rx_symbols_);
+#endif
 
     // Clear interrupts
     RfmWrite(RFM_REG_IRQ_FLAGS, 0xFF);
 
     // Wait for rx time
+#if DEBUG_TIMING == 1
     wait_until(rx_microsstamp);
+#else
+    wait_until(rx_microsstamp);
+#endif
+
 
     // Switch RFM to Rx
     RfmWrite(RFM_REG_OP_MODE, 0x86);
@@ -233,6 +387,12 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 
     // Switch RFM to sleep
     RfmWrite(RFM_REG_OP_MODE, 0x00);
+
+#if DEBUG_SLIM == 1
+    // ATTENTION. This breaks timing for RX2!
+    Serial.print(F("\n\nrx_microsstamp, rx_symbols: "));Serial.print(rx_microsstamp);
+    Serial.print(F(", "));Serial.println(rx_symbols_);
+#endif
 
     switch (irq_flags & 0xC0) {
         case RFM_STATUS_RX_TIMEOUT:
@@ -312,7 +472,9 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 
     // Saves memory cycles, at worst 10 lost packets
     if (++tx_frame_counter_ % 10) {
+#if LORAWAN_KEEP_SESSION
         SetTxFrameCounter(tx_frame_counter_);
+#endif
     }
     adr_ack_counter_++;
 }
@@ -551,6 +713,10 @@ bool SlimLoRa::ProcessJoinAccept1_0(uint8_t *packet, uint8_t packet_length) {
             SetAppSKey(buffer);
         }
     }
+#if DEBUG_SLIM == 1
+    Serial.println(F("Joined. "));
+    DEBUG_MAC();
+#endif
 
     return true;
 }
@@ -673,6 +839,10 @@ bool SlimLoRa::ProcessJoinAccept1_1(uint8_t *packet, uint8_t packet_length) {
                 break;
         }
     }
+#if DEBUG_SLIM == 1
+    Serial.println(F("Joined V1.1"));
+    DEBUG_MAC();
+#endif
 
     return true;
 }
@@ -699,7 +869,6 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
         rx_delay = CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS);
         packet_length = RfmReceivePacket(packet, sizeof(packet), channel_, data_rate_, tx_done_micros_ + rx_delay);
     } else {
-
         rx_delay = CalculateRxDelay(rx2_data_rate_, LORAWAN_JOIN_ACCEPT_DELAY2_MICROS);
         packet_length = RfmReceivePacket(packet, sizeof(packet), 8, rx2_data_rate_, tx_done_micros_ + rx_delay);
     }
@@ -791,6 +960,11 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
     result = 0;
 
 end:
+#if DEBUG_SLIM == 1
+    if ( result == 0 ) {
+	Serial.print(F("\nJoined on window: "));Serial.println(window);
+    }
+#endif
     return result;
 }
 #endif // LORAWAN_OTAA_ENABLED
@@ -977,6 +1151,9 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
     // Check MIC
     CalculateMessageMic(packet, mic, packet_length - 4, frame_counter, LORAWAN_DIRECTION_DOWN);
     if (!CheckMic(mic, &packet[packet_length - 4])) {
+#if DEBUG_SLIM == 1
+	Serial.print(F("MIC error: "));Serial.println(LORAWAN_ERROR_INVALID_MIC);
+#endif
         return LORAWAN_ERROR_INVALID_MIC;
     }
 
@@ -1009,6 +1186,9 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
     result = 0;
 
 end:
+#if DEBUG_SLIM == 1
+    Serial.print(F("MAC error status: "));Serial.println(result);
+#endif
     return result;
 }
 
@@ -1036,8 +1216,10 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
     // ADR backoff
     // TODO: Probably too aggressive
     if (adr_enabled_ && adr_ack_counter_ >= LORAWAN_ADR_ACK_LIMIT + LORAWAN_ADR_ACK_DELAY) {
-        data_rate_ = SF12BW125;
-        RfmWrite(RFM_REG_PA_CONFIG, 0xFE);
+	    if ( data_rate_ < SF12BW125 ) {
+	        data_rate_++;
+	    }
+	SetPower(16);
     }
 
     // Build the packet
