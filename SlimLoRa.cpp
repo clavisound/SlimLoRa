@@ -463,7 +463,7 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 
 #if LORAWAN_KEEP_SESSION
     // Saves memory cycles, at worst EEPROM_WRITE_TX_COUNT lost packets
-    if (++tx_frame_counter_ % EEPROM_WRITE_TX_COUNT) {
+    if (++tx_frame_counter_ % EEPROM_WRITE_TX_COUNT == 0) {
         SetTxFrameCounter(tx_frame_counter_);
     }
 #endif
@@ -707,9 +707,6 @@ bool SlimLoRa::ProcessJoinAccept1_0(uint8_t *packet, uint8_t packet_length) {
             SetAppSKey(buffer);
         }
     }
-#if DEBUG_SLIM == 1
-    printMAC();
-#endif
 
     return true;
 }
@@ -951,8 +948,7 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
 end:
 #if DEBUG_SLIM == 1
     if ( result == 0 ) {
-	Serial.print(F("\nJoined on window: "));Serial.println(window);
-    	printMAC();
+	Serial.print(F("\nJoined on window: "));Serial.println(window);printMAC();
     }
 #endif
 
@@ -1182,9 +1178,9 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
     memset(sticky_fopts_.fopts, 0, sticky_fopts_.length);
     sticky_fopts_.length = 0;
 
-    // Saves memory cycles, we could loose more than 3 packets if we don't receive a packet at all
+    // Saves memory cycles, we could loose more than EEPROM_WRITE_RX_COUNT packets if we don't receive a packet at all
     rx_frame_counter_ = frame_counter + 1;
-    if (rx_frame_counter_ % EEPROM_WRITE_RX_COUNT) {
+    if (rx_frame_counter_ % EEPROM_WRITE_RX_COUNT == 0) {
         SetRxFrameCounter(rx_frame_counter_);
     }
 
@@ -1323,7 +1319,7 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
  */
 void SlimLoRa::SendData(uint8_t fport, uint8_t *payload, uint8_t payload_length) {
 #if DEBUG_SLIM == 1
-    printMAC();
+	Serial.println(F("SendData"));printMAC();
 #endif
     Transmit(fport, payload, payload_length);
 
@@ -1992,7 +1988,10 @@ uint16_t SlimLoRa::GetDevNonce() {
 void SlimLoRa::SetDevNonce(uint16_t dev_nonce) {
     eeprom_write_word(&eeprom_lw_dev_nonce, dev_nonce);
 #if DEBUG_SLIM == 1
-    Serial.print(F("\nWRITE DevNonce: "));Serial.print(dev_nonce >> 8);Serial.print(dev_nonce);
+    uint8_t temp[2];
+    temp[0] = dev_nonce >> 8;
+    temp[1] = dev_nonce;
+    Serial.print(F("\nWRITE DevNonce: "));printHex(temp, 2);
 #endif
 }
 
@@ -2010,7 +2009,12 @@ uint32_t SlimLoRa::GetJoinNonce() {
 void SlimLoRa::SetJoinNonce(uint32_t join_nonce) {
     eeprom_write_dword(&eeprom_lw_join_nonce, join_nonce);
 #if DEBUG_SLIM == 1
-    Serial.print(F("JoinNonce: "));Serial.print(join_nonce >> 24);Serial.print(join_nonce >> 16);Serial.print(join_nonce >> 8);Serial.println(join_nonce);
+    uint8_t temp[4];
+    temp[0] = join_nonce >> 24;
+    temp[1] = join_nonce >> 16;
+    temp[2] = join_nonce >> 8;
+    temp[3] = join_nonce
+    Serial.print(F("JoinNonce: "));printHex(temp, 4);
 #endif
 }
 
