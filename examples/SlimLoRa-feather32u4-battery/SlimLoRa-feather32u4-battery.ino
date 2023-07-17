@@ -24,8 +24,7 @@
  * SleepyDog library from Adafruit,
  * In config tab add your keys from your Network provider.
  * 
- * In SlimLoRa library edit SlimLoRa.h to KEEP_SESSION or to
- * select OTAA.
+ * In SlimLoRa library edit SlimLoRa.h to KEEP_SESSION and select OTAA.
  * 
  */
 
@@ -52,27 +51,24 @@ void setup() {
     delay(9000);
     #ifdef DEBUG_INO
       while (! Serial);                 // don't start unless we have serial connection
-      Serial.println("Starting");
+      Serial.println(F("Starting"));
     #endif
 
     lora.Begin();
-    lora.SetDataRate(SF10BW125);
+    lora.SetDataRate(SF9BW125);
     lora.SetPower(txPower);
-    lora.SetAdrEnabled(0); // 0 to disable
-}
+    lora.SetAdrEnabled(1); // 0 to disable
 
-void loop() {
-  #ifdef LORAWAN_OTAA_ENABLED
     #ifdef LORAWAN_KEEP_SESSION // lora.GetHasJoined needs LORAWAN_KEEP_SESSION
-      while (!lora.HasJoined() && !lora.GetHasJoined() && joinEfforts >= 1) {
+      while (!lora.GetHasJoined() && joinEfforts >= 1) {
      #else
       while (!lora.HasJoined() && joinEfforts >= 1) {
-    #endif
+    #endif // LORAWAN_KEEP_SESSION
         // Visible inform that we try to join.
         digitalWrite(LED_BUILTIN, HIGH);
         
         #ifdef DEBUG_INO
-          Serial.print("\nJoin... Efforts remaining: ");Serial.println(joinEfforts);
+          Serial.print(F("\nJoining. Efforts remaining: "));Serial.println(joinEfforts);
         #endif
         
         joinEfforts--;
@@ -86,42 +82,57 @@ void loop() {
         #ifdef DEBUG_INO
         // We have efforts to re-try  
         if (!lora.HasJoined() && joinEfforts > 0) {
-            Serial.print("JoinStart vs RXend micros (first number seconds): ");Serial.println(joinEnd - joinStart);
-            Serial.println("Retry join in 4 minutes");
-              blinkLed(220, 25, 1); // approx 4 minutes times, duration, every seconds
+            Serial.print(F("JoinStart vs RXend micros (first number seconds): "));Serial.println(joinEnd - joinStart);
+            Serial.println(F("Retry join in 4 minutes"));
+            blinkLed(220, 25, 1); // approx 4 minutes times, duration, every seconds
         }
         #else
             blinkLed(220, 25, 1); // approx 4 minutes times, duration, every seconds
         #endif
     }
 
-// Not joined. Abort everythinh. Just blink every 9 seconds for ever.
-if (!lora.HasJoined() && joinEfforts < 1) {
-            blinkLed(220, 25, 9); // ~33 minutes: times, duration, every seconds
+#ifdef LORAWAN_KEEP_SESSION
+   if ( lora.GetHasJoined() ) {
+     Serial.println(F("No need to join. Session restore."));
+    return;
+#else
+   if ( lora.HasJoined() ) {
+#endif // LORAWAN_KEEP_SESSION
+   Serial.println(F("Just joined. Session started."));
+  }
+}
+
+void loop() {
+  #ifdef LORAWAN_KEEP_SESSION // lora.GetHasJoined needs LORAWAN_KEEP_SESSION
+    if (!lora.GetHasJoined() && joinEfforts < 1) {
+  #else
+    // Not joined. Abort everything. Just blink every 9 seconds for ever.
+    if (!lora.HasJoined() && joinEfforts < 1) {
+  #endif // LORAWAN_KEEP_SESSION
+  blinkLed(220, 25, 9); // ~33 minutes: times, duration (ms), every seconds
 }
 
 // send uplink
-  if (lora.HasJoined()) {
+#ifdef LORAWAN_KEEP_SESSION
+  if ( lora.GetHasJoined() ) {
+#else
+  if ( lora.HasJoined() ) {
+#endif // LORAWAN_KEEP_SESSION
 
-      #ifdef DEBUG_INO
-        Serial.println("Joined, sending uplink.");
-      #endif
-        checkBatt();
+  #ifdef DEBUG_INO
+    Serial.println(F("Sending uplink."));
+  #endif
+    checkBatt();
 
-      #ifdef DEBUG_INO
-        Serial.print("bat: ");Serial.println(vbat);
-      #endif
+    payload_length = sizeof(payload);
+    lora.SendData(fport, payload, payload_length);
 
-        payload_length = sizeof(payload);
-        lora.SendData(fport, payload, payload_length);
-
-        // blink every 3 seconds for ~30 minutes. We joined.
-        blinkLed(600, 50, 3);
+    // blink every 3 seconds for ~30 minutes. We joined.
+    blinkLed(600, 50, 3);
         
-        // testing power
-        lora.SetPower(txPower);
-        txPower = txPower - 1;
-        if (txPower <= 1 ) { txPower = 16; }
+    // testing power
+    lora.SetPower(txPower);
+    txPower = txPower - 1;
+    if (txPower <= 1 ) { txPower = 16; }
   }
-#endif // LORAWAN_OTAA_ENABLED
 } 

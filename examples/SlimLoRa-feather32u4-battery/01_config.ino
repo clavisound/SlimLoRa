@@ -5,7 +5,7 @@
 
 function Decoder(bytes, port) {
 var decoded = {};
-decoded.battery = bytes;
+decoded.battery = bytes[0];
 return decoded;
 }
 

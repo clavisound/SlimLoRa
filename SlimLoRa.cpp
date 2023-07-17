@@ -99,20 +99,26 @@ SlimLoRa::SlimLoRa(uint8_t pin_nss) {
 
 #if DEBUG_SLIM == 1
 void printHex(uint8_t *value, uint8_t len){ 
-      	Serial.print(F(" 0x"));
-    	for (uint8_t i = len; i > 0; i-- ) {
+      	Serial.print(F("\nLSB: 0x"));
+    	for (int8_t i = len - 1; i >= 0; i-- ) {
 		if (value[i] == 0x0 ) { Serial.print(F("00")); continue; }
 		if (value[i] <= 0xF ) { Serial.print(F("0")); Serial.print(value[i], HEX); continue; }
+      		Serial.print(value[i], HEX);
+    	}
+      	Serial.print(F("\nMSB: 0x"));
+    	for (int8_t i = 0; i < len; i++ ) {
+		if (value[i] == 0x0 ) { Serial.print(F("00")); continue; }
+		if (value[i] <= 0xF ) { Serial.print(F("0")); Serial.print(value[i], HEX);continue; }
       		Serial.print(value[i], HEX);
     	}
 }
 #endif
 
 #if DEBUG_SLIM == 1
-void SlimLoRa::DEBUG_MAC(){
+void SlimLoRa::printMAC(){
 #if LORAWAN_KEEP_SESSION
     Serial.print(F("\n\nJoined Status from EEPROM: "));Serial.println(GetHasJoined());
-    Serial.print(F("\nDevAddr: "));printHex(dev_addrDEB, 4);
+//    GetDevAddr(dev_addrDEB);Serial.print(F("\ndev_addrDEB: "));printHex(dev_addrDEB, 4);
 #endif // LORAWAN_KEEP_SESSION
 #if LORAWAN_OTAA_ENABLED
     Serial.print(F("\n\nMAC STATE\nJoin: "));Serial.println(has_joined_);
@@ -121,15 +127,14 @@ void SlimLoRa::DEBUG_MAC(){
 #endif // LORAWAN_OTAA_ENABLED
     Serial.print(F("\nTx_#: "));Serial.println(GetTxFrameCounter());
     Serial.print(F("Rx_#: "));Serial.println(GetRxFrameCounter());
-    Serial.print(F("Rx1 delay: "));Serial.println(GetRx1Delay());
-    Serial.print(F("System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.println("s, ");
-    Serial.print(F("Rx1 offset: "));Serial.println(GetRx1DataRateOffset());
-    Serial.print(F("Rx2 DR: "));Serial.println(rx2_data_rate_);
+    Serial.print(F("Rx1 delay : "));Serial.print(GetRx1Delay());Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.println("s, ");
+    Serial.print(F("Rx1 DR offset: "));Serial.println(GetRx1DataRateOffset());
+    Serial.print(F("Rx2 DR       : "));Serial.println(rx2_data_rate_);
+    Serial.print(F("ADR_ACK_cnt  : "));Serial.println(adr_ack_counter_);
     Serial.print(F("rx_microsstamp: "));Serial.println(rx_microsstampDEB);
-    Serial.print(F("rx_symbols: "));Serial.println(rx_symbolsDEB);
-    Serial.print(F("Adr_ACK_cnt: "));Serial.println(adr_ack_counter_);
-    Serial.print(F("devNonce: "));Serial.println(GetDevNonce(), HEX);
-    Serial.print(F("joinDevNonce: "));Serial.println(GetJoinNonce(), HEX);
+    Serial.print(F("rx_symbols    : "));Serial.println(rx_symbolsDEB);
+    Serial.print(F("devNonce DEC    : "));;Serial.print(GetDevNonce() >> 8);Serial.println(GetDevNonce());
+    Serial.print(F("joinDevNonce DEC: "));Serial.print(GetJoinNonce() >> 24);Serial.print(GetJoinNonce() >> 16);Serial.print(GetJoinNonce() >> 8);Serial.println(GetJoinNonce());
 }
 #endif // DEBUG_SLIM
 
@@ -178,7 +183,6 @@ void SlimLoRa::Begin() {
 
 #if DEBUG_SLIM == 1
     Serial.println(F("Begin. "));
-    DEBUG_MAC();
 #endif
 }
 
@@ -286,6 +290,8 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 
     // Wait for start time
 #if DEBUG_TIMING == 1
+    // Maybe it breaks timing.
+    rx_microsstampDEB = rx_microstamp;
     wait_until(rx_microsstamp - LORAWAN_RX_SETUP_MICROS);
 #else
     wait_until(rx_microsstamp - LORAWAN_RX_SETUP_MICROS);
@@ -455,12 +461,12 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
     // Switch RFM to sleep
     RfmWrite(RFM_REG_OP_MODE, 0x00);
 
-    // Saves memory cycles, at worst 10 lost packets
-    if (++tx_frame_counter_ % 10) {
 #if LORAWAN_KEEP_SESSION
+    // Saves memory cycles, at worst EEPROM_WRITE_TX_COUNT lost packets
+    if (++tx_frame_counter_ % EEPROM_WRITE_TX_COUNT) {
         SetTxFrameCounter(tx_frame_counter_);
-#endif
     }
+#endif
     adr_ack_counter_++;
 }
 
@@ -543,6 +549,9 @@ int32_t SlimLoRa::CalculateRxWindowOffset(int16_t micros_per_half_symbol) {
         rx_symbols = LORAWAN_RX_MIN_SYMBOLS;
     }
     rx_symbols_ = rx_symbols;
+#if DEBUG_TIMING == 1
+    rx_symbolsDEB = rx_symbols;
+#endif
 
     return (8 - rx_symbols) * micros_per_half_symbol - LORAWAN_RX_MARGIN_MICROS;
 }
@@ -699,7 +708,7 @@ bool SlimLoRa::ProcessJoinAccept1_0(uint8_t *packet, uint8_t packet_length) {
         }
     }
 #if DEBUG_SLIM == 1
-    DEBUG_MAC();
+    printMAC();
 #endif
 
     return true;
@@ -911,12 +920,9 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
     dev_addr[2] = packet[8];
     dev_addr[3] = packet[7];
     SetDevAddr(dev_addr);
-	#if DEBUG_SLIM == 1
-		dev_addrDEB[0] = dev_addr[0];
-    		dev_addrDEB[1] = dev_addr[1];
-    		dev_addrDEB[2] = dev_addr[2];
-    		dev_addrDEB[3] = dev_addr[3];
-	#endif
+#if DEBUG_SLIM == 1
+	Serial.print(F("dev_addr from join: "));printHex(dev_addr, 4);
+#endif
 
     rx1_data_rate_offset_ = (packet[11] & 0x70) >> 4;
     SetRx1DataRateOffset(rx1_data_rate_offset_);
@@ -936,9 +942,6 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
     adr_ack_counter_ = 0;
 
     has_joined_ = true;
-#if DEBUG_SLIM == 1
-    // TODO
-#endif
 #if LORAWAN_KEEP_SESSION
     SetHasJoined(true);
 #endif // LORAWAN_KEEP_SESSION
@@ -949,7 +952,7 @@ end:
 #if DEBUG_SLIM == 1
     if ( result == 0 ) {
 	Serial.print(F("\nJoined on window: "));Serial.println(window);
-    	DEBUG_MAC();
+    	printMAC();
     }
 #endif
 
@@ -1181,7 +1184,7 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
     // Saves memory cycles, we could loose more than 3 packets if we don't receive a packet at all
     rx_frame_counter_ = frame_counter + 1;
-    if (rx_frame_counter_ % 3) {
+    if (rx_frame_counter_ % EEPROM_WRITE_RX_COUNT) {
         SetRxFrameCounter(rx_frame_counter_);
     }
 
@@ -1205,16 +1208,16 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 end:
 #if DEBUG_SLIM == 1
-    Serial.print(F("\nMAC error status: "));Serial.println(result);
-    Serial.print(F("Rx delay: "));Serial.println(rx_delay);
-    Serial.print(F("Rx counter: "));Serial.println(GetRxFrameCounter());
+    Serial.print(F("\n\nMAC error status: "));Serial.println(result);
+    Serial.print(F("Rx delay (us): "));Serial.println(rx_delay);
+    Serial.print(F("Rx counter   : "));Serial.println(GetRxFrameCounter());
     if (window == 1) {
     	Serial.print(F("rx1_offset_dr: "));Serial.println(rx1_offset_dr);
     } else {
     	Serial.print(F("rx2_DR: "));Serial.println(rx2_data_rate_);
     }
 	#if LORAWAN_OTAA_ENABLED
-    Serial.print(F("DevAddr: "));printHex(dev_addr, 4);
+    Serial.print(F("\nDevAddr after RX windows: "));printHex(dev_addr, 4);
 	#endif // LORAWAN_OTAA_ENABLED
 #endif
     return result;
@@ -1319,6 +1322,9 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
  * @param payload_length Length of data to be transmitted.
  */
 void SlimLoRa::SendData(uint8_t fport, uint8_t *payload, uint8_t payload_length) {
+#if DEBUG_SLIM == 1
+    printMAC();
+#endif
     Transmit(fport, payload, payload_length);
 
     if (ProcessDownlink(1)) {
@@ -1834,7 +1840,7 @@ uint16_t SlimLoRa::GetTxFrameCounter() {
 void SlimLoRa::SetTxFrameCounter(uint16_t count) {
     eeprom_write_word(&eeprom_lw_tx_frame_counter, count);
 #if DEBUG_SLIM == 1
-    Serial.print(F("Write Tx_#: "));Serial.println(count);
+    Serial.print(F("\nWRITE Tx_#: "));Serial.print(count >> 8);Serial.println(count);
 #endif
 }
 
@@ -1849,7 +1855,7 @@ uint16_t SlimLoRa::GetRxFrameCounter() {
 void SlimLoRa::SetRxFrameCounter(uint16_t count) {
     eeprom_write_word(&eeprom_lw_rx_frame_counter, count);
 #if DEBUG_SLIM == 1
-    Serial.print(F("Write Rx_#: "));Serial.println(count);
+    Serial.print(F("\nWRITE Rx_#: "));Serial.print(count >> 8);Serial.println(count);
 #endif
 }
 
@@ -1866,6 +1872,9 @@ uint8_t SlimLoRa::GetRx1DataRateOffset() {
 
 void SlimLoRa::SetRx1DataRateOffset(uint8_t value) {
     eeprom_write_byte(&eeprom_lw_rx1_data_rate_offset, value);
+#if DEBUG_SLIM == 1
+    Serial.print(F("\nWRITE Rx1_offset: "));Serial.println(value);
+#endif
 }
 
 // Rx2DataRate
@@ -1897,7 +1906,7 @@ uint8_t SlimLoRa::GetRx2DataRate() {
 void SlimLoRa::SetRx2DataRate(uint8_t value) {
     eeprom_write_byte(&eeprom_lw_rx2_data_rate, value);
 #if DEBUG_SLIM == 1
-    Serial.print(F("Write Rx2_DR: "));Serial.println(value);
+    Serial.print(F("\nWRITE Rx2_DR: "));Serial.println(value);
 #endif
 }
 
@@ -1917,7 +1926,7 @@ uint8_t SlimLoRa::GetRx1Delay() {
 void SlimLoRa::SetRx1Delay(uint8_t value) {
     eeprom_write_byte(&eeprom_lw_rx1_delay, value);
 #if DEBUG_SLIM == 1
-    Serial.print(F("Write Rx1_delay: "));Serial.println(value);
+    Serial.print(F("\nWRITE Rx1_delay: "));Serial.println(value);
 #endif
 }
 
@@ -1937,13 +1946,19 @@ uint8_t eeprom_SlimLoRa_sigEnd[4]	EEMEM = { 0x04, 0x03, 0x02, 0x01 }; // This mu
 #if LORAWAN_KEEP_SESSION
 bool SlimLoRa::GetHasJoined() {
     uint8_t value = eeprom_read_byte(&eeprom_lw_has_joined);
-    if ( value == 0xff ) { return 0; }
+#if DEBUG_SLIM == 1
+    Serial.print(F("\nEEPROM join value: "));Serial.println(value);
+#endif
+    if ( value != 0x01 ) { return 0; }
+    return value;
 }
 
 void SlimLoRa::SetHasJoined(bool value) {
     eeprom_write_byte(&eeprom_lw_has_joined, value);
 #if DEBUG_SLIM == 1
-    Serial.print(F("EEPROM write: joined"));
+    Serial.print(F("\nWRITE EEPROM: joined"));
+    uint16_t temp = &eeprom_lw_has_joined;
+    Serial.print(F("\nEEPROM join address: "));Serial.println(temp);
 #endif
 }
 #endif // LORAWAN_KEEP_SESSION
@@ -1952,12 +1967,15 @@ void SlimLoRa::SetHasJoined(bool value) {
 void SlimLoRa::GetDevAddr(uint8_t *dev_addr) {
     eeprom_read_block(dev_addr, eeprom_lw_dev_addr, 4);
 #if DEBUG_SLIM == 1
-    Serial.print(F("DevAddr: "));printHex(dev_addr, 4);
+    Serial.print(F("\nDevAddr on GetDev: "));printHex(dev_addr, 4);
 #endif
 }
 
 void SlimLoRa::SetDevAddr(uint8_t *dev_addr) {
     eeprom_write_block(dev_addr, eeprom_lw_dev_addr, 4);
+#if DEBUG_SLIM == 1
+    Serial.print(F("\nWRITE DevAddr: "));printHex(dev_addr, 4);
+#endif
 }
 
 // DevNonce
@@ -1974,7 +1992,7 @@ uint16_t SlimLoRa::GetDevNonce() {
 void SlimLoRa::SetDevNonce(uint16_t dev_nonce) {
     eeprom_write_word(&eeprom_lw_dev_nonce, dev_nonce);
 #if DEBUG_SLIM == 1
-    Serial.print(F("Write DevNonce: "));Serial.println(dev_nonce, HEX);
+    Serial.print(F("\nWRITE DevNonce: "));Serial.print(dev_nonce >> 8);Serial.print(dev_nonce);
 #endif
 }
 
@@ -1992,7 +2010,7 @@ uint32_t SlimLoRa::GetJoinNonce() {
 void SlimLoRa::SetJoinNonce(uint32_t join_nonce) {
     eeprom_write_dword(&eeprom_lw_join_nonce, join_nonce);
 #if DEBUG_SLIM == 1
-    Serial.print(F("JoinNonce: "));Serial.println(join_nonce, HEX);
+    Serial.print(F("JoinNonce: "));Serial.print(join_nonce >> 24);Serial.print(join_nonce >> 16);Serial.print(join_nonce >> 8);Serial.println(join_nonce);
 #endif
 }
 
@@ -2004,7 +2022,7 @@ void SlimLoRa::GetAppSKey(uint8_t *key) {
 void SlimLoRa::SetAppSKey(uint8_t *key) {
     eeprom_write_block(key, eeprom_lw_app_s_key, 16);
 #if DEBUG_SLIM == 1
-    Serial.print(F("WRITE app_s_key: "));printHex(key, 16);
+    Serial.print(F("\nWRITE app_skey: "));printHex(key, 16);
 #endif
 }
 
@@ -2016,7 +2034,7 @@ void SlimLoRa::GetFNwkSIntKey(uint8_t *key) {
 void SlimLoRa::SetFNwkSIntKey(uint8_t *key) {
     eeprom_write_block(key, eeprom_lw_f_nwk_s_int_key, 16);
 #if DEBUG_SLIM == 1
-    Serial.print(F("WRITE FNwkSInt: "));printHex(key, 16);
+    Serial.print(F("\nWRITE FNwkSInt: "));printHex(key, 16);
 #endif
 }
 
@@ -2028,7 +2046,7 @@ void SlimLoRa::GetSNwkSIntKey(uint8_t *key) {
 void SlimLoRa::SetSNwkSIntKey(uint8_t *key) {
     eeprom_write_block(key, eeprom_lw_s_nwk_s_int_key, 16);
 #if DEBUG_SLIM == 1
-    Serial.print(F("WRITE SNwkSInt: "));printHex(key, 16);
+    Serial.print(F("\nWRITE SNwkSInt: "));printHex(key, 16);
 #endif
 }
 
@@ -2040,7 +2058,7 @@ void SlimLoRa::GetNwkSEncKey(uint8_t *key) {
 void SlimLoRa::SetNwkSEncKey(uint8_t *key) {
     eeprom_write_block(key, eeprom_lw_nwk_s_enc_key, 16);
 #if DEBUG_SLIM == 1
-    Serial.print(F("WRITE nwk_s_enc_key: "));printHex(key, 16);
+    Serial.print(F("\nWRITE NwkSEnc: "));printHex(key, 16);
 #endif
 }
 #endif // LORAWAN_OTAA_ENABLED

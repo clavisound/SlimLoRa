@@ -7,15 +7,19 @@
 
 // Debug SlimLoRa library. 0 to disable
 #define DEBUG_SLIM   1  // Enabled this only to check values / registers. Probably it breaks timing!
-#define DEBUG_TIMING 0  // Only to check YOUR version of timing. DON'T enabled unless you know what you are doing.
+#define DEBUG_TIMING 0  // To experiment. Not used. Don't use it.
 
 // Enable LoRaWAN Over-The-Air Activation
 #define LORAWAN_OTAA_ENABLED    1
 #define LORAWAN_KEEP_SESSION    1
 
+// Write RX counter every X times to protect EEPROM from constant writing
+#define EEPROM_WRITE_TX_COUNT	120	// SlimLoRa default: 10
+#define EEPROM_WRITE_RX_COUNT	9	// SlimLoRa default: 3
+
 // LoRaWAN ADR
-#define LORAWAN_ADR_ACK_LIMIT   254
-#define LORAWAN_ADR_ACK_DELAY   64
+#define LORAWAN_ADR_ACK_LIMIT   254	// Request downlink after those uplinks to verify we have connection.
+#define LORAWAN_ADR_ACK_DELAY   64	// Wait XX times to consider connection lost.
 
 #define MICROS_PER_SECOND               1000000
 
@@ -178,11 +182,10 @@ class SlimLoRa {
     bool GetHasJoined();
     void GetDevAddr(uint8_t *dev_addr);
 #if DEBUG_SLIM == 1
-    void DEBUG_MAC(void);
+    void printMAC(void);
     // debug values
-    uint8_t  dev_addrDEB[4] = { 0x00, 0x00, 0x00, 0x00 }, nwk_k_keyDEB[16], app_s_keyDEB[16];
+    uint8_t  dev_addrDEB[4] = { 0x00, 0x00, 0x00, 0x00 };
     uint8_t  rx_symbolsDEB;
-    uint16_t dev_nonceDEB;
     uint32_t rx_microsstampDEB;
 #endif
 
