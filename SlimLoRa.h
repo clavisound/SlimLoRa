@@ -6,16 +6,16 @@
 #include <util/atomic.h>
 
 // Debug SlimLoRa library. 0 to disable
-#define DEBUG_SLIM   0  // Enabled this only to check values / registers. Probably it breaks timing!
+#define DEBUG_SLIM   1  // Enabled this only to check values / registers. Probably it breaks timing!
 #define DEBUG_TIMING 0  // Only to check YOUR version of timing. DON'T enabled unless you know what you are doing.
 
 // Enable LoRaWAN Over-The-Air Activation
 #define LORAWAN_OTAA_ENABLED    1
-#define LORAWAN_KEEP_SESSION    0
+#define LORAWAN_KEEP_SESSION    1
 
 // LoRaWAN ADR
-#define LORAWAN_ADR_ACK_LIMIT   48
-#define LORAWAN_ADR_ACK_DELAY   16
+#define LORAWAN_ADR_ACK_LIMIT   254
+#define LORAWAN_ADR_ACK_DELAY   64
 
 #define MICROS_PER_SECOND               1000000
 
@@ -165,7 +165,7 @@ typedef struct {
 
 class SlimLoRa {
   public:
-    SlimLoRa(uint8_t pin_nss);
+    SlimLoRa(uint8_t pin_nss); // TODO: TinyLoRa rfm_dio0 (7), rfm_nss (8), rfm_rst (4)
     void Begin(void);
     bool HasJoined(void);
     void ForceTxFrameCounter(uint16_t t_cf);
@@ -176,16 +176,22 @@ class SlimLoRa {
     void SetDataRate(uint8_t dr);
     void SetPower(int8_t power);
     bool GetHasJoined();
-#if DEBUG_SLIM
+    void GetDevAddr(uint8_t *dev_addr);
+#if DEBUG_SLIM == 1
     void DEBUG_MAC(void);
+    // debug values
+    uint8_t  dev_addrDEB[4] = { 0x00, 0x00, 0x00, 0x00 }, nwk_k_keyDEB[16], app_s_keyDEB[16];
+    uint8_t  rx_symbolsDEB;
+    uint16_t dev_nonceDEB;
+    uint32_t rx_microsstampDEB;
 #endif
 
   private:
-    uint8_t pin_nss_;
+    uint8_t pin_nss_; // TODO TinyLoRa irg_, rst_ bat_; bat=battery level pin
     uint8_t channel_ = 0;
     uint8_t data_rate_ = SF7BW125;
     uint8_t rx1_data_rate_offset_ = 0;
-    uint8_t rx2_data_rate_ = SF9BW125; // TVN V3
+    uint8_t rx2_data_rate_;
     uint32_t rx1_delay_micros_;
     bool has_joined_ = false;
     bool adr_enabled_ = true;
@@ -244,7 +250,6 @@ class SlimLoRa {
 #if LORAWAN_KEEP_SESSION
     void SetHasJoined(bool value);
 #endif // LORAWAN_KEEP_SESSION
-    void GetDevAddr(uint8_t *dev_addr);
     void SetDevAddr(uint8_t *dev_addr);
     uint16_t GetDevNonce();
     void SetDevNonce(uint16_t dev_nonce);

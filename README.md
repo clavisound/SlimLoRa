@@ -1,8 +1,48 @@
-# SlimLoRa Arduino library (WIP, does not work yet)
+# SlimLoRa Arduino library for EU868 (WIP, does not fully tested yet)
+
+---
+
+# Tested
+
+- [x] Feather 32u4 EU868 region.
+- [x] Join on helium with SF10. Success everytime on 1st window.
+- [x] SetPower
+
+# Untested
+
+- [ ] ADR.
+- [ ] Store session in EEPROM.
+- [ ] Only once tested SF7, SF8, SF9 and succeded, but I will verify again.
+
+# TODO (PR's welcome)
+
+- [ ] Add pin mappings infrastucture for other connections.
+- [x] Battery Level to DevStatusAns.
+- [ ] Join on TTN fails. Maybe my gateway is not normal. Should try with others.
+- [ ] Test join with SF11, SF12 on Helium and TTN.
+- [ ] Change SetPower style to LoRaWAN style.
+- [ ] Respect Dwell MAC command
+- [ ] Respect Duty Cycle
+- [ ] Respect Join Back-off (not faster than 36 seconds)
+
+# Maybe good ideas
+
+- [ ] 32-bit Frame Counter.
+
+# I can't test it.
+
+- [ ] Add regions. Only works with EU868.
+
+# Evaluation / mystery stuff
+
+- SF10 indoors working, outdoors not?
 
 ---
 
 **Note:**
+
+Original message from Hendrik Hagendorn.
+
 This library evolved from a fun project [LoRa-ATtiny-Node](https://github.com/novag/LoRa-ATtiny-Node). It was never meant to run on more powerful UCs than an ATtiny85. This fork of the original library tries to support the Arduino ecosystem.
 
 It is currently still being adapted to the Arduino ecosystem and is **not ready for use**!
@@ -58,10 +98,6 @@ Be sure to put connected sensors into sleep mode before sending data to save ene
 ### Timer0
 SlimLoRa uses the Timer0 on every call of the Join or SendData methods. Between these calls Timer0 can be used by the user for other purposes.
 See also timing.h and timing.c.
-
-## Configuration
-
-LoRaWAN settings and attached sensors can be configured in the config.h header file.
 
 ## Supported hardware
 

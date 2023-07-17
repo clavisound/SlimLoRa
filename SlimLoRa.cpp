@@ -98,53 +98,38 @@ SlimLoRa::SlimLoRa(uint8_t pin_nss) {
 }
 
 #if DEBUG_SLIM == 1
-void addZeroIfMissing(uint8_t value){ 
-	if (value <= 0xF ) {
-		Serial.print("0"); 
-	}
+void printHex(uint8_t *value, uint8_t len){ 
+      	Serial.print(F(" 0x"));
+    	for (uint8_t i = len; i > 0; i-- ) {
+		if (value[i] == 0x0 ) { Serial.print(F("00")); continue; }
+		if (value[i] <= 0xF ) { Serial.print(F("0")); Serial.print(value[i], HEX); continue; }
+      		Serial.print(value[i], HEX);
+    	}
 }
+#endif
 
+#if DEBUG_SLIM == 1
 void SlimLoRa::DEBUG_MAC(){
+#if LORAWAN_KEEP_SESSION
+    Serial.print(F("\n\nJoined Status from EEPROM: "));Serial.println(GetHasJoined());
+    Serial.print(F("\nDevAddr: "));printHex(dev_addrDEB, 4);
+#endif // LORAWAN_KEEP_SESSION
 #if LORAWAN_OTAA_ENABLED
-    Serial.println(F("\n\nMAC STATE: DEBUG SLIM\n\nJn Stat, T_fc, R_fc, Rx1delay, Rx2DR"));
-    Serial.print(has_joined_);Serial.print(", ");
-
-    uint8_t  dev_addrDEB[4], nwk_k_keyDEB[16], app_s_keyDEB[16];
-    //uint16_t dev_nonceDEB;
-    GetDevAddr(dev_addrDEB);
-    //GetDevNonce(dev_nonceDEB);
-    for (uint8_t i = 0; i < 4; i++ ) {
-      Serial.print(F(" 0x"));addZeroIfMissing(dev_addrDEB[i]);
-      Serial.print(dev_addrDEB[i], HEX);
-    }
-    Serial.print(", ");
-    Serial.println(GetDevNonce());
-    //Serial.println(F("FnwkSIntKey, SNwkSIntkey, NwkSEncKey, AppsKey"));
-    Serial.print(F("NwkSEncKey: "));
-    GetNwkSEncKey(nwk_k_keyDEB);
-    GetAppSKey(app_s_keyDEB);
-    for (uint8_t i = 0; i < 16; i++ ) {
-      Serial.print(F(" 0x"));addZeroIfMissing(nwk_k_keyDEB[i]);
-      Serial.print(nwk_k_keyDEB[i], HEX);
-    }
-    Serial.print(F("\n\nAppsKey: "));
-    for (uint8_t i = 0; i < 16; i++ ) {
-      Serial.print(F(" 0x"));addZeroIfMissing(app_s_keyDEB[i]);
-      Serial.print(app_s_keyDEB[i], HEX);
-    }
-    Serial.println();
-    //Serial.println(F("Adr_ACK_cnt, DevAdd, DevNonce"));
+    Serial.print(F("\n\nMAC STATE\nJoin: "));Serial.println(has_joined_);
 #else
-    Serial.println(F("\n\nMAC STATE: DEBUG_SLIM\nT_fc, R_fc, Rx1delay, Rx2DR"));
+    Serial.print(F("ABP DevAddr: "));printHex(DevAddr, 4);
 #endif // LORAWAN_OTAA_ENABLED
-    Serial.print(tx_frame_counter_);Serial.print(", ");
-    Serial.print(rx_frame_counter_);Serial.print(", ");
-    Serial.print(GetRx1Delay());Serial.print(": ");
-    Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print("s, ");
-    Serial.println(rx2_data_rate_);
-
-    Serial.println(F("Adr_ACK_cnt, DevAdd, DevNonce"));
-    Serial.print(adr_ack_counter_);Serial.println(",");
+    Serial.print(F("\nTx_#: "));Serial.println(GetTxFrameCounter());
+    Serial.print(F("Rx_#: "));Serial.println(GetRxFrameCounter());
+    Serial.print(F("Rx1 delay: "));Serial.println(GetRx1Delay());
+    Serial.print(F("System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.println("s, ");
+    Serial.print(F("Rx1 offset: "));Serial.println(GetRx1DataRateOffset());
+    Serial.print(F("Rx2 DR: "));Serial.println(rx2_data_rate_);
+    Serial.print(F("rx_microsstamp: "));Serial.println(rx_microsstampDEB);
+    Serial.print(F("rx_symbols: "));Serial.println(rx_symbolsDEB);
+    Serial.print(F("Adr_ACK_cnt: "));Serial.println(adr_ack_counter_);
+    Serial.print(F("devNonce: "));Serial.println(GetDevNonce(), HEX);
+    Serial.print(F("joinDevNonce: "));Serial.println(GetJoinNonce(), HEX);
 }
 #endif // DEBUG_SLIM
 
@@ -161,7 +146,7 @@ void SlimLoRa::Begin() {
     // LoRa mode
     RfmWrite(RFM_REG_OP_MODE, 0x80);
 
-    // PA_BOOST pin / +16 dBm output power
+    // PA_BOOST pin / +16 dBm output power. Upper limit for EU868
     SetPower(16);
 
     // Preamble length: 8 symbols
@@ -388,11 +373,11 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
     // Switch RFM to sleep
     RfmWrite(RFM_REG_OP_MODE, 0x00);
 
-#if DEBUG_SLIM == 1
+    /* TODO: store values, print later
     // ATTENTION. This breaks timing for RX2!
-    Serial.print(F("\n\nrx_microsstamp, rx_symbols: "));Serial.print(rx_microsstamp);
-    Serial.print(F(", "));Serial.println(rx_symbols_);
+#if DEBUG_SLIM == 1
 #endif
+*/
 
     switch (irq_flags & 0xC0) {
         case RFM_STATUS_RX_TIMEOUT:
@@ -714,7 +699,6 @@ bool SlimLoRa::ProcessJoinAccept1_0(uint8_t *packet, uint8_t packet_length) {
         }
     }
 #if DEBUG_SLIM == 1
-    Serial.println(F("Joined. "));
     DEBUG_MAC();
 #endif
 
@@ -839,11 +823,6 @@ bool SlimLoRa::ProcessJoinAccept1_1(uint8_t *packet, uint8_t packet_length) {
                 break;
         }
     }
-#if DEBUG_SLIM == 1
-    Serial.println(F("Joined V1.1"));
-    DEBUG_MAC();
-#endif
-
     return true;
 }
 #endif // LORAWAN_V1_1_ENABLED
@@ -911,13 +890,11 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
     // Check OptNeg flag
     if (packet[11] & 0x80) {
         // LoRaWAN1.1+
-
 #if LORAWAN_V1_1_ENABLED
         mic_valid = ProcessJoinAccept1_1(packet, packet_length);
 #endif // LORAWAN_V1_1_ENABLED
     } else {
         // LoRaWAN1.0
-
         mic_valid = ProcessJoinAccept1_0(packet, packet_length);
     }
 
@@ -934,6 +911,12 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
     dev_addr[2] = packet[8];
     dev_addr[3] = packet[7];
     SetDevAddr(dev_addr);
+	#if DEBUG_SLIM == 1
+		dev_addrDEB[0] = dev_addr[0];
+    		dev_addrDEB[1] = dev_addr[1];
+    		dev_addrDEB[2] = dev_addr[2];
+    		dev_addrDEB[3] = dev_addr[3];
+	#endif
 
     rx1_data_rate_offset_ = (packet[11] & 0x70) >> 4;
     SetRx1DataRateOffset(rx1_data_rate_offset_);
@@ -953,6 +936,9 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
     adr_ack_counter_ = 0;
 
     has_joined_ = true;
+#if DEBUG_SLIM == 1
+    // TODO
+#endif
 #if LORAWAN_KEEP_SESSION
     SetHasJoined(true);
 #endif // LORAWAN_KEEP_SESSION
@@ -963,8 +949,10 @@ end:
 #if DEBUG_SLIM == 1
     if ( result == 0 ) {
 	Serial.print(F("\nJoined on window: "));Serial.println(window);
+    	DEBUG_MAC();
     }
 #endif
+
     return result;
 }
 #endif // LORAWAN_OTAA_ENABLED
@@ -1043,8 +1031,38 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
                 break;
             case LORAWAN_FOPT_DEV_STATUS_REQ:
                 pending_fopts_.fopts[pending_fopts_.length++] = LORAWAN_FOPT_DEV_STATUS_ANS;
-                // TODO: Battery level
-                pending_fopts_.fopts[pending_fopts_.length++] = 0xFF;
+                // TODO: make it function. 
+		// If we have value pin procced, 
+		// if we have value pin 255 don't proceed.
+		#if defined(ARDUINO_AVR_FEATHER32U4)
+		#define VBATPIN A9       // pin to measure battery voltage
+		uint8_t vbat;
+		vbat = analogRead(VBATPIN) - 450; // convert to 8bit
+		/*
+		vbat *= 2;    // we divided by 2, so multiply back
+		vbat *= 3.3;  // Multiply by 3.3V, our reference voltage
+		vbat /= 1024; // convert to voltage
+		all in one: vbat *=0.0064453125
+		*/
+		// Connected to USB feather reports 4.29Volts with above conversion
+		// vbat 699 seems to be the Maximum raw value.
+		// raw values (without minus 450 calculation):
+		// 465.5 = 3.0Volts, 480=3.1 volts, 496=3.2 volts 699=4.5Volts
+		// Capacity measured with voltage is not linear! https://learn.adafruit.com/assets/979
+		// 3.95V is 80%, 3.8V = 60%, 3.75V = 40%, 3.7V = 20%
+		if ( vbat < 29 ) {
+		       	vbat = 1;				// empty battery
+	       	}
+		else {
+			vbat = map(vbat, 30, 200, 1, 254);	// LoRaWAN wants value from 1-254.
+								// 255 reserved for not measured.
+								// 0 reserved for external source
+		}
+		if ( vbat > 254 ) { vbat = 0; }			// probably charging, aka: external source. 238 = 688 - 450
+                pending_fopts_.fopts[pending_fopts_.length++] = vbat;
+		#else
+                pending_fopts_.fopts[pending_fopts_.length++] = 0xFF; // Unable to measure the battery level.
+		#endif //ARDUINO_AVR_FEATHER32U4
                 pending_fopts_.fopts[pending_fopts_.length++] = (last_packet_snr_ & 0x80) >> 2 | last_packet_snr_ & 0x1F;
 
                 i += LORAWAN_FOPT_DEV_STATUS_REQ_SIZE;
@@ -1187,7 +1205,17 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 end:
 #if DEBUG_SLIM == 1
-    Serial.print(F("MAC error status: "));Serial.println(result);
+    Serial.print(F("\nMAC error status: "));Serial.println(result);
+    Serial.print(F("Rx delay: "));Serial.println(rx_delay);
+    Serial.print(F("Rx counter: "));Serial.println(GetRxFrameCounter());
+    if (window == 1) {
+    	Serial.print(F("rx1_offset_dr: "));Serial.println(rx1_offset_dr);
+    } else {
+    	Serial.print(F("rx2_DR: "));Serial.println(rx2_data_rate_);
+    }
+	#if LORAWAN_OTAA_ENABLED
+    Serial.print(F("DevAddr: "));printHex(dev_addr, 4);
+	#endif // LORAWAN_OTAA_ENABLED
 #endif
     return result;
 }
@@ -1214,7 +1242,6 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
     EncryptPayload(payload, payload_length, tx_frame_counter_, LORAWAN_DIRECTION_UP);
 
     // ADR backoff
-    // TODO: Probably too aggressive
     if (adr_enabled_ && adr_ack_counter_ >= LORAWAN_ADR_ACK_LIMIT + LORAWAN_ADR_ACK_DELAY) {
 	    if ( data_rate_ < SF12BW125 ) {
 	        data_rate_++;
@@ -1784,12 +1811,14 @@ void SlimLoRa::AesCalculateRoundKey(uint8_t round, uint8_t *round_key) {
 
 /**
  * EEPROM variables
+ * https://www.nongnu.org/avr-libc/user-manual/group__avr__eeprom.html
  */
-uint16_t eeprom_lw_tx_frame_counter EEMEM = 0;
-uint16_t eeprom_lw_rx_frame_counter EEMEM = 0;
-uint8_t eeprom_lw_rx1_data_rate_offset EEMEM = 0;
-uint8_t eeprom_lw_rx2_data_rate EEMEM = 0;
-uint8_t eeprom_lw_rx1_delay EEMEM = 0;
+uint8_t eeprom_SlimLoRa_sigStart[4]	EEMEM = { 0x01, 0x02, 0x03, 0x04 }; // This must be always first to mark the start of SlimLoRa MAC data.
+uint16_t eeprom_lw_tx_frame_counter	EEMEM = 0;
+uint16_t eeprom_lw_rx_frame_counter	EEMEM = 0;
+uint8_t eeprom_lw_rx1_data_rate_offset	EEMEM = 0;
+uint8_t eeprom_lw_rx2_data_rate		EEMEM = 0;
+uint8_t eeprom_lw_rx1_delay		EEMEM = 0;
 
 // TxFrameCounter
 uint16_t SlimLoRa::GetTxFrameCounter() {
@@ -1804,21 +1833,24 @@ uint16_t SlimLoRa::GetTxFrameCounter() {
 
 void SlimLoRa::SetTxFrameCounter(uint16_t count) {
     eeprom_write_word(&eeprom_lw_tx_frame_counter, count);
+#if DEBUG_SLIM == 1
+    Serial.print(F("Write Tx_#: "));Serial.println(count);
+#endif
 }
 
 // RxFrameCounter
 uint16_t SlimLoRa::GetRxFrameCounter() {
     uint16_t value = eeprom_read_word(&eeprom_lw_rx_frame_counter);
 
-    if (value == 0xFFFF) {
-        return 0;
-    }
-
+    if (value == 0xFFFF) { return 0; }
     return value;
 }
 
 void SlimLoRa::SetRxFrameCounter(uint16_t count) {
     eeprom_write_word(&eeprom_lw_rx_frame_counter, count);
+#if DEBUG_SLIM == 1
+    Serial.print(F("Write Rx_#: "));Serial.println(count);
+#endif
 }
 
 // Rx1DataRateOffset
@@ -1843,9 +1875,19 @@ uint8_t SlimLoRa::GetRx2DataRate() {
     if (value == 0xFF) {
 #if LORAWAN_OTAA_ENABLED
         return SF12BW125;
+	#ifdef TTNRX2 // TTN
+        	return SF9BW125;
+	#endif // TTN
+	#ifdef HELIUMRX2 // Helium
+        	return SF12BW125;
+	#endif // HELIUMXRX2
 #else
-        // TTN
-        return SF9BW125;
+	#ifdef TTNRX2 // TTN
+        	return SF12BW125; // TODO RESTORE to SF9. For some reason TTN transimits SF12 instead of SF9
+	#endif // TTN
+	#ifdef HELIUMRX2 // Helium
+        	return SF12BW125;
+	#endif // HELIUMXRX2
 #endif // LORAWAN_OTAA_ENABLED
     }
 
@@ -1854,6 +1896,9 @@ uint8_t SlimLoRa::GetRx2DataRate() {
 
 void SlimLoRa::SetRx2DataRate(uint8_t value) {
     eeprom_write_byte(&eeprom_lw_rx2_data_rate, value);
+#if DEBUG_SLIM == 1
+    Serial.print(F("Write Rx2_DR: "));Serial.println(value);
+#endif
 }
 
 // Rx1Delay
@@ -1871,35 +1916,44 @@ uint8_t SlimLoRa::GetRx1Delay() {
 
 void SlimLoRa::SetRx1Delay(uint8_t value) {
     eeprom_write_byte(&eeprom_lw_rx1_delay, value);
+#if DEBUG_SLIM == 1
+    Serial.print(F("Write Rx1_delay: "));Serial.println(value);
+#endif
 }
 
 #if LORAWAN_OTAA_ENABLED
 #if LORAWAN_KEEP_SESSION
-uint8_t eeprom_lw_has_joined EEMEM = 0;
+uint8_t eeprom_lw_has_joined		EEMEM = 0;
 #endif // LORAWAN_KEEP_SESSION
-uint8_t eeprom_lw_dev_addr[4] EEMEM;
-uint16_t eeprom_lw_dev_nonce EEMEM = 1;
-uint32_t eeprom_lw_join_nonce EEMEM = 0;
-uint8_t eeprom_lw_app_s_key[16] EEMEM;
-uint8_t eeprom_lw_f_nwk_s_int_key[16] EEMEM;
-uint8_t eeprom_lw_s_nwk_s_int_key[16] EEMEM;
-uint8_t eeprom_lw_nwk_s_enc_key[16] EEMEM;
+uint8_t eeprom_lw_dev_addr[4]		EEMEM;
+uint16_t eeprom_lw_dev_nonce		EEMEM = 1;
+uint32_t eeprom_lw_join_nonce		EEMEM = 0;
+uint8_t eeprom_lw_app_s_key[16]		EEMEM;
+uint8_t eeprom_lw_f_nwk_s_int_key[16]	EEMEM;
+uint8_t eeprom_lw_s_nwk_s_int_key[16]	EEMEM;
+uint8_t eeprom_lw_nwk_s_enc_key[16]	EEMEM;
+uint8_t eeprom_SlimLoRa_sigEnd[4]	EEMEM = { 0x04, 0x03, 0x02, 0x01 }; // This must be always last to mark the end of SlimLoRa MAC data.
 
 #if LORAWAN_KEEP_SESSION
 bool SlimLoRa::GetHasJoined() {
     uint8_t value = eeprom_read_byte(&eeprom_lw_has_joined);
-
-    return value == 0x01;
+    if ( value == 0xff ) { return 0; }
 }
 
 void SlimLoRa::SetHasJoined(bool value) {
     eeprom_write_byte(&eeprom_lw_has_joined, value);
+#if DEBUG_SLIM == 1
+    Serial.print(F("EEPROM write: joined"));
+#endif
 }
 #endif // LORAWAN_KEEP_SESSION
 
 // DevAddr
 void SlimLoRa::GetDevAddr(uint8_t *dev_addr) {
     eeprom_read_block(dev_addr, eeprom_lw_dev_addr, 4);
+#if DEBUG_SLIM == 1
+    Serial.print(F("DevAddr: "));printHex(dev_addr, 4);
+#endif
 }
 
 void SlimLoRa::SetDevAddr(uint8_t *dev_addr) {
@@ -1919,6 +1973,9 @@ uint16_t SlimLoRa::GetDevNonce() {
 
 void SlimLoRa::SetDevNonce(uint16_t dev_nonce) {
     eeprom_write_word(&eeprom_lw_dev_nonce, dev_nonce);
+#if DEBUG_SLIM == 1
+    Serial.print(F("Write DevNonce: "));Serial.println(dev_nonce, HEX);
+#endif
 }
 
 // JoinNonce
@@ -1934,6 +1991,9 @@ uint32_t SlimLoRa::GetJoinNonce() {
 
 void SlimLoRa::SetJoinNonce(uint32_t join_nonce) {
     eeprom_write_dword(&eeprom_lw_join_nonce, join_nonce);
+#if DEBUG_SLIM == 1
+    Serial.print(F("JoinNonce: "));Serial.println(join_nonce, HEX);
+#endif
 }
 
 // AppSKey
@@ -1943,6 +2003,9 @@ void SlimLoRa::GetAppSKey(uint8_t *key) {
 
 void SlimLoRa::SetAppSKey(uint8_t *key) {
     eeprom_write_block(key, eeprom_lw_app_s_key, 16);
+#if DEBUG_SLIM == 1
+    Serial.print(F("WRITE app_s_key: "));printHex(key, 16);
+#endif
 }
 
 // FNwkSIntKey
@@ -1952,6 +2015,9 @@ void SlimLoRa::GetFNwkSIntKey(uint8_t *key) {
 
 void SlimLoRa::SetFNwkSIntKey(uint8_t *key) {
     eeprom_write_block(key, eeprom_lw_f_nwk_s_int_key, 16);
+#if DEBUG_SLIM == 1
+    Serial.print(F("WRITE FNwkSInt: "));printHex(key, 16);
+#endif
 }
 
 // SNwkSIntKey
@@ -1961,6 +2027,9 @@ void SlimLoRa::GetSNwkSIntKey(uint8_t *key) {
 
 void SlimLoRa::SetSNwkSIntKey(uint8_t *key) {
     eeprom_write_block(key, eeprom_lw_s_nwk_s_int_key, 16);
+#if DEBUG_SLIM == 1
+    Serial.print(F("WRITE SNwkSInt: "));printHex(key, 16);
+#endif
 }
 
 // NwkSEncKey
@@ -1970,5 +2039,8 @@ void SlimLoRa::GetNwkSEncKey(uint8_t *key) {
 
 void SlimLoRa::SetNwkSEncKey(uint8_t *key) {
     eeprom_write_block(key, eeprom_lw_nwk_s_enc_key, 16);
+#if DEBUG_SLIM == 1
+    Serial.print(F("WRITE nwk_s_enc_key: "));printHex(key, 16);
+#endif
 }
 #endif // LORAWAN_OTAA_ENABLED
