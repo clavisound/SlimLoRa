@@ -5,13 +5,12 @@
 #include <stdint.h>
 #include <util/atomic.h>
 
-
 // START OF USER DEFINED OPTIONS
 // Select EEPROM handling
-#define ARDUINO_EEPROM	0
+#define ARDUINO_EEPROM	0	// TODO: don't enable this
 
 // Debug SlimLoRa library. 0 to disable
-#define DEBUG_SLIM   	1  // Enabled this only to check values / registers. Probably it breaks timing!
+#define DEBUG_SLIM   	0  // Enabled this only to check values / registers. Probably it breaks timing!
 #define DEBUG_TIMING 	0  // To experiment. Not used. Don't use it.
 
 // Enable LoRaWAN Over-The-Air Activation
@@ -20,14 +19,17 @@
 #define LORAWAN_KEEP_SESSION    1
 
 // Store counters every X times to protect EEPROM from constant writings
-#define EEPROM_WRITE_TX_COUNT	120	// SlimLoRa default: 10
+#define EEPROM_WRITE_TX_COUNT	3	// SlimLoRa default: 10
 #define EEPROM_WRITE_RX_COUNT	9	// SlimLoRa default: 3
 
 // LoRaWAN ADR
 // https://lora-developers.semtech.com/documentation/tech-papers-and-guides/implementing-adaptive-data-rate-adr/implementing-adaptive-data-rate/
-#define LORAWAN_ADR_ACK_LIMIT   2	// Request downlink after those uplinks to verify we have connection.	Sane value: 64
-#define LORAWAN_ADR_ACK_DELAY   2	// Wait XX times to consider connection lost.				Sane value: 32
+#define LORAWAN_ADR_ACK_LIMIT   64	// Request downlink after those uplinks to verify we have connection.	Sane value: 64
+#define LORAWAN_ADR_ACK_DELAY   32	// Wait XX times to consider connection lost.				Sane value: 32
 // END OF USER DEFINED OPTIONS
+
+// Drift adjustment. Default:	5
+#define SLIMLORA_DRIFT		5
 
 // Arduino library of eeprom is simpler / with less functility than avr/eeprom.h
 // but it needs extra work. We need to staticaly store the address of eache data.
@@ -40,7 +42,7 @@
 	#define EEPROM_DR1_OFFSET	 68 + EEPROM_OFFSET	// 1 byte but I need 3 bits (decimal 7)
 	#define EEPROM_JOINED		 68 + EEPROM_OFFSET	// SAME ADDRESS WITH EEPROM_DR1_OFFSET: 1 bit (byte) [7]
 	#define EEPROM_RX2_DATA_RATE	 69 + EEPROM_OFFSET	// 1 byte but I need 4 bits (decimal 15) [0-3]
-	#define EEPROM_RX1_DELAY	 69 + EEPROM_OFFSET	// SAME ADDRESS WITH EEPROM_RX2_DATA_RATE. Nibble but I need 4 bits (decimal 15) [4-7]
+	#define EEPROM_RX1_DELAY	 69 + EEPROM_OFFSET	// SAME ADDRESS WITH EEPROM_RX2_DATA_RATE. Nibble. I need 4 bits (decimal 15) [4-7]
 	#define EEPROM_DEVNONCE		 70 + EEPROM_OFFSET	// 2 bytes
 	#define EEPROM_JOINNONCE	 72 + EEPROM_OFFSET	// 4 bytes
 	#define EEPROM_APPSKEY		 76 + EEPROM_OFFSET	// 16 bytes array

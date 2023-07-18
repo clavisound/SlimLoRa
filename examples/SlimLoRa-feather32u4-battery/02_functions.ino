@@ -38,7 +38,11 @@ void blinkLed(uint16_t times, uint16_t duration, uint8_t pause) { // x, ms, seco
     #ifdef DEBUG_INO
       delay(duration);
       digitalWrite(LED_BUILTIN, LOW);
-      Serial.print(F("."));
+      if ( times % 80 == 0 ) {
+        Serial.println();
+      } else {
+        Serial.print(F("."));
+      }
       delay(pause * 1000);
     #else
       Watchdog.sleep(duration);               // Sleep for up to 8 seconds (8000ms, 4000, 2000, 1000, 500, 250, 120, 60, 30, 15ms)

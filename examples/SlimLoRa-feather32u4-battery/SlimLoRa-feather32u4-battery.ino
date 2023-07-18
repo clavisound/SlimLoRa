@@ -59,6 +59,9 @@ void setup() {
     lora.SetPower(txPower);
     lora.SetAdrEnabled(1); // 0 to disable
 
+    // For DEBUG only
+    lora.ForceTxFrameCounter(9);
+
     #ifdef LORAWAN_KEEP_SESSION // lora.GetHasJoined needs LORAWAN_KEEP_SESSION
       while (!lora.GetHasJoined() && joinEfforts >= 1) {
      #else
@@ -82,23 +85,25 @@ void setup() {
         // We have efforts to re-try  
         if (!lora.HasJoined() && joinEfforts > 0) {
           #ifdef DEBUG_INO
-            Serial.print(F("JoinStart vs RXend micros (first number seconds): "));Serial.println(joinEnd - joinStart);
-            Serial.println(F("Retry join in 4 minutes"));
-        }
+            Serial.print(F("\nJoinStart vs RXend micros (first number seconds): "));Serial.print(joinEnd - joinStart);
+            Serial.println(F("\nRetry join in 4 minutes"));
         #else
-            blinkLed(220, 25, 1); // approx 4 minutes times, duration, every seconds
+            blinkLed(240, 10, 1); // approx 3 minutes times, duration (ms), every seconds
         #endif
     }
+}
 
+#ifdef DEBUG_INO
 #ifdef LORAWAN_KEEP_SESSION
    if ( lora.GetHasJoined() ) {
-     Serial.println(F("No need to join. Session restore."));
+     Serial.println(F("\nNo need to join. Session restore from EEPROM."));
     return;
 #else
    if ( lora.HasJoined() ) {
 #endif // LORAWAN_KEEP_SESSION
-   Serial.println(F("Just joined. Session started."));
-  }
+   Serial.println(F("\nJust joined. Session started."));
+   }
+#endif // DEBUG_INO
 }
 
 void loop() {
@@ -119,15 +124,15 @@ void loop() {
 #endif // LORAWAN_KEEP_SESSION
 
   #ifdef DEBUG_INO
-    Serial.println(F("Sending uplink."));
+    Serial.println(F("\nSending uplink."));
   #endif
     checkBatt();
 
     payload_length = sizeof(payload);
     lora.SendData(fport, payload, payload_length);
 
-    // blink every 3 seconds for ~30 minutes. We joined.
-    blinkLed(600, 50, 3);
+    // blink every 3 seconds for ~15 minutes. We joined.
+    blinkLed(300, 50, 3);
         
     // testing power
     lora.SetPower(txPower);
