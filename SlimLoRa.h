@@ -5,21 +5,50 @@
 #include <stdint.h>
 #include <util/atomic.h>
 
+
+// START OF USER DEFINED OPTIONS
+// Select EEPROM handling
+#define ARDUINO_EEPROM	0
+
 // Debug SlimLoRa library. 0 to disable
-#define DEBUG_SLIM   1  // Enabled this only to check values / registers. Probably it breaks timing!
-#define DEBUG_TIMING 0  // To experiment. Not used. Don't use it.
+#define DEBUG_SLIM   	1  // Enabled this only to check values / registers. Probably it breaks timing!
+#define DEBUG_TIMING 	0  // To experiment. Not used. Don't use it.
 
 // Enable LoRaWAN Over-The-Air Activation
 #define LORAWAN_OTAA_ENABLED    1
+// Store the session data to EEPROM
 #define LORAWAN_KEEP_SESSION    1
 
-// Write RX counter every X times to protect EEPROM from constant writing
+// Store counters every X times to protect EEPROM from constant writings
 #define EEPROM_WRITE_TX_COUNT	120	// SlimLoRa default: 10
 #define EEPROM_WRITE_RX_COUNT	9	// SlimLoRa default: 3
 
 // LoRaWAN ADR
-#define LORAWAN_ADR_ACK_LIMIT   254	// Request downlink after those uplinks to verify we have connection.
-#define LORAWAN_ADR_ACK_DELAY   64	// Wait XX times to consider connection lost.
+// https://lora-developers.semtech.com/documentation/tech-papers-and-guides/implementing-adaptive-data-rate-adr/implementing-adaptive-data-rate/
+#define LORAWAN_ADR_ACK_LIMIT   2	// Request downlink after those uplinks to verify we have connection.	Sane value: 64
+#define LORAWAN_ADR_ACK_DELAY   2	// Wait XX times to consider connection lost.				Sane value: 32
+// END OF USER DEFINED OPTIONS
+
+// Arduino library of eeprom is simpler / with less functility than avr/eeprom.h
+// but it needs extra work. We need to staticaly store the address of eache data.
+#if ARDUINO_EEPROM == 1
+	#define EEPROM_OFFSET		  0			// Change this (not too high) if you feel that you gonna burn the EEPROM to use another area of EEPROM
+								// Be careful, maximum value around 800 (1024 - EEPROM_END).
+	#define EEPROM_DEVADDR		  0 + EEPROM_OFFSET	// 4 bytes array
+	#define EEPROM_TX_COUNTER	  4 + EEPROM_OFFSET	// 32 bytes but in practice 16 bytes: future proof 32 bytes
+	#define EEPROM_RX_COUNTER	 36 + EEPROM_OFFSET	// 32 bytes but in practice 16 bytes: future proof 32 bytes
+	#define EEPROM_DR1_OFFSET	 68 + EEPROM_OFFSET	// 1 byte but I need 3 bits (decimal 7)
+	#define EEPROM_JOINED		 68 + EEPROM_OFFSET	// SAME ADDRESS WITH EEPROM_DR1_OFFSET: 1 bit (byte) [7]
+	#define EEPROM_RX2_DATA_RATE	 69 + EEPROM_OFFSET	// 1 byte but I need 4 bits (decimal 15) [0-3]
+	#define EEPROM_RX1_DELAY	 69 + EEPROM_OFFSET	// SAME ADDRESS WITH EEPROM_RX2_DATA_RATE. Nibble but I need 4 bits (decimal 15) [4-7]
+	#define EEPROM_DEVNONCE		 70 + EEPROM_OFFSET	// 2 bytes
+	#define EEPROM_JOINNONCE	 72 + EEPROM_OFFSET	// 4 bytes
+	#define EEPROM_APPSKEY		 76 + EEPROM_OFFSET	// 16 bytes array
+	#define EEPROM_FNWKKEY		 92 + EEPROM_OFFSET	// 16 bytes array
+	#define EEPROM_SNWKKEY		108 + EEPROM_OFFSET	// 16 bytes array
+	#define EEPROM_NW_ENC_KEY	124 + EEPROM_OFFSET	// 16 bytes array
+	#define EEPROM_END		138 + EEPROM_OFFSET	// last byte of SlimLoRa on EEPROM
+#endif
 
 #define MICROS_PER_SECOND               1000000
 

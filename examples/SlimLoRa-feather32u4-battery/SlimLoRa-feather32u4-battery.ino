@@ -79,12 +79,11 @@ void setup() {
         // join effort is done. Close the lights.
         digitalWrite(LED_BUILTIN, LOW);
         
-        #ifdef DEBUG_INO
         // We have efforts to re-try  
         if (!lora.HasJoined() && joinEfforts > 0) {
+          #ifdef DEBUG_INO
             Serial.print(F("JoinStart vs RXend micros (first number seconds): "));Serial.println(joinEnd - joinStart);
             Serial.println(F("Retry join in 4 minutes"));
-            blinkLed(220, 25, 1); // approx 4 minutes times, duration, every seconds
         }
         #else
             blinkLed(220, 25, 1); // approx 4 minutes times, duration, every seconds

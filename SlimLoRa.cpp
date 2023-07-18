@@ -1158,6 +1158,7 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
         goto end;
     }
 #else
+    // ABP DevAddr
     if (!(packet[4] == DevAddr[0] && packet[3] == DevAddr[1]
             && packet[2] == DevAddr[2] && packet[1] == DevAddr[3])) {
         result = LORAWAN_ERROR_UNEXPECTED_DEV_ADDR;
@@ -1199,6 +1200,8 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
         f_options_length = packet[5] & 0xF;
         ProcessFrameOptions(&packet[8], f_options_length);
     }
+
+    // TODO return downlink port and values.
 
     result = 0;
 
@@ -1811,6 +1814,9 @@ void SlimLoRa::AesCalculateRoundKey(uint8_t round, uint8_t *round_key) {
     }
 }
 
+#if ARDUINO_EEPROM == 1
+
+#else
 /**
  * EEPROM variables
  * https://www.nongnu.org/avr-libc/user-manual/group__avr__eeprom.html
@@ -1821,6 +1827,7 @@ uint16_t eeprom_lw_rx_frame_counter	EEMEM = 0;
 uint8_t eeprom_lw_rx1_data_rate_offset	EEMEM = 0;
 uint8_t eeprom_lw_rx2_data_rate		EEMEM = 0;
 uint8_t eeprom_lw_rx1_delay		EEMEM = 0;
+#endif
 
 // TxFrameCounter
 uint16_t SlimLoRa::GetTxFrameCounter() {
@@ -2013,7 +2020,7 @@ void SlimLoRa::SetJoinNonce(uint32_t join_nonce) {
     temp[0] = join_nonce >> 24;
     temp[1] = join_nonce >> 16;
     temp[2] = join_nonce >> 8;
-    temp[3] = join_nonce
+    temp[3] = join_nonce;
     Serial.print(F("JoinNonce: "));printHex(temp, 4);
 #endif
 }

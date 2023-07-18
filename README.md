@@ -5,16 +5,21 @@
 # Tested
 
 - [x] Feather 32u4 EU868 region.
-- [x] Join on helium with SF10. Success everytime on 1st window.
+- [x] Join on Helium with SF10. Success everytime on 1st window but not in first attempt.
+- [x] Join SF9 on Helium.
 - [x] SetPower
+
+# Semi-Working
+
+Session from EEPROM.
+- [x] Restore works with Device address, AppSKey and NetworkKey. After Join, there is no need to rejoin if the device is powered off.
+- [ ] Something funny with RX counter happening?
 
 # Untested
 
 - [ ] ADR.
-- [ ] Store session in EEPROM.
-- [ ] Only once tested SF7, SF8, SF9 and succeded, but I will verify again.
 
-# TODO (PR's welcome)
+# Untested and TODO's (PR's welcome)
 
 - [ ] Add pin mappings infrastucture for other connections.
 - [x] Battery Level to DevStatusAns.
@@ -24,6 +29,7 @@
 - [ ] Respect Dwell MAC command
 - [ ] Respect Duty Cycle
 - [ ] Respect Join Back-off (not faster than 36 seconds)
+- [ ] Test ADR_ACK_LIMIT
 
 # Maybe good ideas
 
