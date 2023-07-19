@@ -23,7 +23,7 @@ void checkBatt(){
       
     if ( vbatC > 3 ){ vbatC = 3; } // sometimes vbat is > 635 (aka: 185 after 8bit conversion) and we have overflow.
     
-    #ifdef DEBUG_INO
+    #if DEBUG_INO == 1
       Serial.print(F("VBat (8bit): ")); Serial.print(vbat);Serial.print(F(", VBatB (volt): ")); Serial.print((vbat + 450) * 0.0064453125);
       Serial.print(F(", VBatC (range): ")); Serial.println(vbatC);
     #endif
@@ -35,7 +35,7 @@ void blinkLed(uint16_t times, uint16_t duration, uint8_t pause) { // x, ms, seco
   if ( times == 0 ) times = 1; // make sure we have one loop
   for ( times > 0; times--; ) {
     digitalWrite(LED_BUILTIN, HIGH);
-    #ifdef DEBUG_INO
+    #if DEBUG_INO == 1
       delay(duration);
       digitalWrite(LED_BUILTIN, LOW);
       if ( times % 80 == 0 ) {
@@ -51,3 +51,21 @@ void blinkLed(uint16_t times, uint16_t duration, uint8_t pause) { // x, ms, seco
     #endif
   }
 }
+
+#if DEBUG_INO == 1
+  void printHexB(uint8_t *value, uint8_t len){ 
+        Serial.print(F("\nLSB: 0x"));
+      for (int8_t i = len - 1; i >= 0; i-- ) {
+    if (value[i] == 0x0 ) { Serial.print(F("00")); continue; }
+    if (value[i] <= 0xF ) { Serial.print(F("0")); Serial.print(value[i], HEX); continue; }
+          Serial.print(value[i], HEX);
+      }
+        Serial.print(F("\nMSB: 0x"));
+      for (int8_t i = 0; i < len; i++ ) {
+    if (value[i] == 0x0 ) { Serial.print(F("00")); continue; }
+    if (value[i] <= 0xF ) { Serial.print(F("0")); Serial.print(value[i], HEX);continue; }
+          Serial.print(value[i], HEX);
+      }
+        Serial.println();
+}
+#endif

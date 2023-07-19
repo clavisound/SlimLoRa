@@ -114,6 +114,11 @@ void printHex(uint8_t *value, uint8_t len){
     	}
       	Serial.println();
 }
+
+// Mark data in Serial log that must be kept secret.
+void printNOWEB(){
+	Serial.print(F("\n NOWEB "));
+}
 #endif
 
 #if DEBUG_SLIM == 1
@@ -1203,7 +1208,8 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
     // TODO return downlink port and payload.
 #if DEBUG_SLIM == 1
     Serial.print(F("\nPort Down : "));Serial.print(port);
-    Serial.print(F("\nPacket RAW: "));printHex(packet, packet_length);
+    Serial.print(F("\nPacket RAW #1: "));printHex(packet, packet_length);
+    Serial.print(F("\nPacket RAW #2: "));printHex(packet, 64);
 #endif
 
     result = 0;
@@ -1952,7 +1958,7 @@ uint8_t eeprom_lw_s_nwk_s_int_key[16]	EEMEM;
 uint8_t eeprom_lw_nwk_s_enc_key[16]	EEMEM;
 uint8_t eeprom_SlimLoRa_sigEnd[4]	EEMEM = { 0x04, 0x03, 0x02, 0x01 }; // This must be always last to mark the end of SlimLoRa MAC data.
 
-#if LORAWAN_KEEP_SESSION
+#if LORAWAN_KEEP_SESSION && ARDUINO_EEPROM == 0
 bool SlimLoRa::GetHasJoined() {
     uint8_t value = eeprom_read_byte(&eeprom_lw_has_joined);
 #if DEBUG_SLIM == 1
@@ -2039,43 +2045,52 @@ void SlimLoRa::GetAppSKey(uint8_t *key) {
 void SlimLoRa::SetAppSKey(uint8_t *key) {
     eeprom_write_block(key, eeprom_lw_app_s_key, 16);
 #if DEBUG_SLIM == 1
-    Serial.print(F("\nWRITE app_skey: "));printHex(key, 16);
+	printNOWEB();Serial.print(F("WRITE app_skey: "));printHex(key, 16);
 #endif
 }
 
 // FNwkSIntKey
 void SlimLoRa::GetFNwkSIntKey(uint8_t *key) {
     eeprom_read_block(key, eeprom_lw_f_nwk_s_int_key, 16);
+#if DEBUG_SLIM == 1
+    printNOWEB();Serial.print(F("FNwkSInt: "));printHex(key, 16);
+#endif
 }
 
 void SlimLoRa::SetFNwkSIntKey(uint8_t *key) {
     eeprom_write_block(key, eeprom_lw_f_nwk_s_int_key, 16);
 #if DEBUG_SLIM == 1
-    Serial.print(F("\nWRITE FNwkSInt: "));printHex(key, 16);
+    printNOWEB();Serial.print(F("WRITE FNwkSInt: "));printHex(key, 16);
 #endif
 }
 
 // SNwkSIntKey
 void SlimLoRa::GetSNwkSIntKey(uint8_t *key) {
     eeprom_read_block(key, eeprom_lw_s_nwk_s_int_key, 16);
+#if DEBUG_SLIM == 1
+    printNOWEB();Serial.print(F("SNwkSInt: "));printHex(key, 16);
+#endif
 }
 
 void SlimLoRa::SetSNwkSIntKey(uint8_t *key) {
     eeprom_write_block(key, eeprom_lw_s_nwk_s_int_key, 16);
 #if DEBUG_SLIM == 1
-    Serial.print(F("\nWRITE SNwkSInt: "));printHex(key, 16);
+    printNOWEB();Serial.print(F("WRITE SNwkSInt: "));printHex(key, 16);
 #endif
 }
 
 // NwkSEncKey
 void SlimLoRa::GetNwkSEncKey(uint8_t *key) {
     eeprom_read_block(key, eeprom_lw_nwk_s_enc_key, 16);
+#if DEBUG_SLIM == 1
+    printNOWEB();Serial.print(F("NwkSEncKey: "));printHex(key, 16);
+#endif
 }
 
 void SlimLoRa::SetNwkSEncKey(uint8_t *key) {
     eeprom_write_block(key, eeprom_lw_nwk_s_enc_key, 16);
 #if DEBUG_SLIM == 1
-    Serial.print(F("\nWRITE NwkSEnc: "));printHex(key, 16);
+    printNOWEB();Serial.print(F("WRITE NwkSEnc: "));printHex(key, 16);
 #endif
 }
 #endif // LORAWAN_OTAA_ENABLED

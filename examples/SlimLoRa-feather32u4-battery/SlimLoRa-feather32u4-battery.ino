@@ -33,7 +33,7 @@
 #include "SlimLoRa.h"
 #include <Adafruit_SleepyDog.h>
 
-#define DEBUG_INO
+// #define DEBUG_INO 0
 
 #define VBATPIN   A9
 
@@ -43,24 +43,53 @@ uint32_t joinStart, joinEnd, RXend, vbat;
 uint8_t dataRate, txPower = 16, payload[1], payload_length, vbatC;
 uint8_t fport = 1;
 
+#if DEBUG_INO == 1
+  uint8_t temp[16];
+  uint32_t tempCounters;
+#endif
+
 SlimLoRa lora = SlimLoRa(8);    // OK for feather 32u4 (CS featherpin. Aka: nss_pin for SlimLoRa). TODO: support other pin configurations.
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT); // Initialize pin LED_BUILTIN as an output
   
     delay(9000);
-    #ifdef DEBUG_INO
+    #if DEBUG_INO == 1
       while (! Serial);                 // don't start unless we have serial connection
       Serial.println(F("Starting"));
     #endif
 
     lora.Begin();
-    lora.SetDataRate(SF9BW125);
+    lora.SetDataRate(SF10BW125);
     lora.SetPower(txPower);
     lora.SetAdrEnabled(1); // 0 to disable
 
     // For DEBUG only
-    lora.ForceTxFrameCounter(9);
+   // lora.ForceTxFrameCounter(53);
+   // lora.ForceRxFrameCounter(0);
+
+    // Show data stored in EEPROM
+    #if DEBUG_INO == 1
+        Serial.println(F("MAC STATE from EEPROM"));
+      #if LORAWAN_OTAA_ENABLED // You define this on SlimLoRa.h file.
+                                          Serial.print(F("EEPROM join: "));Serial.println(lora.GetHasJoined());
+      #else
+                                          Serial.print(F("ABP DevAddr"));printHexB(DevAddr, 4);
+      #endif // LORAWAN_OTAA_ENABLED
+      lora.GetDevAddr(temp)              ;Serial.print(F("DevAdd"));printHexB(temp, 4);
+                                          Serial.print(F("Tx_#       : "));Serial.println(lora.GetTxFrameCounter());
+                                          Serial.print(F("Rx_#       : "));Serial.println(lora.GetRxFrameCounter());
+                                          Serial.print(F("Rx1 delay  : "));Serial.print(lora.GetRx1Delay());Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.println("s, ");
+                                          Serial.print(F("Rx1 DR offset: "));Serial.println(lora.GetRx1DataRateOffset());
+                                          Serial.print(F("DevNonce   : "));Serial.print(lora.GetDevNonce() >> 8);Serial.println(lora.GetDevNonce());
+                                          Serial.print(F("JoinNonce  : "));Serial.print(lora.GetJoinNonce() >> 24);Serial.print(lora.GetJoinNonce() >> 16);Serial.print(lora.GetJoinNonce() >> 8);Serial.println(lora.GetJoinNonce());
+      lora.GetAppSKey(temp)              ;Serial.print(F("AppSKey"))    ;printHexB(temp, 16);
+      lora.GetFNwkSIntKey(temp)          ;Serial.print(F("FNwkSIntKey"));printHexB(temp, 16);
+      lora.GetSNwkSIntKey(temp)          ;Serial.print(F("SNwkSIntKey"));printHexB(temp, 16);
+      lora.GetNwkSEncKey(temp)           ;Serial.print(F("NwkSEncKey")) ;printHexB(temp, 16);
+      Serial.println(F("Disconnect / power off the device and study the log. You have   18 seconds time.\nAfter that the program will continue."));
+      delay(18000);
+    #endif // DEBUG_INO
 
     #ifdef LORAWAN_KEEP_SESSION // lora.GetHasJoined needs LORAWAN_KEEP_SESSION
       while (!lora.GetHasJoined() && joinEfforts >= 1) {
@@ -70,7 +99,7 @@ void setup() {
         // Visible inform that we try to join.
         digitalWrite(LED_BUILTIN, HIGH);
         
-        #ifdef DEBUG_INO
+        #if DEBUG_INO == 1
           Serial.print(F("\nJoining. Efforts remaining: "));Serial.println(joinEfforts);
         #endif
         
@@ -84,7 +113,7 @@ void setup() {
         
         // We have efforts to re-try  
         if (!lora.HasJoined() && joinEfforts > 0) {
-          #ifdef DEBUG_INO
+          #if DEBUG_INO == 1
             Serial.print(F("\nJoinStart vs RXend micros (first number seconds): "));Serial.print(joinEnd - joinStart);
             Serial.println(F("\nRetry join in 4 minutes"));
         #else
@@ -93,7 +122,7 @@ void setup() {
     }
 }
 
-#ifdef DEBUG_INO
+#if DEBUG_INO == 1
 #ifdef LORAWAN_KEEP_SESSION
    if ( lora.GetHasJoined() ) {
      Serial.println(F("\nNo need to join. Session restore from EEPROM."));
@@ -123,7 +152,7 @@ void loop() {
   if ( lora.HasJoined() ) {
 #endif // LORAWAN_KEEP_SESSION
 
-  #ifdef DEBUG_INO
+  #if DEBUG_INO == 1
     Serial.println(F("\nSending uplink."));
   #endif
     checkBatt();

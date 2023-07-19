@@ -30,6 +30,8 @@ Session from EEPROM.
 - [ ] Respect Duty Cycle
 - [ ] Respect Join Back-off (not faster than 36 seconds)
 - [ ] Test ADR_ACK_LIMIT
+- [ ] Confirmed Downlinks
+- [ ] Confirmed Uplinks
 
 # Maybe good ideas
 

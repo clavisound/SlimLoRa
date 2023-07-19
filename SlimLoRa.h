@@ -215,13 +215,12 @@ class SlimLoRa {
 #if DEBUG_SLIM == 1
     void printMAC(void);
     // debug values
-    uint8_t  dev_addrDEB[4] = { 0x00, 0x00, 0x00, 0x00 };
     uint8_t  rx_symbolsDEB;
     uint32_t rx_microsstampDEB;
 #endif
 
-  private:
-    uint8_t pin_nss_; // TODO TinyLoRa irg_, rst_ bat_; bat=battery level pin
+//  private: 		// TODO: re-enable this
+    uint8_t pin_nss_;	// TODO TinyLoRa irg_, rst_ bat_; bat=battery level pin
     uint8_t channel_ = 0;
     uint8_t data_rate_ = SF7BW125;
     uint8_t rx1_data_rate_offset_ = 0;
