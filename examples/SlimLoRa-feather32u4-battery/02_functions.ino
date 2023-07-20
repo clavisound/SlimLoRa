@@ -1,3 +1,8 @@
+#if DEBUG_INO == 1
+  uint8_t temp[16];
+  uint32_t tempCounters;
+#endif
+
 void checkBatt(){
     vbat = analogRead(VBATPIN) - 450; // convert to 8bit
     /*
@@ -23,7 +28,7 @@ void checkBatt(){
       
     if ( vbatC > 3 ){ vbatC = 3; } // sometimes vbat is > 635 (aka: 185 after 8bit conversion) and we have overflow.
     
-    #ifdef DEBUG_INO
+    #if DEBUG_INO == 1
       Serial.print(F("VBat (8bit): ")); Serial.print(vbat);Serial.print(F(", VBatB (volt): ")); Serial.print((vbat + 450) * 0.0064453125);
       Serial.print(F(", VBatC (range): ")); Serial.println(vbatC);
     #endif
@@ -35,7 +40,7 @@ void blinkLed(uint16_t times, uint16_t duration, uint8_t pause) { // x, ms, seco
   if ( times == 0 ) times = 1; // make sure we have one loop
   for ( times > 0; times--; ) {
     digitalWrite(LED_BUILTIN, HIGH);
-    #ifdef DEBUG_INO
+    #if DEBUG_INO == 1
       delay(duration);
       digitalWrite(LED_BUILTIN, LOW);
       if ( times % 80 == 0 ) {
@@ -51,3 +56,43 @@ void blinkLed(uint16_t times, uint16_t duration, uint8_t pause) { // x, ms, seco
     #endif
   }
 }
+
+#if DEBUG_INO == 1
+  void printHexB(uint8_t *value, uint8_t len){ 
+        Serial.print(F("\nLSB: 0x"));
+      for (int8_t i = len - 1; i >= 0; i-- ) {
+    if (value[i] == 0x0 ) { Serial.print(F("00")); continue; }
+    if (value[i] <= 0xF ) { Serial.print(F("0")); Serial.print(value[i], HEX); continue; }
+          Serial.print(value[i], HEX);
+      }
+        Serial.print(F("\nMSB: 0x"));
+      for (int8_t i = 0; i < len; i++ ) {
+    if (value[i] == 0x0 ) { Serial.print(F("00")); continue; }
+    if (value[i] <= 0xF ) { Serial.print(F("0")); Serial.print(value[i], HEX);continue; }
+          Serial.print(value[i], HEX);
+      }
+        Serial.println();
+}
+
+void printMAC_EEPROM(){
+      Serial.println(F("MAC STATE from EEPROM"));
+      #if LORAWAN_OTAA_ENABLED // You define this on SlimLoRa.h file.
+                                          Serial.print(F("EEPROM join: "));Serial.println(lora.GetHasJoined());
+      #else
+                                          Serial.print(F("ABP DevAddr"));printHexB(DevAddr, 4);
+      #endif // LORAWAN_OTAA_ENABLED
+      lora.GetDevAddr(temp)              ;Serial.print(F("DevAdd"));printHexB(temp, 4);
+                                          Serial.print(F("Tx_#       : "));Serial.println(lora.GetTxFrameCounter());
+                                          Serial.print(F("Rx_#       : "));Serial.println(lora.GetRxFrameCounter());
+                                          Serial.print(F("Rx1 delay  : "));Serial.print(lora.GetRx1Delay());Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print("s, RX2: ");Serial.print(LORAWAN_JOIN_ACCEPT_DELAY2_MICROS / 1000000);Serial.println("s, ");
+                                          Serial.print(F("Rx1 DR offset: "));Serial.println(lora.GetRx1DataRateOffset());
+                                          Serial.print(F("DevNonce   : "));Serial.print(lora.GetDevNonce() >> 8);Serial.println(lora.GetDevNonce());
+                                          Serial.print(F("JoinNonce  : "));Serial.print(lora.GetJoinNonce() >> 24);Serial.print(lora.GetJoinNonce() >> 16);Serial.print(lora.GetJoinNonce() >> 8);Serial.println(lora.GetJoinNonce());
+      lora.GetAppSKey(temp)              ;Serial.print(F("AppSKey"))    ;printHexB(temp, 16);
+      lora.GetFNwkSIntKey(temp)          ;Serial.print(F("FNwkSIntKey"));printHexB(temp, 16);
+      lora.GetSNwkSIntKey(temp)          ;Serial.print(F("SNwkSIntKey"));printHexB(temp, 16);
+      lora.GetNwkSEncKey(temp)           ;Serial.print(F("NwkSEncKey")) ;printHexB(temp, 16);
+ 
+}
+
+#endif

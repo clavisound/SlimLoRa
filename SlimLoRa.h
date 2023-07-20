@@ -6,8 +6,17 @@
 #include <util/atomic.h>
 
 // START OF USER DEFINED OPTIONS
+#define NETWORK NET_TTN	// Two options: NET_HLM = helium, NET_TTN = TheThingsNetwork
+			// NET_TTN: RX2 SF9
+			// NET_HLM: RX2 SF12
+
+// I propose to you that you config your device on the console.helium.com to 5 seconds RX DELAY
+#define NET_HELIUM_RX_DELAY	5
+// Make sure this value is the same with TTN console.
+#define NET_TTN_RX_DELAY	5
+
 // Select EEPROM handling
-#define ARDUINO_EEPROM	0	// TODO: don't enable this
+#define ARDUINO_EEPROM	1	// Uses more storage, but it helps debugging with static mapping of addresses.
 
 // Debug SlimLoRa library. 0 to disable
 #define DEBUG_SLIM   	0  // Enabled this only to check values / registers. Probably it breaks timing!
@@ -28,8 +37,12 @@
 #define LORAWAN_ADR_ACK_DELAY   32	// Wait XX times to consider connection lost.				Sane value: 32
 // END OF USER DEFINED OPTIONS
 
-// Drift adjustment. Default:	5
+// Drift adjustment. Default:	5 works with feather-32u4 and helium at 5 seconds RX delay
 #define SLIMLORA_DRIFT		5
+
+#if ARDUINO_EEPROM == 1
+	#include <EEPROM.h>
+#endif
 
 // Arduino library of eeprom is simpler / with less functility than avr/eeprom.h
 // but it needs extra work. We need to staticaly store the address of eache data.
@@ -39,17 +52,19 @@
 	#define EEPROM_DEVADDR		  0 + EEPROM_OFFSET	// 4 bytes array
 	#define EEPROM_TX_COUNTER	  4 + EEPROM_OFFSET	// 32 bytes but in practice 16 bytes: future proof 32 bytes
 	#define EEPROM_RX_COUNTER	 36 + EEPROM_OFFSET	// 32 bytes but in practice 16 bytes: future proof 32 bytes
-	#define EEPROM_DR1_OFFSET	 68 + EEPROM_OFFSET	// 1 byte but I need 3 bits (decimal 7)
-	#define EEPROM_JOINED		 68 + EEPROM_OFFSET	// SAME ADDRESS WITH EEPROM_DR1_OFFSET: 1 bit (byte) [7]
-	#define EEPROM_RX2_DATA_RATE	 69 + EEPROM_OFFSET	// 1 byte but I need 4 bits (decimal 15) [0-3]
-	#define EEPROM_RX1_DELAY	 69 + EEPROM_OFFSET	// SAME ADDRESS WITH EEPROM_RX2_DATA_RATE. Nibble. I need 4 bits (decimal 15) [4-7]
+	#define EEPROM_RX1DR_OFFSET	 68 + EEPROM_OFFSET	// 1 byte but I need 3 bits (decimal 7 [0-3]
+	#define EEPROM_JOINED		 68 + EEPROM_OFFSET	// SAME ADDRESS WITH EEPROM_RX1DR_OFFSET: 1 bit (byte) [7]
+	#define EEPROM_RX2_DR		 69 + EEPROM_OFFSET	// 1 byte but I need 4 bits (decimal 15) [0-3]
+	#define EEPROM_RX_DELAY		 69 + EEPROM_OFFSET	// SAME ADDRESS WITH EEPROM_RX2_DR. Nibble. I need 4 bits (decimal 15) [4-7]
 	#define EEPROM_DEVNONCE		 70 + EEPROM_OFFSET	// 2 bytes
 	#define EEPROM_JOINNONCE	 72 + EEPROM_OFFSET	// 4 bytes
 	#define EEPROM_APPSKEY		 76 + EEPROM_OFFSET	// 16 bytes array
-	#define EEPROM_FNWKKEY		 92 + EEPROM_OFFSET	// 16 bytes array
-	#define EEPROM_SNWKKEY		108 + EEPROM_OFFSET	// 16 bytes array
+	#define EEPROM_FNWKSIKEY	 92 + EEPROM_OFFSET	// 16 bytes array
+	#define EEPROM_SNWKSIKEY	108 + EEPROM_OFFSET	// 16 bytes array
 	#define EEPROM_NW_ENC_KEY	124 + EEPROM_OFFSET	// 16 bytes array
-	#define EEPROM_END		138 + EEPROM_OFFSET	// last byte of SlimLoRa on EEPROM
+	#define EEPROM_DOWNPACKET	136 + EEPROM_OFFSET	// 64 bytes array
+	#define EEPROM_DOWNPORT		200 + EEPROM_OFFSET	// 64 bytes array
+	#define EEPROM_END		201 + EEPROM_OFFSET	// last byte of SlimLoRa on EEPROM
 #endif
 
 #define MICROS_PER_SECOND               1000000
@@ -154,8 +169,14 @@
 #define LORAWAN_JOIN_ACCEPT_MAX_SIZE        28
 
 // LoRaWAN delays in seconds
-#define LORAWAN_JOIN_ACCEPT_DELAY1_MICROS   5 * MICROS_PER_SECOND
-#define LORAWAN_JOIN_ACCEPT_DELAY2_MICROS   6 * MICROS_PER_SECOND
+#if NETWORK == NET_TTN
+#define LORAWAN_JOIN_ACCEPT_DELAY1_MICROS   NET_TTN_RX_DELAY       * MICROS_PER_SECOND
+#define LORAWAN_JOIN_ACCEPT_DELAY2_MICROS   (NET_TTN_RX_DELAY + 1) * MICROS_PER_SECOND
+#endif
+#if NETWORK == NET_HELIUM
+#define LORAWAN_JOIN_ACCEPT_DELAY1_MICROS   NET_HELIUM_RX_DELAY       * MICROS_PER_SECOND
+#define LORAWAN_JOIN_ACCEPT_DELAY2_MICROS   (NET_HELIUM_RX_DELAY + 1) * MICROS_PER_SECOND
+#endif
 
 #define LORAWAN_RX_ERROR_MICROS             10000   // 10 ms
 #define LORAWAN_RX_MARGIN_MICROS            2000    // 2000 us
@@ -215,13 +236,12 @@ class SlimLoRa {
 #if DEBUG_SLIM == 1
     void printMAC(void);
     // debug values
-    uint8_t  dev_addrDEB[4] = { 0x00, 0x00, 0x00, 0x00 };
     uint8_t  rx_symbolsDEB;
     uint32_t rx_microsstampDEB;
 #endif
 
-  private:
-    uint8_t pin_nss_; // TODO TinyLoRa irg_, rst_ bat_; bat=battery level pin
+//  private: 		// TODO: re-enable this
+    uint8_t pin_nss_;	// TODO TinyLoRa irg_, rst_ bat_; bat=battery level pin
     uint8_t channel_ = 0;
     uint8_t data_rate_ = SF7BW125;
     uint8_t rx1_data_rate_offset_ = 0;
