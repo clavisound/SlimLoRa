@@ -2012,10 +2012,11 @@ uint8_t SlimLoRa::GetRx1DataRateOffset() {
 void SlimLoRa::SetRx1DataRateOffset(uint8_t value) {
 	uint8_t tmp_joined;
 	tmp_joined = EEPROM.read(EEPROM_JOINED);
-	value |= tmp_joined;	// shared byte with EEPROM_joined. Merge them.
+	value |= ( tmp_joined << 7 );	// shared byte with EEPROM_joined. Merge them.
 	EEPROM.write(EEPROM_RX1DR_OFFSET, value);
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nWRITE Rx1_offset: "));Serial.print(value &= 0x0F);
+	Serial.print(F("\nWRITE Rx1_offset RAW: "));Serial.print(value);
 #endif
 }
 
@@ -2023,7 +2024,7 @@ void SlimLoRa::SetRx1DataRateOffset(uint8_t value) {
 uint8_t SlimLoRa::GetRx2DataRate() {
 	uint8_t value;
 	value = EEPROM.read(EEPROM_RX2_DR);
-	value &= 0x0F;		// strip last 4 bits. Shared byte with EEPROM_RX_DELAY
+	value &= 0x0F;		// strip last [7-4] 4 bits. Shared byte with EEPROM_RX_DELAY
 	if (value == 0x0F) {	// probably erased EEPROM.
 #if LORAWAN_OTAA_ENABLED
 		return SF12BW125;	// default LORAWAN 1.0.3
@@ -2272,21 +2273,21 @@ void SlimLoRa::SetHasJoined(bool value) {
 	EEPROM.write(EEPROM_JOINED, temp);
 
 	#if DEBUG_SLIM == 1
-	Serial.print(F("\nWRITE EEPROM: joined"));
+	Serial.print(F("\nWRITE EEPROM: joined. RAW value: "));Serial.print(temp);
 	#endif
 }
 #endif // LORAWAN_KEEP_SESSION
 
 // DevAddr
 void SlimLoRa::GetDevAddr(uint8_t *dev_addr) {
-	EEPROM.put(EEPROM_DEVADDR, dev_addr);
+	EEPROM.get(EEPROM_DEVADDR, dev_addr);
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nDevAddr on GetDev: "));printHex(dev_addr, 4);
 #endif
 }
 
 void SlimLoRa::SetDevAddr(uint8_t *dev_addr) {
-	EEPROM.get(EEPROM_DEVADDR, dev_addr);
+	EEPROM.put(EEPROM_DEVADDR, dev_addr);
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nWRITE DevAddr: "));printHex(dev_addr, 4);
 #endif

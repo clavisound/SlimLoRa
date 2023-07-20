@@ -76,7 +76,7 @@ void setup() {
      #else
       while (!lora.HasJoined() && joinEfforts >= 1) {
     #endif // LORAWAN_KEEP_SESSION
-        // Steady LED incates that we try to join.
+        // Steady LED indicates that we try to join.
         digitalWrite(LED_BUILTIN, HIGH);
         
         #if DEBUG_INO == 1
@@ -101,11 +101,11 @@ void setup() {
         if (!lora.HasJoined() && joinEfforts > 0) {
           #if DEBUG_INO == 1
             Serial.print(F("\nJoinStart vs RXend micros (first number seconds): "));Serial.print(joinEnd - joinStart);
-            Serial.println(F("\nRetry join in 4 minutes"));
+            Serial.println(F("\nRetry join in 6 minutes"));
             printMAC_EEPROM();
-            blinkLed(240, 10, 1); // approx 3 minutes times, duration (ms), every seconds
+            blinkLed(160, 10, 1); // approx 3 minutes times, duration (ms), every seconds
           #else
-            blinkLed(240, 10, 1);
+            blinkLed(160, 10, 1);
           #endif
     }
   }
@@ -154,9 +154,7 @@ void loop() {
     blinkLed(300, 50, 3);
         
     // testing power
-    lora.SetPower(txPower);
-    txPower = txPower - 1;
-    if (txPower <= 1 ) { txPower = 16; }
+    // lora.SetPower(txPower);txPower = txPower - 1;if (txPower <= 1 ) { txPower = 16; }
 
   #if DEBUG_INO == 1
     Serial.println(F("\nUplink done."));
