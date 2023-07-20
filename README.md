@@ -14,6 +14,9 @@
 Session from EEPROM.
 - [x] Restore works with Device address, AppSKey and NetworkKey. After Join, there is no need to rejoin if the device is powered off.
 - [ ] Something funny with RX counter happening?
+- [ ] If you compile with different options, of if you change part of your skectch relative to EEPROM (EEMEM) the address of the data are changing places! This is "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h.
+Solution #1: Don't enable keep session.
+Solution #2: Erase the Join byte on EEPROM location. Track it with: `avr-objdump -D` on .eemem section.
 
 # Untested
 
