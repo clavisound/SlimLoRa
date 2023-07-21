@@ -118,6 +118,7 @@ void printHex(uint8_t *value, uint8_t len){
 		}
   	Serial.println();
 }
+#endif
 
 /**
  * Function to write arrays to eeprom
@@ -159,14 +160,12 @@ void getEEPROM(uint8_t eepromAddr, uint8_t *arrayData, uint8_t size) {
 #endif
 }
 
-
+#if DEBUG_SLIM == 1
 // Mark data in Serial log that must be kept secret.
 void printNOWEB(){
 	Serial.print(F("\n NOWEB "));
 }
-#endif
 
-#if DEBUG_SLIM == 1
 void SlimLoRa::printMAC(){
 #if LORAWAN_OTAA_ENABLED
 	Serial.print(F("\n\nMAC STATE\nJoin: "));Serial.print(has_joined_);
@@ -231,7 +230,7 @@ void SlimLoRa::Begin() {
 #endif
 
 #if DEBUG_SLIM == 1
-	Serial.println(F("Begin. "));
+	Serial.println(F("Init of RFM done."));
 #endif
 }
 
@@ -1021,7 +1020,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 
 	for (uint8_t i = 0; i < f_options_length; i++) {
 #if DEBUG_SLIM == 1
-	Serial.print(F("\n\n!!Processing MAC command!!"));Serial.println(options[i]);
+	Serial.print(F("\n\n!!Processing MAC command-->"));Serial.println(options[i]);
 #endif
 		switch (options[i]) {
 			case LORAWAN_FOPT_LINK_CHECK_ANS:
@@ -2081,7 +2080,6 @@ uint8_t SlimLoRa::GetRx2DataRate() {
 void SlimLoRa::SetRx2DataRate(uint8_t value) {
 	uint8_t tmp_rx_delay;
 	tmp_rx_delay = EEPROM.read(EEPROM_RX_DELAY) & 0xF0;	// get only [7-4] bits.
-//	tmp_rx_delay &= 0xF0;			
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nWRITE Rx2_DR: "));Serial.print(value);
 #endif
@@ -2093,7 +2091,6 @@ void SlimLoRa::SetRx2DataRate(uint8_t value) {
 uint8_t SlimLoRa::GetRx1Delay() {
 	uint8_t value;
        	value = EEPROM.read(EEPROM_RX_DELAY) >> 4;	// shared byte with EEPROM_RX2_DATARATE
-//	value = value >> 4;			// shift bits to return real value TODO: delete
 	if ( value == 0 || value >= 0xF ) {	// probably erased EEPROM
 #if NETWORK == NET_TTN
 			return NET_TTN_RX_DELAY;	// default for TTN
