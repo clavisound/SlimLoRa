@@ -1,4 +1,4 @@
-#define HLM // TTN or HLM (helium) MSB values
+#define TTN // TTN or HLM (helium) MSB values
 
 // JS DECODER for Helium or TTN
 /*

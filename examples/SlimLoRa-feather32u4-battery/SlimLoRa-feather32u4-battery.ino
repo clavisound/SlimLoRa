@@ -1,4 +1,4 @@
-/*
+/*  
  * This sketch joins and sends the battery level every 30 minutes.
  * 
  * Tested with Helium SF10 in Europe.
@@ -24,7 +24,7 @@
  * SleepyDog library from Adafruit,
  * In config tab add your keys from your Network provider.
  * 
- * In SlimLoRa library edit SlimLoRa.h to KEEP_SESSION and select OTAA.
+ * You may need to edit SlimLoRa.h to KEEP_SESSION and select OTAA.
  * 
  */
 
@@ -33,7 +33,7 @@
 #include "SlimLoRa.h"
 #include <Adafruit_SleepyDog.h>
   
-#define DEBUG_INO 1
+#define DEBUG_INO 0
 #define PHONEY    0 // don't transmit. for DEBUGing
 
 #define VBATPIN   A9
@@ -41,7 +41,7 @@
 uint8_t joinEfforts = 10; // how many times we will try to join.
 
 uint32_t joinStart, joinEnd, RXend, vbat;
-uint8_t dataRate, txPower = 16, payload[1], payload_length, vbatC;
+uint8_t dataRate, txPower = 0, payload[1], payload_length, vbatC;
 uint8_t fport = 1;
 
 SlimLoRa lora = SlimLoRa(8);    // OK for feather 32u4 (CS featherpin. Aka: nss_pin for SlimLoRa). TODO: support other pin configurations.
@@ -56,7 +56,7 @@ void setup() {
     #endif
 
     lora.Begin();
-    lora.SetDataRate(SF10BW125);
+    lora.SetDataRate(SF8BW125);
     lora.SetPower(txPower);
     lora.SetAdrEnabled(1); // 0 to disable
 

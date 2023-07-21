@@ -233,6 +233,8 @@ class SlimLoRa {
     void SetPower(int8_t power);
     bool GetHasJoined();
     void GetDevAddr(uint8_t *dev_addr);
+//    void getEEPROM(uint8_t eepromAdr, uint8_t *arrayData, uint8_t size);
+//    void setEEPROM(uint8_t eepromAdr, uint8_t *arrayData, uint8_t size);
 #if DEBUG_SLIM == 1
     void printMAC(void);
     // debug values

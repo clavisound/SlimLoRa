@@ -6,7 +6,8 @@
 
 - [x] Feather 32u4 EU868 region.
 - [x] Join on Helium with SF10. Success everytime on 1st window but not in first attempt.
-- [x] Join SF9 on Helium.
+- [x] Join SF9 on TTN .
+- [x] Join SF8 on TTN and power 0dBm in same room.
 - [x] SetPower
 
 # Semi-Working
@@ -21,10 +22,10 @@ Session from EEPROM.
 
 # Untested and TODO's (PR's welcome)
 
+- [ ] Make DevNonce random.
 - [ ] Add pin mappings infrastucture for other connections.
 - [x] Battery Level to DevStatusAns.
-- [ ] Join on TTN fails. Maybe my gateway is not normal. Should try with others.
-- [ ] Test join with SF11, SF12 on Helium and TTN.
+- [ ] Test join with SF7-8 on Helium and TTN.
 - [ ] Change SetPower style to LoRaWAN style.
 - [ ] Respect Dwell MAC command
 - [ ] Respect Duty Cycle

@@ -119,6 +119,47 @@ void printHex(uint8_t *value, uint8_t len){
   	Serial.println();
 }
 
+/**
+ * Function to write arrays to eeprom
+ *
+ * @param eepromAddr eeprom address.
+ * @param arrayData Array sto store
+ * @param size size of array
+ *
+ */
+void setEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t size) {
+   for ( uint8_t i = 0; i < size; i++ ) {
+    EEPROM.update(eepromAddr + i, arrayData[i]);
+#if DEBUG_SLIM == 1
+    if ( i == 0 ) {
+   Serial.print("\nWRITE EEPROM Address: 0x");Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
+    } else {
+   Serial.print(F(", "));Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
+    }
+#endif
+   }
+#if DEBUG_SLIM == 1
+   Serial.print("\nWRITE: ");printHex(arrayData, size);
+#endif
+}
+
+void getEEPROM(uint8_t eepromAddr, uint8_t *arrayData, uint8_t size) {
+   for ( uint8_t i = 0; i < size; i++ ) {
+    arrayData[i] = EEPROM.read(eepromAddr + i);
+#if DEBUG_SLIM == 1
+    if ( i == 0 ) {
+   Serial.print("\nREAD EEPROM Address: 0x");Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
+    } else {
+   Serial.print(F(", "));Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
+    }
+#endif
+   }
+#if DEBUG_SLIM == 1
+   Serial.print("\nread: ");printHex(arrayData, size);
+#endif
+}
+
+
 // Mark data in Serial log that must be kept secret.
 void printNOWEB(){
 	Serial.print(F("\n NOWEB "));
@@ -979,6 +1020,9 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 	}
 
 	for (uint8_t i = 0; i < f_options_length; i++) {
+#if DEBUG_SLIM == 1
+	Serial.print(F("\n\n!!Processing MAC command!!"));Serial.println(options[i]);
+#endif
 		switch (options[i]) {
 			case LORAWAN_FOPT_LINK_CHECK_ANS:
 				i += LORAWAN_FOPT_LINK_CHECK_ANS_SIZE;
@@ -1040,37 +1084,39 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 			case LORAWAN_FOPT_DEV_STATUS_REQ:
 				pending_fopts_.fopts[pending_fopts_.length++] = LORAWAN_FOPT_DEV_STATUS_ANS;
 				// TODO: make it function. 
-		// If we have value pin procced, 
-		// if we have value pin 255 don't proceed.
-		#if defined(ARDUINO_AVR_FEATHER32U4)
-		#define VBATPIN A9	   // pin to measure battery voltage
-		uint8_t vbat;
-		vbat = analogRead(VBATPIN) - 450; // convert to 8bit
-		/*
-		vbat *= 2;	// we divided by 2, so multiply back
-		vbat *= 3.3;  // Multiply by 3.3V, our reference voltage
-		vbat /= 1024; // convert to voltage
-		all in one: vbat *=0.0064453125
-		*/
-		// Connected to USB feather reports 4.29Volts with above conversion
-		// vbat 699 seems to be the Maximum raw value.
-		// raw values (without minus 450 calculation):
-		// 465.5 = 3.0Volts, 480=3.1 volts, 496=3.2 volts 699=4.5Volts
-		// Capacity measured with voltage is not linear! https://learn.adafruit.com/assets/979
-		// 3.95V is 80%, 3.8V = 60%, 3.75V = 40%, 3.7V = 20%
-		if ( vbat < 29 ) {
-			   	vbat = 1;				// empty battery
-		   	}
-		else {
-			vbat = map(vbat, 30, 200, 1, 254);	// LoRaWAN wants value from 1-254.
-								// 255 reserved for not measured.
-								// 0 reserved for external source
-		}
-		if ( vbat > 254 ) { vbat = 0; }			// probably charging, aka: external source. 238 = 688 - 450
-				pending_fopts_.fopts[pending_fopts_.length++] = vbat;
-		#else
+				// If we have value pin procced, 
+				// if we have value pin 255 don't proceed.
+
+				#if defined(ARDUINO_AVR_FEATHER32U4)
+				#define VBATPIN A9	   // pin to measure battery voltage
+				uint8_t vbat;
+				vbat = analogRead(VBATPIN) - 450; // convert to 8bit
+				/*
+				vbat *= 2;	// we divided by 2, so multiply back
+				vbat *= 3.3;  // Multiply by 3.3V, our reference voltage
+				vbat /= 1024; // convert to voltage
+				all in one: vbat *=0.0064453125
+				*/
+				// Connected to USB feather reports 4.29Volts with above conversion
+				// vbat 699 seems to be the Maximum raw value.
+				// raw values (without minus 450 calculation):
+				// 465.5 = 3.0Volts, 480=3.1 volts, 496=3.2 volts 699=4.5Volts
+				// Capacity measured with voltage is not linear! https://learn.adafruit.com/assets/979
+				// 3.95V is 80%, 3.8V = 60%, 3.75V = 40%, 3.7V = 20%
+				if ( vbat < 29 ) {
+			   		vbat = 1;				// empty battery
+		   		}
+				else {
+					vbat = map(vbat, 30, 200, 1, 254);	// LoRaWAN wants value from 1-254.
+										// 255 reserved for not measured.
+										// 0 reserved for external source
+				}
+				if ( vbat > 254 ) { vbat = 0; }			// probably charging, aka: external source. 238 = 688 - 450
+					pending_fopts_.fopts[pending_fopts_.length++] = vbat;
+				#else
 				pending_fopts_.fopts[pending_fopts_.length++] = 0xFF; // Unable to measure the battery level.
-		#endif //ARDUINO_AVR_FEATHER32U4
+				#endif //ARDUINO_AVR_FEATHER32U4
+
 				pending_fopts_.fopts[pending_fopts_.length++] = (last_packet_snr_ & 0x80) >> 2 | last_packet_snr_ & 0x1F;
 
 				i += LORAWAN_FOPT_DEV_STATUS_REQ_SIZE;
@@ -1836,17 +1882,7 @@ void SlimLoRa::AesCalculateRoundKey(uint8_t round, uint8_t *round_key) {
 	}
 }
 
-#if ARDUINO_EEPROM == 1
-/**
- * EEPROM variables
- * https://docs.arduino.cc/learn/programming/eeprom-guide
- */
-uint16_t eeprom_lw_tx_frame_counter;
-uint16_t eeprom_lw_rx_frame_counter;
-uint8_t eeprom_lw_rx1_data_rate_offset;
-uint8_t eeprom_lw_rx2_data_rate;
-uint8_t eeprom_lw_rx1_delay;
-#else
+#if ARDUINO_EEPROM == 0
 /**
  * EEPROM variables
  * https://www.nongnu.org/avr-libc/user-manual/group__avr__eeprom.html
@@ -1856,9 +1892,7 @@ uint16_t eeprom_lw_rx_frame_counter	EEMEM = 0;
 uint8_t eeprom_lw_rx1_data_rate_offset	EEMEM = 0;
 uint8_t eeprom_lw_rx2_data_rate		EEMEM = 0;
 uint8_t eeprom_lw_rx1_delay		EEMEM = 0;
-#endif
 
-#if ARDUINO_EEPROM == 0
 // TxFrameCounter
 uint16_t SlimLoRa::GetTxFrameCounter() {
 	uint16_t value = eeprom_read_word(&eeprom_lw_tx_frame_counter);
@@ -2000,10 +2034,8 @@ void SlimLoRa::SetRxFrameCounter(uint16_t count) {
 // Rx1DataRateOffset
 uint8_t SlimLoRa::GetRx1DataRateOffset() {
 	uint8_t value;
-       	value = EEPROM.read(EEPROM_RX1DR_OFFSET);
-	value &= 0x7F;		// strip last bit. Shared byte with EEPROM_JOINED
-
-	if (value > 0x3F ) {	// since we strip last bit treat 0xFF as 0x3F: bits: 00111111
+       	value = EEPROM.read(EEPROM_RX1DR_OFFSET) & 0x7F;	// Get 7 bytes [0-6] strip last bit. Shared byte with EEPROM_JOINED
+	if (value > 0x3F ) {					// since we stripped last bit full value 0xFF is 0x3F: bits: 00111111
 		return 0;
 	}
 	return value;
@@ -2011,8 +2043,8 @@ uint8_t SlimLoRa::GetRx1DataRateOffset() {
 
 void SlimLoRa::SetRx1DataRateOffset(uint8_t value) {
 	uint8_t tmp_joined;
-	tmp_joined = EEPROM.read(EEPROM_JOINED);
-	value |= ( tmp_joined << 7 );	// shared byte with EEPROM_joined. Merge them.
+	tmp_joined = EEPROM.read(EEPROM_JOINED) << 7;	// Get only [7] bit
+	value |= tmp_joined;				// shared byte with EEPROM_joined. Merge them.
 	EEPROM.write(EEPROM_RX1DR_OFFSET, value);
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nWRITE Rx1_offset: "));Serial.print(value &= 0x0F);
@@ -2023,8 +2055,7 @@ void SlimLoRa::SetRx1DataRateOffset(uint8_t value) {
 // Rx2DataRate
 uint8_t SlimLoRa::GetRx2DataRate() {
 	uint8_t value;
-	value = EEPROM.read(EEPROM_RX2_DR);
-	value &= 0x0F;		// strip last [7-4] 4 bits. Shared byte with EEPROM_RX_DELAY
+	value = EEPROM.read(EEPROM_RX2_DR) & 0x0F;	// Get only [0-3] 4 bits. Shared byte with EEPROM_RX_DELAY
 	if (value == 0x0F) {	// probably erased EEPROM.
 #if LORAWAN_OTAA_ENABLED
 		return SF12BW125;	// default LORAWAN 1.0.3
@@ -2049,8 +2080,8 @@ uint8_t SlimLoRa::GetRx2DataRate() {
 
 void SlimLoRa::SetRx2DataRate(uint8_t value) {
 	uint8_t tmp_rx_delay;
-	tmp_rx_delay = EEPROM.read(EEPROM_RX_DELAY);
-	tmp_rx_delay &= 0xF0;			// get only [7-4] bits.
+	tmp_rx_delay = EEPROM.read(EEPROM_RX_DELAY) & 0xF0;	// get only [7-4] bits.
+//	tmp_rx_delay &= 0xF0;			
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nWRITE Rx2_DR: "));Serial.print(value);
 #endif
@@ -2061,9 +2092,9 @@ void SlimLoRa::SetRx2DataRate(uint8_t value) {
 // Rx1Delay
 uint8_t SlimLoRa::GetRx1Delay() {
 	uint8_t value;
-       	value = EEPROM.read(EEPROM_RX_DELAY);	// shared byte with EEPROM_RX2_DATARATE
-	value = value >> 4;			// shift bits to return real value
-	if ( value == 0 || value >= 0xF ) {	// probaly erased EEPROM
+       	value = EEPROM.read(EEPROM_RX_DELAY) >> 4;	// shared byte with EEPROM_RX2_DATARATE
+//	value = value >> 4;			// shift bits to return real value TODO: delete
+	if ( value == 0 || value >= 0xF ) {	// probably erased EEPROM
 #if NETWORK == NET_TTN
 			return NET_TTN_RX_DELAY;	// default for TTN
 #endif
@@ -2076,11 +2107,12 @@ uint8_t SlimLoRa::GetRx1Delay() {
 
 void SlimLoRa::SetRx1Delay(uint8_t value) {
 	uint8_t temp_rx2_dr;
-	temp_rx2_dr = EEPROM.read(EEPROM_RX2_DR);
-	value |= temp_rx2_dr;				// shared byte with EEPROM_RX2_DATARATE
+	temp_rx2_dr = EEPROM.read(EEPROM_RX2_DR) & 0x0F;	// Get only the [0-3] bits
+	value |= temp_rx2_dr;					// shared byte with EEPROM_RX2_DATARATE
 	EEPROM.update(EEPROM_RX_DELAY, value);
 #if DEBUG_SLIM == 1
-	Serial.print(F("\nWRITE Rx1_delay: "));Serial.print(value);
+	Serial.print(F("\nWRITE Rx1_delay: "));Serial.print(value >> 4);
+	Serial.print(F("\nWRITE Rx1_delay RAW: "));Serial.print(value);
 #endif
 }
 #endif // ARDUINO_EEPROM == 1
@@ -2254,16 +2286,19 @@ uint8_t eeprom_lw_s_nwk_s_int_key[16];
 uint8_t eeprom_lw_nwk_s_enc_key[16];
 
 #if LORAWAN_KEEP_SESSION
-bool SlimLoRa::GetHasJoined() { // Same address with DR1_OFFSET. Take the last bit.
+bool SlimLoRa::GetHasJoined() { 
 	uint8_t value = EEPROM.read(EEPROM_JOINED);
 #if DEBUG_SLIM == 1
-	Serial.print(F("\nEEPROM join value (shared with DR1_OFFSET): "));Serial.println(value);
+	Serial.print(F("\nEEPROM join value (shared with DR1_OFFSET): "));Serial.println(value);Serial.print(F("addr : 0x"));Serial.print(EEPROM_JOINED, HEX);
 #endif
 	if ( value == 0xFF ) { 		// Erased EEPROM
 		return 0;
 	}
-	value >> 7;			// keep only the last bit.
-	return value;
+	value = value >> 7;		// Same address with DR1_OFFSET. Take the last bit.
+#if DEBUG_SLIM == 1
+	Serial.print(F("\nEEPROM join value: "));Serial.println(value);
+#endif
+	return value;		
 }
 
 void SlimLoRa::SetHasJoined(bool value) {
@@ -2271,7 +2306,6 @@ void SlimLoRa::SetHasJoined(bool value) {
 	EEPROM.get(EEPROM_JOINED, temp);		// Same address with DR1_OFFSET. Keep the first bits.
 	temp |= ( value << 7 );
 	EEPROM.write(EEPROM_JOINED, temp);
-
 	#if DEBUG_SLIM == 1
 	Serial.print(F("\nWRITE EEPROM: joined. RAW value: "));Serial.print(temp);
 	#endif
@@ -2280,14 +2314,14 @@ void SlimLoRa::SetHasJoined(bool value) {
 
 // DevAddr
 void SlimLoRa::GetDevAddr(uint8_t *dev_addr) {
-	EEPROM.get(EEPROM_DEVADDR, dev_addr);
+	getEEPROM(EEPROM_DEVADDR, dev_addr, 4);
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nDevAddr on GetDev: "));printHex(dev_addr, 4);
 #endif
 }
 
 void SlimLoRa::SetDevAddr(uint8_t *dev_addr) {
-	EEPROM.put(EEPROM_DEVADDR, dev_addr);
+	setEEPROM(EEPROM_DEVADDR, dev_addr, 4);
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nWRITE DevAddr: "));printHex(dev_addr, 4);
 #endif
@@ -2338,26 +2372,29 @@ void SlimLoRa::SetJoinNonce(uint32_t join_nonce) {
 
 // AppSKey
 void SlimLoRa::GetAppSKey(uint8_t *key) {
-	EEPROM.get(EEPROM_APPSKEY,eeprom_lw_app_s_key);
+	getEEPROM(EEPROM_APPSKEY, key, 16);
+#if DEBUG_SLIM == 1
+	printNOWEB();Serial.print(F("Read appSkey: "));printHex(key, 16);
+#endif
 }
 
 void SlimLoRa::SetAppSKey(uint8_t *key) {
-	EEPROM.put(EEPROM_APPSKEY, eeprom_lw_app_s_key);
+	setEEPROM(EEPROM_APPSKEY, key, 16);
 #if DEBUG_SLIM == 1
-	printNOWEB();Serial.print(F("WRITE app_skey: "));printHex(key, 16);
+	printNOWEB();Serial.print(F("WRITE appSkey: "));printHex(key, 16);
 #endif
 }
 
 // FNwkSIntKey
 void SlimLoRa::GetFNwkSIntKey(uint8_t *key) {
-	EEPROM.get(EEPROM_FNWKSIKEY, eeprom_lw_f_nwk_s_int_key);
+	getEEPROM(EEPROM_FNWKSIKEY, key, 16);
 #if DEBUG_SLIM == 1
 	printNOWEB();Serial.print(F("FNwkSInt: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetFNwkSIntKey(uint8_t *key) {
-	EEPROM.put(EEPROM_FNWKSIKEY, eeprom_lw_f_nwk_s_int_key);
+	setEEPROM(EEPROM_FNWKSIKEY, key, 16);
 #if DEBUG_SLIM == 1
 	printNOWEB();Serial.print(F("WRITE FNwkSInt: "));printHex(key, 16);
 #endif
@@ -2365,14 +2402,14 @@ void SlimLoRa::SetFNwkSIntKey(uint8_t *key) {
 
 // SNwkSIntKey
 void SlimLoRa::GetSNwkSIntKey(uint8_t *key) {
-	EEPROM.get(EEPROM_SNWKSIKEY, eeprom_lw_s_nwk_s_int_key);
+	getEEPROM(EEPROM_SNWKSIKEY, key, 16);
 #if DEBUG_SLIM == 1
 	printNOWEB();Serial.print(F("SNwkSInt: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetSNwkSIntKey(uint8_t *key) {
-	EEPROM.put(EEPROM_SNWKSIKEY, eeprom_lw_s_nwk_s_int_key);
+	setEEPROM(EEPROM_SNWKSIKEY, key, 16);
 #if DEBUG_SLIM == 1
 	printNOWEB();Serial.print(F("WRITE SNwkSInt: "));printHex(key, 16);
 #endif
@@ -2380,14 +2417,14 @@ void SlimLoRa::SetSNwkSIntKey(uint8_t *key) {
 
 // NwkSEncKey
 void SlimLoRa::GetNwkSEncKey(uint8_t *key) {
-	EEPROM.get(EEPROM_NW_ENC_KEY, eeprom_lw_nwk_s_enc_key);
+	getEEPROM(EEPROM_NW_ENC_KEY, key, 16);
 #if DEBUG_SLIM == 1
 	printNOWEB();Serial.print(F("NwkSEncKey: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetNwkSEncKey(uint8_t *key) {
-	EEPROM.put(EEPROM_NW_ENC_KEY, eeprom_lw_nwk_s_enc_key);
+	setEEPROM(EEPROM_NW_ENC_KEY, key, 16);
 #if DEBUG_SLIM == 1
 	printNOWEB();Serial.print(F("WRITE NwkSEnc: "));printHex(key, 16);
 #endif
