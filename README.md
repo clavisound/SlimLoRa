@@ -6,9 +6,10 @@
 
 - [x] Feather 32u4 EU868 region.
 - [x] Join SF10 with Helium. Success everytime on 1st window but not in first attempt.
-- [x] Join SF9 on TTN and power 0dBm on different room. Success on 1st window.
+- [x] Join SF9 on TTN and power 0dBm in different room. Success on 1st window.
 - [x] Join SF8 on TTN and power 0dBm in same room. Success on 1st window.
-- [x] ADR works. After join with SF9 at 6 meters from gateway (RSSI -85), TTN sends SF7 ADR command and SlimLoRa conforms.
+- [x] Join SF7 on TTN and power 0dBm in different room. Success on 1st window.
+- [x] ADR works. After join with SF9 in different room from gateway (RSSI -85), TTN sends SF7 (or SF8) ADR command and SlimLoRa conforms.
 - [x] Session restore works with Device address, AppSKey and NetworkKey. After Join, there is no need to rejoin if the device is powered off.
 - [x] ADR_ACK_LIMIT works.
 - [x] SetPower

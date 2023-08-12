@@ -59,17 +59,17 @@ void blinkLed(uint16_t times, uint16_t duration, uint8_t pause) { // x, ms, seco
 
 #if DEBUG_INO == 1
   void printHexB(uint8_t *value, uint8_t len){ 
-        Serial.print(F("\nLSB: 0x"));
-      for (int8_t i = len - 1; i >= 0; i-- ) {
-    if (value[i] == 0x0 ) { Serial.print(F("00")); continue; }
-    if (value[i] <= 0xF ) { Serial.print(F("0")); Serial.print(value[i], HEX); continue; }
-          Serial.print(value[i], HEX);
-      }
         Serial.print(F("\nMSB: 0x"));
       for (int8_t i = 0; i < len; i++ ) {
-    if (value[i] == 0x0 ) { Serial.print(F("00")); continue; }
-    if (value[i] <= 0xF ) { Serial.print(F("0")); Serial.print(value[i], HEX);continue; }
-          Serial.print(value[i], HEX);
+        if (value[i] == 0x0 ) { Serial.print(F("00")); continue; }
+        if (value[i] <= 0xF ) { Serial.print(F("0")); Serial.print(value[i], HEX);continue; }
+      Serial.print(value[i], HEX);
+      }
+      Serial.print(F("\nLSB: 0x"));
+      for (int8_t i = len - 1; i >= 0; i-- ) {
+        if (value[i] == 0x0 ) { Serial.print(F("00")); continue; }
+        if (value[i] <= 0xF ) { Serial.print(F("0")); Serial.print(value[i], HEX); continue; }
+      Serial.print(value[i], HEX);
       }
         Serial.println();
 }
@@ -82,8 +82,8 @@ void printMAC_EEPROM(){
                                           Serial.print(F("ABP DevAddr"));printHexB(DevAddr, 4);
       #endif // LORAWAN_OTAA_ENABLED
       lora.GetDevAddr(temp)              ;Serial.print(F("DevAdd"));printHexB(temp, 4);
-                                          Serial.print(F("Tx_#       : "));Serial.print(lora.GetTxFrameCounter()); // Serial.print(F("\tRAM: "));Serial.println(tx_frame_counter_);
-                                          Serial.print(F("Rx_#       : "));Serial.print(lora.GetRxFrameCounter()); // Serial.print(F("\tRAM: "));Serial.println(rx_frame_counter_);
+                                          Serial.print(F("Tx_#       : "));Serial.println(lora.GetTxFrameCounter()); // Serial.print(F("\tRAM: "));Serial.println(tx_frame_counter_);
+                                          Serial.print(F("Rx_#       : "));Serial.println(lora.GetRxFrameCounter()); // Serial.print(F("\tRAM: "));Serial.println(rx_frame_counter_);
                                           Serial.print(F("Rx1 delay  : "));Serial.print(lora.GetRx1Delay());Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print("s, RX2: ");Serial.print(LORAWAN_JOIN_ACCEPT_DELAY2_MICROS / 1000000);Serial.println("s, ");
                                           Serial.print(F("Rx1 DR Offset: "));Serial.println(lora.GetRx1DataRateOffset());
                                           Serial.print(F("DevNonce   : "));Serial.print(lora.GetDevNonce() >> 8);Serial.println(lora.GetDevNonce());

@@ -44,7 +44,7 @@ static SPISettings RFM_spisettings = SPISettings(4000000, MSBFIRST, SPI_MODE0);
 
 #if ARDUINO_EEPROM == 0
 /**
- * EEPROM variables
+ * AVR style EEPROM variables
  * https://www.nongnu.org/avr-libc/user-manual/group__avr__eeprom.html
  */
 uint16_t eeprom_lw_tx_frame_counter	EEMEM = 0;
@@ -118,16 +118,16 @@ SlimLoRa::SlimLoRa(uint8_t pin_nss) {
 
 #if DEBUG_SLIM == 1
 void printHex(uint8_t *value, uint8_t len){ 
-  	Serial.print(F("\nLSB: 0x"));
-	for (int8_t i = len - 1; i >= 0; i-- ) {
-		if (value[i] == 0x0 ) { Serial.print(F("00")); continue; }
-		if (value[i] <= 0xF ) { Serial.print(F("0")); Serial.print(value[i], HEX); continue; }
-  		Serial.print(value[i], HEX);
-		}
   	Serial.print(F("\nMSB: 0x"));
 	for (int8_t i = 0; i < len; i++ ) {
 		if (value[i] == 0x0 ) { Serial.print(F("00")); continue; }
 		if (value[i] <= 0xF ) { Serial.print(F("0")); Serial.print(value[i], HEX);continue; }
+  		Serial.print(value[i], HEX);
+		}
+  	Serial.print(F("\nLSB: 0x"));
+	for (int8_t i = len - 1; i >= 0; i-- ) {
+		if (value[i] == 0x0 ) { Serial.print(F("00")); continue; }
+		if (value[i] <= 0xF ) { Serial.print(F("0")); Serial.print(value[i], HEX); continue; }
   		Serial.print(value[i], HEX);
 		}
   	Serial.println();
@@ -188,8 +188,8 @@ void SlimLoRa::printMAC(){
 #else
 	Serial.print(F("\nABP DevAddr: "));printHex(DevAddr, 4);
 #endif // LORAWAN_OTAA_ENABLED
-	Serial.print(F("\nTx_#: "));Serial.println(GetTxFrameCounter());
-	Serial.print(F("Rx_#: "));Serial.println(GetRxFrameCounter());
+	Serial.print(F("\nTx#: "));Serial.println(GetTxFrameCounter());
+	Serial.print(F("Rx#: "));Serial.println(GetRxFrameCounter());
 	Serial.print(F("Rx1 delay : "));Serial.print(GetRx1Delay());
 	Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print("s, RX2: ");Serial.print(LORAWAN_JOIN_ACCEPT_DELAY2_MICROS / 1000000);Serial.println("s, ");
 	Serial.print(F("Rx1 DR offset: "));Serial.println(GetRx1DataRateOffset());
@@ -248,7 +248,7 @@ void SlimLoRa::Begin() {
 #endif
 
 #if DEBUG_SLIM == 1
-	Serial.println(F("Init of RFM done."));
+	Serial.println(F("\nInit of RFM done."));
 #endif
 }
 
@@ -1922,14 +1922,13 @@ uint16_t SlimLoRa::GetTxFrameCounter() {
 void SlimLoRa::SetTxFrameCounter(uint16_t count) {
 	eeprom_write_word(&eeprom_lw_tx_frame_counter, count);
 #if DEBUG_SLIM == 1
-	Serial.print(F("\nWRITE Tx_#: "));Serial.print(count >> 8);Serial.print(count);
+	Serial.print(F("\nWRITE Tx#: "));Serial.print(count >> 8);Serial.print(count);
 #endif
 }
 
 // RxFrameCounter
 uint16_t SlimLoRa::GetRxFrameCounter() {
 	uint16_t value = eeprom_read_word(&eeprom_lw_rx_frame_counter);
-
 	if (value == 0xFFFF) { return 0; }
 	return value;
 }
@@ -1937,7 +1936,7 @@ uint16_t SlimLoRa::GetRxFrameCounter() {
 void SlimLoRa::SetRxFrameCounter(uint16_t count) {
 	eeprom_write_word(&eeprom_lw_rx_frame_counter, count);
 #if DEBUG_SLIM == 1
-	Serial.print(F("\nWRITE Rx_#: "));Serial.print(count >> 8);Serial.print(count);
+	Serial.print(F("\nWRITE Rx#: "));Serial.print(count >> 8);Serial.print(count);
 #endif
 }
 
@@ -2027,7 +2026,7 @@ uint16_t SlimLoRa::GetTxFrameCounter() {
 void SlimLoRa::SetTxFrameCounter(uint16_t count) {
 	EEPROM.put(EEPROM_TX_COUNTER, count);
 #if DEBUG_SLIM == 1
-	Serial.print(F("\nWRITE Tx_#: "));Serial.print(count >> 8);Serial.print(count);
+	Serial.print(F("\nWRITE Tx#: "));Serial.print(count >> 8);Serial.print(count);
 #endif
 }
 
@@ -2042,7 +2041,8 @@ uint16_t SlimLoRa::GetRxFrameCounter() {
 void SlimLoRa::SetRxFrameCounter(uint16_t count) {
 	EEPROM.put(EEPROM_RX_COUNTER, count);
 #if DEBUG_SLIM == 1
-	Serial.print(F("\nWRITE Rx_#: "));Serial.print(count >> 8);Serial.print(count);
+	Serial.print(F("\nWRITE Rx#: "));Serial.print(count >> 8);Serial.print(count);
+	Serial.print(F("\nWRITE Rx#2: "));Serial.print(rx_frame_counter_ >> 8);Serial.print(rx_frame_counter_);
 #endif
 }
 
@@ -2119,11 +2119,15 @@ uint8_t SlimLoRa::GetRx1Delay() {
 }
 
 void SlimLoRa::SetRx1Delay(uint8_t value) {
+#if DEBUG_SLIM == 1
+	Serial.print(F("\nTOWRITE Rx1_delay: "));Serial.print(value);
+#endif
 	uint8_t temp_rx2_dr;
 	temp_rx2_dr = EEPROM.read(EEPROM_RX2_DR) & 0x0F;	// Get only the [0-3] bits
-	value |= temp_rx2_dr;					// shared byte with EEPROM_RX2_DATARATE
+	value = (value << 4) | temp_rx2_dr;					// shared byte with EEPROM_RX2_DATARATE
 	EEPROM.update(EEPROM_RX_DELAY, value);
 #if DEBUG_SLIM == 1
+	// EVAL something wrong here? RAW value is 7 (binary 111) vs 0101 0011 (83 or 0x53)
 	Serial.print(F("\nWRITE Rx1_delay: "));Serial.print(value >> 4);
 	Serial.print(F("\nWRITE Rx1_delay RAW: "));Serial.print(value);
 #endif
@@ -2182,7 +2186,6 @@ uint16_t SlimLoRa::GetDevNonce() {
 	uint16_t value = eeprom_read_word(&eeprom_lw_dev_nonce);
 
 	if (value == 0xFFFF) {
-		return 1;
 	}
 
 	return value;

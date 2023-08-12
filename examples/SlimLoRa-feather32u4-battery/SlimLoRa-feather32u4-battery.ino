@@ -1,9 +1,6 @@
 /*  
  * This sketch joins and sends the battery level every 30 minutes.
  * 
- * Problems with TTN:
- * TTN sends RX2 with SF12, although I selected SF9 for RX2
- * 
  * You need 
  * To be in Europe! **Only 868 region**. Sorry. Please feel free
  * to modify the SlimLoRa library and send PR's to my github
@@ -16,11 +13,11 @@
  * Send PR's to https://github.com/clavisound/SlimLoRa
  * 
  * Software:
- * Arduino 1.8.19 (binary on Linux),
+ * Arduino 1.8.19 (x86_64 binary on Linux),
  * SleepyDog library from Adafruit,
  * In 01_config tab add your keys from your Network provider.
  * 
- * You may need to edit SlimLoRa.h to KEEP_SESSION and select OTAA.
+ * You may need to edit SlimLoRa.h for various options.
  * 
  */
 
@@ -34,7 +31,7 @@
 
 #define VBATPIN   A9
 
-uint8_t joinEfforts = 10; // how many times we will try to join.
+uint8_t joinEfforts = 5; // how many times we will try to join.
 
 uint32_t joinStart, joinEnd, RXend, vbat;
 uint8_t dataRate, txPower = 0, payload[1], payload_length, vbatC;
@@ -45,26 +42,25 @@ SlimLoRa lora = SlimLoRa(8);    // OK for feather 32u4 (CS featherpin. Aka: nss_
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT); // Initialize pin LED_BUILTIN as an output
   
-    delay(9000);
+    delay(3000);
     #if DEBUG_INO == 1
       while (! Serial);                 // don't start unless we have serial connection
       Serial.println(F("Starting"));
     #endif
 
     lora.Begin();
-    lora.SetDataRate(SF9BW125);
+    lora.SetDataRate(SF7BW125);
     lora.SetPower(txPower);
     lora.SetAdrEnabled(1); // 0 to disable
 
     // Show data stored in EEPROM
     #if DEBUG_INO == 1
       printMAC_EEPROM();
-      Serial.println(F("Disconnect / power off the device and study the log. You have 18 seconds time.\nAfter that the program will continue."));
-      delay(18000);
+      Serial.println(F("Disconnect / power off the device and study the log. You have 30 seconds time.\nAfter that the program will continue."));
     #endif // DEBUG_INO
 
-    // Just a delay for 45 seconds
-     blinkLed(30, 500, 1); // times, duration (ms), seconds
+    // Just a delay for 30 seconds
+     blinkLed(20, 500, 1); // times, duration (ms), seconds
 
     #if LORAWAN_KEEP_SESSION == 1 && LORAWAN_OTAA_ENABLED == 1 // lora.GetHasJoined needs LORAWAN_KEEP_SESSION
       while (!lora.GetHasJoined() && joinEfforts >= 1) {

@@ -44,8 +44,9 @@
 	#include <EEPROM.h>
 #endif
 
-// Arduino library of eeprom is simpler / with less functility than avr/eeprom.h
-// but it needs extra work. We need to staticaly store the address of eache data.
+// Arduino library of eeprom is simpler / with less functionality than avr/eeprom.h
+// It needs extra work. We need to define the address of eache data.
+// It's better for future firmware updates. Data remains in same place in contrast of avr/eeprom.h
 #if ARDUINO_EEPROM == 1
 	#define EEPROM_OFFSET		  0			// Change this (not too high) if you feel that you gonna burn the EEPROM to use another area of EEPROM
 								// Be careful, maximum value around 800 (1024 - EEPROM_END).
