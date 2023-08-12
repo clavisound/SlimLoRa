@@ -47,7 +47,7 @@ static SPISettings RFM_spisettings = SPISettings(4000000, MSBFIRST, SPI_MODE0);
  * AVR style EEPROM variables
  * https://www.nongnu.org/avr-libc/user-manual/group__avr__eeprom.html
  */
-uint16_t eeprom_lw_tx_frame_counter	EEMEM = 0;
+uint16_t eeprom_lw_tx_frame_counter	EEMEM = 1;
 uint16_t eeprom_lw_rx_frame_counter	EEMEM = 0;
 uint8_t eeprom_lw_rx1_data_rate_offset	EEMEM = 0;
 uint8_t eeprom_lw_rx2_data_rate		EEMEM = 0;
@@ -997,8 +997,8 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
 	SetRx1Delay(packet[12] & 0xF);
 	rx1_delay_micros_ = GetRx1Delay() * MICROS_PER_SECOND;
 
-	tx_frame_counter_ = 0;
-	SetTxFrameCounter(0);
+	tx_frame_counter_ = 1;
+	SetTxFrameCounter(1);
 
 	rx_frame_counter_ = 0;
 	SetRxFrameCounter(0);
@@ -1273,17 +1273,16 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 		ProcessFrameOptions(&packet[8], f_options_length);
 	}
 
-	// TODO return downlink port and payload.
+	// TODO store downlink port and payload.
 	
 	// TEMPORARY
 	// Store the received packet for debugging purposes.
 #if ARDUINO_EEPROM  == 1
-	EEPROM.put(EEPROM_DOWNPACKET, packet);
+	EEPROM.put (EEPROM_DOWNPACKET, packet);
 	EEPROM.update(EEPROM_DOWNPORT, port);
 #else
 	eeprom_write_block(eeprom_lw_down_packet, packet, 64);
 	eeprom_write_byte(eeprom_lw_down_port, port);
-
 #endif
 
 #if DEBUG_SLIM == 1
@@ -2139,7 +2138,7 @@ void SlimLoRa::SetRx1Delay(uint8_t value) {
 uint8_t eeprom_lw_has_joined		EEMEM = 0;
 #endif // LORAWAN_KEEP_SESSION
 uint8_t eeprom_lw_dev_addr[4]		EEMEM;
-uint16_t eeprom_lw_dev_nonce		EEMEM = 1;
+uint16_t eeprom_lw_dev_nonce		EEMEM = 0;
 uint32_t eeprom_lw_join_nonce		EEMEM = 0;
 uint8_t eeprom_lw_app_s_key[16]		EEMEM;
 uint8_t eeprom_lw_f_nwk_s_int_key[16]	EEMEM;

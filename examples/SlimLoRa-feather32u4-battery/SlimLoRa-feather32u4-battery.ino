@@ -52,6 +52,7 @@ void setup() {
     lora.SetDataRate(SF7BW125);
     lora.SetPower(txPower);
     lora.SetAdrEnabled(1); // 0 to disable
+    lora.ForceTxFrameCounter(1);
 
     // Show data stored in EEPROM
     #if DEBUG_INO == 1

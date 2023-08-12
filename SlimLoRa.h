@@ -63,9 +63,9 @@
 	#define EEPROM_FNWKSIKEY	 92 + EEPROM_OFFSET	// 16 bytes array
 	#define EEPROM_SNWKSIKEY	108 + EEPROM_OFFSET	// 16 bytes array
 	#define EEPROM_NW_ENC_KEY	124 + EEPROM_OFFSET	// 16 bytes array
-	#define EEPROM_DOWNPACKET	136 + EEPROM_OFFSET	// 64 bytes array
-	#define EEPROM_DOWNPORT		200 + EEPROM_OFFSET	// 64 bytes array
-	#define EEPROM_END		201 + EEPROM_OFFSET	// last byte of SlimLoRa on EEPROM
+	#define EEPROM_DOWNPACKET	140 + EEPROM_OFFSET	// 64 bytes array
+	#define EEPROM_DOWNPORT		204 + EEPROM_OFFSET	// 64 bytes array
+	#define EEPROM_END		268 + EEPROM_OFFSET	// last byte of SlimLoRa on EEPROM
 #endif
 
 #define MICROS_PER_SECOND               1000000
