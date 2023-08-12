@@ -5,32 +5,30 @@
 # Tested
 
 - [x] Feather 32u4 EU868 region.
-- [x] Join on Helium with SF10. Success everytime on 1st window but not in first attempt.
-- [x] Join SF9 on TTN .
-- [x] Join SF8 on TTN and power 0dBm in same room.
+- [x] Join SF10 with Helium. Success everytime on 1st window but not in first attempt.
+- [x] Join SF9 on TTN and power 0dBm on different room. Success on 1st window.
+- [x] Join SF8 on TTN and power 0dBm in same room. Success on 1st window.
+- [x] ADR works. After join with SF9 at 6 meters from gateway (RSSI -85), TTN sends SF7 ADR command and SlimLoRa conforms.
+- [x] Session restore works with Device address, AppSKey and NetworkKey. After Join, there is no need to rejoin if the device is powered off.
+- [x] ADR_ACK_LIMIT works.
 - [x] SetPower
-
-# Semi-Working
-
-Session from EEPROM.
-- [x] Restore works with Device address, AppSKey and NetworkKey. After Join, there is no need to rejoin if the device is powered off.
-- [ ] Something funny with RX counter happening?
 
 # Untested
 
-- [ ] ADR.
-
-# Untested and TODO's (PR's welcome)
-
-- [ ] Make DevNonce random.
-- [ ] Add pin mappings infrastucture for other connections.
-- [x] Battery Level to DevStatusAns.
+- [ ] Added battery Level to DevStatusAns, but need to tested it. How? Can I order TTN to request a DevStatusAns?
 - [ ] Test join with SF7-8 on Helium and TTN.
-- [ ] Change SetPower style to LoRaWAN style.
+
+# TODO's (PR's welcome) - In order of importance.
+
+- [ ] Add pin mappings infrastucture for other connections.
+- [ ] Make DevNonce random.
+- [ ] Confirmed Uplink
+- [ ] Confirmed Downlink
 - [ ] Respect Dwell MAC command
 - [ ] Respect Duty Cycle
 - [ ] Respect Join Back-off (not faster than 36 seconds)
-- [ ] Test ADR_ACK_LIMIT
+- [ ] Change SetPower style to LoRaWAN style.
+- [ ] Random delay for TX.
 
 # Maybe good ideas
 
@@ -48,18 +46,12 @@ Session from EEPROM.
 
 **Note:**
 
-Original message from Hendrik Hagendorn.
+Original message from Hendrik Hagendorn [some parts deleted].
 
 This library evolved from a fun project [LoRa-ATtiny-Node](https://github.com/novag/LoRa-ATtiny-Node). It was never meant to run on more powerful UCs than an ATtiny85. This fork of the original library tries to support the Arduino ecosystem.
 
-It is currently still being adapted to the Arduino ecosystem and is **not ready for use**!
-
-If you are looking for a stable and proven LoRaWAN library, SlimLoRa is most likely not for you! Go for alternatives like the popular LMIC.
-
 SlimLoRa originated from a code base by Ideentron B.V.. Therefore its structure is similar to the TinyLoRa library.
 SlimLoRa is very different from LMIC. This does not mean it's better, it's different. E.g. SlimLoRa has no eventing system.
-
-Since it was a library optmized for the ATtiny85 many things have to be adjusted to work with the Arduino standard libraries. I do not have a lot of experience with Arduinos, so hints about best practices and contributions in general are appreciated.
 
 ---
 

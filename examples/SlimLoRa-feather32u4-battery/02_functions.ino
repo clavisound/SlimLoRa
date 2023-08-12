@@ -82,10 +82,10 @@ void printMAC_EEPROM(){
                                           Serial.print(F("ABP DevAddr"));printHexB(DevAddr, 4);
       #endif // LORAWAN_OTAA_ENABLED
       lora.GetDevAddr(temp)              ;Serial.print(F("DevAdd"));printHexB(temp, 4);
-                                          Serial.print(F("Tx_#       : "));Serial.println(lora.GetTxFrameCounter());
-                                          Serial.print(F("Rx_#       : "));Serial.println(lora.GetRxFrameCounter());
+                                          Serial.print(F("Tx_#       : "));Serial.print(lora.GetTxFrameCounter()); // Serial.print(F("\tRAM: "));Serial.println(tx_frame_counter_);
+                                          Serial.print(F("Rx_#       : "));Serial.print(lora.GetRxFrameCounter()); // Serial.print(F("\tRAM: "));Serial.println(rx_frame_counter_);
                                           Serial.print(F("Rx1 delay  : "));Serial.print(lora.GetRx1Delay());Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print("s, RX2: ");Serial.print(LORAWAN_JOIN_ACCEPT_DELAY2_MICROS / 1000000);Serial.println("s, ");
-                                          Serial.print(F("Rx1 DR offset: "));Serial.println(lora.GetRx1DataRateOffset());
+                                          Serial.print(F("Rx1 DR Offset: "));Serial.println(lora.GetRx1DataRateOffset());
                                           Serial.print(F("DevNonce   : "));Serial.print(lora.GetDevNonce() >> 8);Serial.println(lora.GetDevNonce());
                                           Serial.print(F("JoinNonce  : "));Serial.print(lora.GetJoinNonce() >> 24);Serial.print(lora.GetJoinNonce() >> 16);Serial.print(lora.GetJoinNonce() >> 8);Serial.println(lora.GetJoinNonce());
       lora.GetAppSKey(temp)              ;Serial.print(F("AppSKey"))    ;printHexB(temp, 16);
@@ -95,4 +95,4 @@ void printMAC_EEPROM(){
  
 }
 
-#endif
+#endif // DEBUG_INO

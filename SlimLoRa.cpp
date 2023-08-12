@@ -42,6 +42,20 @@ extern const uint8_t DevAddr[4];
 
 static SPISettings RFM_spisettings = SPISettings(4000000, MSBFIRST, SPI_MODE0);
 
+#if ARDUINO_EEPROM == 0
+/**
+ * EEPROM variables
+ * https://www.nongnu.org/avr-libc/user-manual/group__avr__eeprom.html
+ */
+uint16_t eeprom_lw_tx_frame_counter	EEMEM = 0;
+uint16_t eeprom_lw_rx_frame_counter	EEMEM = 0;
+uint8_t eeprom_lw_rx1_data_rate_offset	EEMEM = 0;
+uint8_t eeprom_lw_rx2_data_rate		EEMEM = 0;
+uint8_t eeprom_lw_rx1_delay		EEMEM = 0;
+uint8_t eeprom_lw_down_packet[64];
+uint8_t eeprom_lw_down_port;
+#endif
+
 // Frequency band for europe
 const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
 	{ 0xD9, 0x06, 0x8B }, // Channel 0 868.100 MHz / 61.035 Hz = 14222987 = 0xD9068B
@@ -120,6 +134,7 @@ void printHex(uint8_t *value, uint8_t len){
 }
 #endif
 
+#if ARDUINO_EEPROM == 1
 /**
  * Function to write arrays to eeprom
  *
@@ -159,6 +174,7 @@ void getEEPROM(uint8_t eepromAddr, uint8_t *arrayData, uint8_t size) {
    Serial.print("\nread: ");printHex(arrayData, size);
 #endif
 }
+#endif // ARDUINO_EEPROM
 
 #if DEBUG_SLIM == 1
 // Mark data in Serial log that must be kept secret.
@@ -221,8 +237,10 @@ void SlimLoRa::Begin() {
 	RfmWrite(RFM_REG_FIFO_RX_BASE_ADDR, 0x00);
 
 	// Init MAC state
-#if LORAWAN_KEEP_SESSION
+#if LORAWAN_KEEP_SESSION && LORAWAN_OTAA_ENABLED
 	has_joined_	   = GetHasJoined();
+#endif
+#if LORAWAN_KEEP_SESSION
 	tx_frame_counter_ = GetTxFrameCounter();
 	rx_frame_counter_ = GetRxFrameCounter();
 	rx2_data_rate_	= GetRx2DataRate();
@@ -517,8 +535,8 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 	if (++tx_frame_counter_ % EEPROM_WRITE_TX_COUNT == 0) {
 #if LORAWAN_KEEP_SESSION
 		SetTxFrameCounter(tx_frame_counter_);
-	}
 #endif
+	}
 	adr_ack_counter_++;
 }
 
@@ -1113,7 +1131,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				if ( vbat > 254 ) { vbat = 0; }			// probably charging, aka: external source. 238 = 688 - 450
 					pending_fopts_.fopts[pending_fopts_.length++] = vbat;
 				#else
-				pending_fopts_.fopts[pending_fopts_.length++] = 0xFF; // Unable to measure the battery level.
+					pending_fopts_.fopts[pending_fopts_.length++] = 0xFF; // Unable to measure the battery level.
 				#endif //ARDUINO_AVR_FEATHER32U4
 
 				pending_fopts_.fopts[pending_fopts_.length++] = (last_packet_snr_ & 0x80) >> 2 | last_packet_snr_ & 0x1F;
@@ -1259,8 +1277,15 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 	
 	// TEMPORARY
 	// Store the received packet for debugging purposes.
+#if ARDUINO_EEPROM  == 1
 	EEPROM.put(EEPROM_DOWNPACKET, packet);
-	EEPROM.write(EEPROM_DOWNPORT, port);
+	EEPROM.update(EEPROM_DOWNPORT, port);
+#else
+	eeprom_write_block(eeprom_lw_down_packet, packet, 64);
+	eeprom_write_byte(eeprom_lw_down_port, port);
+
+#endif
+
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nPort Down : "));Serial.print(port);
 	Serial.print(F("\nPacket RAW #1: "));printHex(packet, packet_length);
@@ -1881,17 +1906,8 @@ void SlimLoRa::AesCalculateRoundKey(uint8_t round, uint8_t *round_key) {
 	}
 }
 
-#if ARDUINO_EEPROM == 0
-/**
- * EEPROM variables
- * https://www.nongnu.org/avr-libc/user-manual/group__avr__eeprom.html
- */
-uint16_t eeprom_lw_tx_frame_counter	EEMEM = 0;
-uint16_t eeprom_lw_rx_frame_counter	EEMEM = 0;
-uint8_t eeprom_lw_rx1_data_rate_offset	EEMEM = 0;
-uint8_t eeprom_lw_rx2_data_rate		EEMEM = 0;
-uint8_t eeprom_lw_rx1_delay		EEMEM = 0;
 
+#if ARDUINO_EEPROM == 0
 // TxFrameCounter
 uint16_t SlimLoRa::GetTxFrameCounter() {
 	uint16_t value = eeprom_read_word(&eeprom_lw_tx_frame_counter);
@@ -2126,7 +2142,7 @@ uint8_t eeprom_lw_f_nwk_s_int_key[16]	EEMEM;
 uint8_t eeprom_lw_s_nwk_s_int_key[16]	EEMEM;
 uint8_t eeprom_lw_nwk_s_enc_key[16]	EEMEM;
 
-#if LORAWAN_KEEP_SESSION
+#if LORAWAN_KEEP_SESSION 
 bool SlimLoRa::GetHasJoined() {
 	uint8_t value = eeprom_read_byte(&eeprom_lw_has_joined);
 #if DEBUG_SLIM == 1
