@@ -239,11 +239,6 @@ void SlimLoRa::getArrayEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t s
 #endif // ARDUINO_EEPROM == 1
 
 #if DEBUG_SLIM == 1
-// Mark data in Serial log that must be kept secret.
-void printNOWEB(){
-	Serial.print(F("\nNOWEB "));
-}
-
 void SlimLoRa::printMAC(){
 #if LORAWAN_OTAA_ENABLED
 	Serial.print(F("\n\nMAC STATE\nJoin: "));Serial.print(has_joined_);

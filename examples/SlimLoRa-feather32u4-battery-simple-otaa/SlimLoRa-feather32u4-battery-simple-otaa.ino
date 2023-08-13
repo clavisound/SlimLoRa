@@ -31,7 +31,7 @@
 #include "SlimLoRa.h"
 #include <Adafruit_SleepyDog.h>
   
-#define DEBUG_INO 0       // DEBUG via Serial.print. If you enable this, it's a battery killer. Disable DEBUG_INO and you will have deep sleep.
+#define DEBUG_INO 1       // DEBUG via Serial.print. If you enable this, it's a battery killer. Disable DEBUG_INO and you will have deep sleep.
 
 #define VBATPIN   A9
 
