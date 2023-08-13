@@ -62,7 +62,7 @@ If you choose in SlimLoRa.h AVR style by disabling Arduino style with `ARDUINO_E
 
 # How to use it (mini-tutorial)
 
-Download the library and extract to Arduino/libraries folder. Rename SlimLoRa-master or SlimLoRa-VERSION to SlimLoRa. Read the details on examples.
+Download the library and extract to Arduino/libraries folder. Rename SlimLoRa-master or SlimLoRa-VERSION to SlimLoRa. Read the details on examples. If something goes bad erase ALL the EEPROM and on SlimLoRa.h `#define ARDUINO_EEPROM 0`
 
 ---
 
