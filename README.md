@@ -14,18 +14,17 @@
 - [x] ADR_ACK_LIMIT works.
 - [x] SetPower
 
-<<<<<<< HEAD
 # Semi-Working
 
 Session from EEPROM.
 - [x] Restore works with Device address, AppSKey and NetworkKey. After Join, there is no need to rejoin if the device is powered off.
 - [ ] Something funny with RX counter happening?
-- [ ] If you compile with different options, of if you change part of your skectch relative to EEPROM (EEMEM) the address of the data are changing places! This is "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h.
-Solution #1: Don't enable keep session.
-Solution #2: Erase the Join byte on EEPROM location. Track it with: `avr-objdump -D` on .eemem section.
+- [x] ARDUINO_EEPROM style store is not working. By default avr/eeprom.h style is used. When you use avr/eeprom.h style and you compile with different options, of if you change part of your skectch relative to EEPROM (EEMEM) the address of the data are changing places! This is a "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h.
+Solution #1: Erase ALL the EEPROM after uploading the new firmware.
+Solution #2: Hint you can track the EEPROM addresses with: `avr-objdump -D` on .eemem section.
+Solution #3: Don't enable keep session.
+Solutiin #4: Someone to fix the ARDUINO_EEPROM style.
 
-=======
->>>>>>> arduino-eeprom
 # Untested
 
 - [ ] Added battery Level to DevStatusAns, but need to tested it. How? Can I order TTN to request a DevStatusAns?
@@ -41,14 +40,8 @@ Solution #2: Erase the Join byte on EEPROM location. Track it with: `avr-objdump
 - [ ] Respect Dwell MAC command (only for US902?)
 - [ ] Respect Duty Cycle
 - [ ] Respect Join Back-off (not faster than 36 seconds)
-<<<<<<< HEAD
-- [ ] Test ADR_ACK_LIMIT
-- [ ] Confirmed Downlinks
-- [ ] Confirmed Uplinks
-=======
 - [ ] Change SetPower style to LoRaWAN style.
 - [ ] Random delay for TX.
->>>>>>> arduino-eeprom
 
 # Maybe good ideas
 
