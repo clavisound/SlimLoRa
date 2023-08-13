@@ -22,11 +22,11 @@
 // Make sure this value is the same with TTN console.
 #define NET_TTN_RX_DELAY	5
 
-// Select Arduino style EEPROM handling: DOES NOT WORK, DON'T USE IT
+// Select Arduino style EEPROM handling.
 #define ARDUINO_EEPROM	1	// Uses static storage, but it helps debugging.
 
 // Debug SlimLoRa library via Serial.print() 0 to disable
-#define DEBUG_SLIM   	0  // Enabled this only to check values / registers. Probably it breaks timing!
+#define DEBUG_SLIM   	1  // Enabled this only to check values / registers.
 #define DEBUG_TIMING 	0  // To experiment. Not used. Don't use it.
 
 // Enable LoRaWAN Over-The-Air Activation

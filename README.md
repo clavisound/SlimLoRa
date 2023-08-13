@@ -60,6 +60,10 @@ Solutiin #4: Someone to fix the ARDUINO_EEPROM style.
 Store session works with two 'systems'. With static memory location (Arduino style; This is the DEFAULT) and dynamic memory locatiosn (AVR style).
 If you choose in SlimLoRa.h AVR style by disabling Arduino style with `ARDUINO_EEPROM 0` and compile with different options, or if you change part of your sketch relative to EEPROM (EEMEM) the address of the data are changing places! This is "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h. So... if you changing stuff on your sketch and your device is already joined: ERASE ALL THE EEPROM to re-join.
 
+# How to use it (mini-tutorial)
+
+Download the library and extract to Arduino/libraries folder. Rename SlimLoRa-master or SlimLoRa-VERSION to SlimLoRa. Read the details on examples.
+
 ---
 
 **Note:**
