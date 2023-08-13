@@ -56,6 +56,11 @@ uint8_t eeprom_lw_down_packet[64];
 uint8_t eeprom_lw_down_port;
 #endif
 
+// Variables to respect Duty Cycle
+uint32_t slimStartTXtime, slimEndTXtime;
+uint16_t slimCurrentTXms, slimTotalTXms;
+uint8_t  slimDownlinks; // maximum 10 per day. TTN rule.
+
 #ifdef EU863
 // Frequency band for europe
 const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
@@ -571,6 +576,20 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 		RfmWrite(RFM_REG_FIFO, *packet);
 		packet++;
 	}
+	
+	// TODO
+	// Store the start of TX time to respect duty cycle. We don't transmit more than 30 seconds (TTN rule)
+	// TODO check if millis are close to overflow. Is yes wait some seconds.
+	// #if DEBUG_SLIM == 1
+	// 	Serial.println(F(("millis close to overflow"));
+	// #endif
+	// startTXms = millis();
+	// if ( startTXms > OVERFLOW_MILLIS - 10000 ) {
+	//	delay(12000);
+	//
+	//	Re-read startTXms
+	//	startTXms = millis();
+	// }
 
 	// Switch RFM to Tx
 	RfmWrite(RFM_REG_OP_MODE, 0x83);
@@ -581,6 +600,10 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
 		tx_done_micros_ = micros();
 	}
+	// TODO
+	// End of transmission.
+	// endTXms = millis();
+	// totalTXms += endTXms - startTXms;
 
 	// Clear interrupt
 	RfmWrite(RFM_REG_IRQ_FLAGS, 0xFF);

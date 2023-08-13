@@ -26,7 +26,7 @@
 #define ARDUINO_EEPROM	1	// Uses static storage, but it helps debugging.
 
 // Debug SlimLoRa library via Serial.print() 0 to disable
-#define DEBUG_SLIM   	1  // Enabled this only to check values / registers.
+#define DEBUG_SLIM   	0  // Enabled this only to check values / registers.
 #define DEBUG_TIMING 	0  // To experiment. Not used. Don't use it.
 
 // Enable LoRaWAN Over-The-Air Activation
@@ -76,6 +76,7 @@
 #endif
 
 #define MICROS_PER_SECOND               1000000
+#define OVERFLOW_MILLIS 		86400000	// overflow timer (millis) every 49 days and 17 hours.
 
 // RFM registers
 #define RFM_REG_FIFO                    0x00

@@ -19,26 +19,26 @@
 Session from EEPROM.
 - [x] Restore works with Device address, AppSKey and NetworkKey. After Join, there is no need to rejoin if the device is powered off.
 - [ ] Something funny with RX counter happening?
-- [x] ARDUINO_EEPROM style store is not working. By default avr/eeprom.h style is used. When you use avr/eeprom.h style and you compile with different options, of if you change part of your skectch relative to EEPROM (EEMEM) the address of the data are changing places! This is a "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h.
+- [x] Added arduino eeprom style store and restore. I recommend `ARDUINO_EEPROM == 1` in `SlimLoRa.h`. When you use avr/eeprom.h style and you compile with different options, of if you change part of your skectch relative to EEPROM (EEMEM) the address of the data are changing places! This is a "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h.
 Solution #1: Erase ALL the EEPROM after uploading the new firmware.
 Solution #2: Hint you can track the EEPROM addresses with: `avr-objdump -D` on .eemem section.
 Solution #3: Don't enable keep session.
-Solutiin #4: Someone to fix the ARDUINO_EEPROM style.
+Solutiin #4: use arduino style eeprom in SlimLoRa.h
 
 # Untested
 
 - [ ] Added battery Level to DevStatusAns, but need to tested it. How? Can I order TTN to request a DevStatusAns?
-- [ ] Test join with SF7-8 on Helium.
+- [ ] Test join with SF7 SF8 SF9 on Helium.
 - [ ] ABP.
 
 # TODO's (PR's welcome) - In order of importance.
 
 - [ ] Add pin mappings infrastucture for other boards.
+- [ ] Respect Duty Cycle
 - [ ] Make DevNonce random.
 - [ ] Confirmed Uplink
 - [ ] Confirmed Downlink
 - [ ] Respect Dwell MAC command (only for US902?)
-- [ ] Respect Duty Cycle
 - [ ] Respect Join Back-off (not faster than 36 seconds)
 - [ ] Change SetPower style to LoRaWAN style.
 - [ ] Random delay for TX.
