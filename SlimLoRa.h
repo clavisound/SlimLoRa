@@ -23,7 +23,7 @@
 #define NET_TTN_RX_DELAY	5
 
 // Select Arduino style EEPROM handling: DOES NOT WORK, DON'T USE IT
-#define ARDUINO_EEPROM	0	// Uses static storage, but it helps debugging.
+#define ARDUINO_EEPROM	1	// Uses static storage, but it helps debugging.
 
 // Debug SlimLoRa library via Serial.print() 0 to disable
 #define DEBUG_SLIM   	0  // Enabled this only to check values / registers. Probably it breaks timing!

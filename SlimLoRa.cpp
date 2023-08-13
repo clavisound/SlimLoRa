@@ -1348,7 +1348,6 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 #else
 	eeprom_write_block(eeprom_lw_down_packet, packet, 64);
 	eeprom_write_byte(eeprom_lw_down_port, port);
->>>>>>> arduino-eeprom
 #endif
 
 #if DEBUG_SLIM == 1
@@ -2185,14 +2184,18 @@ void SlimLoRa::SetRx2DataRate(uint8_t value) {
 uint8_t SlimLoRa::GetRx1Delay() {
 	uint8_t value;
        	value = EEPROM.read(EEPROM_RX_DELAY) >> 4;	// shared byte with EEPROM_RX2_DATARATE
-	if ( value == 0 || value >= 0xF ) {	// probably erased EEPROM
-#if NETWORK == NET_TTN
-			return NET_TTN_RX_DELAY;	// default for TTN
-#endif
-#if NETWORK == NET_HELIUM
-			return NET_HELIUM_RX_DELAY;	// default for Helium
-#endif
+	if ( value == 0 || value >= 0xF ) {		// probably erased EEPROM
+		#if NETWORK == NET_TTN
+		value = NET_TTN_RX_DELAY;		// default for TTN
+		#endif
+
+		#if NETWORK == NET_HELIUM
+		value = NET_HELIUM_RX_DELAY;		// default for Helium
+		#endif
 	}
+	#if DEBUG_SLIM == 1
+	Serial.print(F("Rx1 Delay: "));Serial.println(value);
+	#endif
 	return value;
 }
 
@@ -2225,7 +2228,6 @@ uint8_t eeprom_lw_s_nwk_s_int_key[16]	EEMEM;
 uint8_t eeprom_lw_nwk_s_enc_key[16]	EEMEM;
 
 #if LORAWAN_KEEP_SESSION 
->>>>>>> arduino-eeprom
 bool SlimLoRa::GetHasJoined() {
 	uint8_t value = eeprom_read_byte(&eeprom_lw_has_joined);
 #if DEBUG_SLIM == 1

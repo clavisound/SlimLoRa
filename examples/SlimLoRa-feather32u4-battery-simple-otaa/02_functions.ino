@@ -88,11 +88,6 @@ void printMAC_EEPROM(){
                                           Serial.print(F("Rx1 DR Offset: "));Serial.println(lora.GetRx1DataRateOffset());
                                           Serial.print(F("DevNonce   : "));Serial.print(lora.GetDevNonce() >> 8);Serial.println(lora.GetDevNonce());
                                           Serial.print(F("JoinNonce  : "));Serial.print(lora.GetJoinNonce() >> 24);Serial.print(lora.GetJoinNonce() >> 16);Serial.print(lora.GetJoinNonce() >> 8);Serial.println(lora.GetJoinNonce());
-      lora.GetAppSKey(temp)              ;Serial.print(F("AppSKey"))    ;printHexB(temp, 16);
-      lora.GetFNwkSIntKey(temp)          ;Serial.print(F("FNwkSIntKey"));printHexB(temp, 16);
-      lora.GetSNwkSIntKey(temp)          ;Serial.print(F("SNwkSIntKey"));printHexB(temp, 16);
-      lora.GetNwkSEncKey(temp)           ;Serial.print(F("NwkSEncKey")) ;printHexB(temp, 16);
- 
 }
 
 #endif // DEBUG_INO
