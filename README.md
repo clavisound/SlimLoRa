@@ -5,10 +5,10 @@
 # Tested
 
 - [x] Feather 32u4 EU868 region.
-- [x] Join SF10 with Helium. Success everytime on 1st window but not in first attempt.
 - [x] Join SF9 on TTN and power 0dBm in different room. Success on 1st window.
 - [x] Join SF8 on TTN and power 0dBm in same room. Success on 1st window.
 - [x] Join SF7 on TTN and power 0dBm in different room. Success on 1st window.
+- [x] Join SF10 with Helium. Success everytime on 1st window but not in first attempt.
 - [x] ADR works. After join with SF9 in different room from gateway (RSSI -85), TTN sends SF7 (or SF8) ADR command and SlimLoRa conforms.
 - [x] Session restore works with Device address, AppSKey and NetworkKey. After Join, there is no need to rejoin if the device is powered off.
 - [x] ADR_ACK_LIMIT works.
@@ -17,15 +17,16 @@
 # Untested
 
 - [ ] Added battery Level to DevStatusAns, but need to tested it. How? Can I order TTN to request a DevStatusAns?
-- [ ] Test join with SF7-8 on Helium and TTN.
+- [ ] Test join with SF7-8 on Helium.
+- [ ] ABP.
 
 # TODO's (PR's welcome) - In order of importance.
 
-- [ ] Add pin mappings infrastucture for other connections.
+- [ ] Add pin mappings infrastucture for other boards.
 - [ ] Make DevNonce random.
 - [ ] Confirmed Uplink
 - [ ] Confirmed Downlink
-- [ ] Respect Dwell MAC command
+- [ ] Respect Dwell MAC command (only for US902?)
 - [ ] Respect Duty Cycle
 - [ ] Respect Join Back-off (not faster than 36 seconds)
 - [ ] Change SetPower style to LoRaWAN style.
@@ -43,6 +44,11 @@
 
 - SF10 indoors working, outdoors not?
 
+# About EEPROM (store session)
+
+Store session works with two 'systems'. With static memory location (Arduino style; This is the DEFAULT) and dynamic memory locatiosn (AVR style)
+
+If you choose in SlimLoRa.h AVR style by disabling Arduino style with `ARDUINO_EEPROM 0` and compile with different options, or if you change part of your sketch relative to EEPROM (EEMEM) the address of the data are changing places! This is "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h. So... if you changing stuff on your sketch and your device is already joined: ERASE ALL THE EEPROM to re-join.
 ---
 
 **Note:**

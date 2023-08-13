@@ -56,6 +56,7 @@ uint8_t eeprom_lw_down_packet[64];
 uint8_t eeprom_lw_down_port;
 #endif
 
+#ifdef EU863
 // Frequency band for europe
 const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
 	{ 0xD9, 0x06, 0x8B }, // Channel 0 868.100 MHz / 61.035 Hz = 14222987 = 0xD9068B
@@ -68,7 +69,53 @@ const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
 	{ 0xD8, 0xF9, 0xBE }, // Channel 7 867.900 MHz / 61.035 Hz = 14219710 = 0xD8F9BE
 	{ 0xD9, 0x61, 0xBE }  // Downlink  869.525 MHz / 61.035 Hz = 14246334 = 0xD961BE
 };
+#endif
 
+#ifdef AU915 // According to Regional Parameters of LoRaWAN 1.0.3 spec page: 37 line 850 there is 64 channels starting from 915.200 MHz to 927.800 MHz with 200MHz steps.
+const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
+    {0xE5, 0x33, 0x5A}, // Channel 0 916.800 MHz / 61.035 Hz = 15020890 = 0xE5335A
+    {0xE5, 0x40, 0x26}, // Channel 2 917.000 MHz / 61.035 Hz = 15024166 = 0xE54026
+    {0xE5, 0x4C, 0xF3}, // Channel 3 917.200 MHz / 61.035 Hz = 15027443 = 0xE54CF3
+    {0xE5, 0x59, 0xC0}, // Channel 4 917.400 MHz / 61.035 Hz = 15030720 = 0xE559C0
+    {0xE5, 0x66, 0x8D}, // Channel 5 917.600 MHz / 61.035 Hz = 15033997 = 0xE5668D
+    {0xE5, 0x73, 0x5A}, // Channel 6 917.800 MHz / 61.035 Hz = 15037274 = 0xE5735A
+    {0xE5, 0x80, 0x27}, // Channel 7 918.000 MHz / 61.035 Hz = 15040551 = 0xE58027
+    {0xE5, 0x8C, 0xF3}, // Channel 8 918.200 MHz / 61.035 Hz = 15043827 = 0xE58CF3
+    {0xE5, 0x8C, 0xF3}  // Downlink ??? MHz / 61.035 Hz = 15043827 = 0xE58CF3 // TODO 8 channels LoRa BW 500kHz, DR8 to DR13 starting at 923.300 MHz to 927.500 MHz, steps: 600KHz.
+};
+#endif
+
+#ifdef US902 // page 21 line 435: 64 chanels starting 902.300 MHz to 914.900 MHz steps: 200KHz. DR0 (SF10) to DR3 (SF7) only!
+const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
+    {0xE1, 0xF9, 0xC0}, // Channel 0 903.900 MHz / 61.035 Hz = 14809536 = 0xE1F9C0
+    {0xE2, 0x06, 0x8C}, // Channel 1 904.100 MHz / 61.035 Hz = 14812812 = 0xE2068C
+    {0xE2, 0x13, 0x59}, // Channel 2 904.300 MHz / 61.035 Hz = 14816089 = 0xE21359
+    {0xE2, 0x20, 0x26}, // Channel 3 904.500 MHz / 61.035 Hz = 14819366 = 0xE22026
+    {0xE2, 0x2C, 0xF3}, // Channel 4 904.700 MHz / 61.035 Hz = 14822643 = 0xE22CF3
+    {0xE2, 0x39, 0xC0}, // Channel 5 904.900 MHz / 61.035 Hz = 14825920 = 0xE239C0
+    {0xE2, 0x46, 0x8C}, // Channel 6 905.100 MHz / 61.035 Hz = 14829196 = 0xE2468C
+    {0xE2, 0x53, 0x59}, // Channel 7 905.300 MHz / 61.035 Hz = 14832473 = 0xE25359
+    {0xE5, 0x8C, 0xF3}  // Downlink RX2 923.300 MHz / 61.035 Hz = 14832473 = 0xE25359 page 25 line 556
+};
+// TODO if more than 8 channels: RX1 page 25 line 554 'Downlink channel is modulo 8 upstream'. In other words: up 0 /down 0, up 7 /down 7, up 8 /down 0, up 15 /down 7.
+// in bash words: for i in `seq 0 63`; do echo -n "up: $i RX1: "; expr $i % 8; done
+#endif
+
+#ifdef AS920
+const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
+    {0xE6, 0xCC, 0xF4}, // Channel 0 868.100 MHz / 61.035 Hz = 15125748 = 0xE6CCF4
+    {0xE6, 0xD9, 0xC0}, // Channel 1 868.300 MHz / 61.035 Hz = 15129024 = 0xE6D9C0
+    {0xE6, 0x8C, 0xF3}, // Channel 2 868.500 MHz / 61.035 Hz = 15109363 = 0xE68CF3
+    {0xE6, 0x99, 0xC0}, // Channel 3 867.100 MHz / 61.035 Hz = 15112640 = 0xE699C0
+    {0xE6, 0xA6, 0x8D}, // Channel 4 867.300 MHz / 61.035 Hz = 15115917 = 0xE6A68D
+    {0xE6, 0xB3, 0x5A}, // Channel 5 867.500 MHz / 61.035 Hz = 15119194 = 0xE6B35A
+    {0xE6, 0xC0, 0x27}, // Channel 6 867.700 MHz / 61.035 Hz = 15122471 = 0xE6C027
+    {0xE6, 0x80, 0x27},  // Channel 7 867.900 MHz / 61.035 Hz = 15106087 = 0xE68027
+    {0xE5, 0x8C, 0xF3}  // Downlink ??? MHz / 61.035 Hz = 15043827 = 0xE58CF3 // TODO
+};
+#endif
+
+// TODO for other regions.
 // Data rate
 const uint8_t PROGMEM SlimLoRa::kDataRateTable[7][3] = {
 	// bw	sf   agc
@@ -82,6 +129,7 @@ const uint8_t PROGMEM SlimLoRa::kDataRateTable[7][3] = {
 };
 
 // Half symbol times
+// TODO for other regions
 const uint32_t PROGMEM SlimLoRa::kDRMicrosPerHalfSymbol[7] = {
 	((128 << 7) * MICROS_PER_SECOND + 500000) / 1000000, // SF12BW125
 	((128 << 6) * MICROS_PER_SECOND + 500000) / 1000000, // SF11BW125
@@ -112,6 +160,7 @@ const uint8_t PROGMEM SlimLoRa::kSTable[16][16] = {
 	{0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16}
 };
 
+// TODO add pins for other boards.
 SlimLoRa::SlimLoRa(uint8_t pin_nss) {
 	pin_nss_ = pin_nss;
 }
@@ -136,14 +185,14 @@ void printHex(uint8_t *value, uint8_t len){
 
 #if ARDUINO_EEPROM == 1
 /**
- * Function to write arrays to eeprom
+ * Function to write array to eeprom
  *
  * @param eepromAddr eeprom address.
- * @param arrayData Array sto store
+ * @param arrayData Array to store
  * @param size size of array
  *
  */
-void setEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t size) {
+void SlimLoRa::setArrayEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t size) {
    for ( uint8_t i = 0; i < size; i++ ) {
     EEPROM.update(eepromAddr + i, arrayData[i]);
 #if DEBUG_SLIM == 1
@@ -159,12 +208,20 @@ void setEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t size) {
 #endif
 }
 
-void getEEPROM(uint8_t eepromAddr, uint8_t *arrayData, uint8_t size) {
+/**
+ * Function to read array to eeprom
+ *
+ * @param eepromAddr eeprom address.
+ * @param arrayData Array to read
+ * @param size size of array
+ *
+ */
+void SlimLoRa::getArrayEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t size) {
    for ( uint8_t i = 0; i < size; i++ ) {
     arrayData[i] = EEPROM.read(eepromAddr + i);
 #if DEBUG_SLIM == 1
     if ( i == 0 ) {
-   Serial.print("\nREAD EEPROM Address: 0x");Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
+   Serial.print("\nREAD EEPROM Address->Value: 0x");Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
     } else {
    Serial.print(F(", "));Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
     }
@@ -174,12 +231,12 @@ void getEEPROM(uint8_t eepromAddr, uint8_t *arrayData, uint8_t size) {
    Serial.print("\nread: ");printHex(arrayData, size);
 #endif
 }
-#endif // ARDUINO_EEPROM
+#endif // ARDUINO_EEPROM == 1
 
 #if DEBUG_SLIM == 1
 // Mark data in Serial log that must be kept secret.
 void printNOWEB(){
-	Serial.print(F("\n NOWEB "));
+	Serial.print(F("\nNOWEB "));
 }
 
 void SlimLoRa::printMAC(){
@@ -925,6 +982,9 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
 		packet_length = RfmReceivePacket(packet, sizeof(packet), channel_, data_rate_, tx_done_micros_ + rx_delay);
 	} else {
 		rx_delay = CalculateRxDelay(rx2_data_rate_, LORAWAN_JOIN_ACCEPT_DELAY2_MICROS);
+		#ifdef US920 // TODO DR8 = SF12BW500
+			packet_length = RfmReceivePacket(packet, sizeof(packet), 8, rx2_data_rate_, tx_done_micros_ + rx_delay);
+		#endif
 		packet_length = RfmReceivePacket(packet, sizeof(packet), 8, rx2_data_rate_, tx_done_micros_ + rx_delay);
 	}
 
@@ -1038,7 +1098,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 
 	for (uint8_t i = 0; i < f_options_length; i++) {
 #if DEBUG_SLIM == 1
-	Serial.print(F("\n\n!!Processing MAC command-->"));Serial.println(options[i]);
+	Serial.print(F("\n\nProcessing MAC command: "));Serial.println(options[i]);
 #endif
 		switch (options[i]) {
 			case LORAWAN_FOPT_LINK_CHECK_ANS:
@@ -1100,7 +1160,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				break;
 			case LORAWAN_FOPT_DEV_STATUS_REQ:
 				pending_fopts_.fopts[pending_fopts_.length++] = LORAWAN_FOPT_DEV_STATUS_ANS;
-				// TODO: make it function. 
+				// TODO: make it a function. 
 				// If we have value pin procced, 
 				// if we have value pin 255 don't proceed.
 
@@ -1109,9 +1169,9 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				uint8_t vbat;
 				vbat = analogRead(VBATPIN) - 450; // convert to 8bit
 				/*
-				vbat *= 2;	// we divided by 2, so multiply back
-				vbat *= 3.3;  // Multiply by 3.3V, our reference voltage
-				vbat /= 1024; // convert to voltage
+				vbat *= 2	// we divided by 2, so multiply back
+				vbat *= 3.3;	// Multiply by 3.3V, our reference voltage
+				vbat /= 1024;	// convert to voltage
 				all in one: vbat *=0.0064453125
 				*/
 				// Connected to USB feather reports 4.29Volts with above conversion
@@ -1412,6 +1472,20 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
  * @param payload_length Length of data to be transmitted.
  */
 void SlimLoRa::SendData(uint8_t fport, uint8_t *payload, uint8_t payload_length) {
+	#ifdef US902
+	// TODO payloads for US902 https://www.thethingsnetwork.org/docs/lorawan/regional-parameters/#us902-928-maximum-payload-size
+	// SF10 11  bytes
+	// SF 9 53  bytes
+	// SF 8 128 bytes
+	// SF 7 242 bytes
+	if ( payload_length > 11 ) {
+#if DEBUG_SLIM == 1
+	Serial.println(F("Big Payload, data not send."));
+#endif
+		return -1;
+	}
+	#endif // US902
+
 #if DEBUG_SLIM == 1
 	Serial.println(F("SendData"));printMAC();
 #endif
@@ -1964,22 +2038,21 @@ uint8_t SlimLoRa::GetRx2DataRate() {
 	if (value == 0xFF) {
 #if LORAWAN_OTAA_ENABLED
 		return SF12BW125;
-	#ifdef TTNRX2 // TTN
-			return SF9BW125;
+	#if NETWORK == NET_TTN // TTN
+		return RX_SECOND_WINDOW;
 	#endif // TTN
-	#ifdef HELIUMRX2 // Helium
-			return SF12BW125;
-	#endif // HELIUMXRX2
+	#if NETWORK == NET_HELIUM // Helium
+		return RX_SECOND_WINDOW;
+	#endif // HELIUM
 #else
-	#ifdef TTNRX2 // TTN
-			return SF12BW125; // TODO RESTORE to SF9. For some reason TTN transimits SF12 instead of SF9
+	#if NETWORK == NET_TTN // TTN
+		return RX_SECOND_WINDOW;
 	#endif // TTN
-	#ifdef HELIUMRX2 // Helium
-			return SF12BW125;
-	#endif // HELIUMXRX2
+	#if NETWORK == NET_TTN // TTN
+		return RX_SECOND_WINDOW;
+	#endif // Helium
 #endif // LORAWAN_OTAA_ENABLED
 	}
-
 	return value;
 }
 
@@ -2160,7 +2233,9 @@ void SlimLoRa::SetHasJoined(bool value) {
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nWRITE EEPROM: joined"));
 	uint16_t temp = &eeprom_lw_has_joined;
-	Serial.print(F("\nEEPROM join address: "));Serial.print(temp);
+	Serial.print(F("\nEEPROM join address #1:  "));Serial.print(temp);
+	// EVAL
+	Serial.print(F("\nEEPROM join address #2: "));Serial.print(int()&eeprom_lw_has_joined);
 #endif
 }
 #endif // LORAWAN_KEEP_SESSION
@@ -2329,14 +2404,14 @@ void SlimLoRa::SetHasJoined(bool value) {
 
 // DevAddr
 void SlimLoRa::GetDevAddr(uint8_t *dev_addr) {
-	getEEPROM(EEPROM_DEVADDR, dev_addr, 4);
+	getArrayEEPROM(EEPROM_DEVADDR, dev_addr, 4);
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nDevAddr on GetDev: "));printHex(dev_addr, 4);
 #endif
 }
 
 void SlimLoRa::SetDevAddr(uint8_t *dev_addr) {
-	setEEPROM(EEPROM_DEVADDR, dev_addr, 4);
+	setArrayEEPROM(EEPROM_DEVADDR, dev_addr, 4);
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nWRITE DevAddr: "));printHex(dev_addr, 4);
 #endif
@@ -2348,7 +2423,6 @@ uint16_t SlimLoRa::GetDevNonce() {
 	EEPROM.get(EEPROM_DEVNONCE, value);
 
 	if (value == 0xFFFF) {
-		return 1;
 	}
 	return value;
 }
@@ -2387,14 +2461,14 @@ void SlimLoRa::SetJoinNonce(uint32_t join_nonce) {
 
 // AppSKey
 void SlimLoRa::GetAppSKey(uint8_t *key) {
-	getEEPROM(EEPROM_APPSKEY, key, 16);
+	getArrayEEPROM(EEPROM_APPSKEY, key, 16);
 #if DEBUG_SLIM == 1
 	printNOWEB();Serial.print(F("Read appSkey: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetAppSKey(uint8_t *key) {
-	setEEPROM(EEPROM_APPSKEY, key, 16);
+	setArrayEEPROM(EEPROM_APPSKEY, key, 16);
 #if DEBUG_SLIM == 1
 	printNOWEB();Serial.print(F("WRITE appSkey: "));printHex(key, 16);
 #endif
@@ -2402,14 +2476,14 @@ void SlimLoRa::SetAppSKey(uint8_t *key) {
 
 // FNwkSIntKey
 void SlimLoRa::GetFNwkSIntKey(uint8_t *key) {
-	getEEPROM(EEPROM_FNWKSIKEY, key, 16);
+	getArrayEEPROM(EEPROM_FNWKSIKEY, key, 16);
 #if DEBUG_SLIM == 1
 	printNOWEB();Serial.print(F("FNwkSInt: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetFNwkSIntKey(uint8_t *key) {
-	setEEPROM(EEPROM_FNWKSIKEY, key, 16);
+	setArrayEEPROM(EEPROM_FNWKSIKEY, key, 16);
 #if DEBUG_SLIM == 1
 	printNOWEB();Serial.print(F("WRITE FNwkSInt: "));printHex(key, 16);
 #endif
@@ -2417,14 +2491,14 @@ void SlimLoRa::SetFNwkSIntKey(uint8_t *key) {
 
 // SNwkSIntKey
 void SlimLoRa::GetSNwkSIntKey(uint8_t *key) {
-	getEEPROM(EEPROM_SNWKSIKEY, key, 16);
+	getArrayEEPROM(EEPROM_SNWKSIKEY, key, 16);
 #if DEBUG_SLIM == 1
 	printNOWEB();Serial.print(F("SNwkSInt: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetSNwkSIntKey(uint8_t *key) {
-	setEEPROM(EEPROM_SNWKSIKEY, key, 16);
+	setArrayEEPROM(EEPROM_SNWKSIKEY, key, 16);
 #if DEBUG_SLIM == 1
 	printNOWEB();Serial.print(F("WRITE SNwkSInt: "));printHex(key, 16);
 #endif
@@ -2432,14 +2506,14 @@ void SlimLoRa::SetSNwkSIntKey(uint8_t *key) {
 
 // NwkSEncKey
 void SlimLoRa::GetNwkSEncKey(uint8_t *key) {
-	getEEPROM(EEPROM_NW_ENC_KEY, key, 16);
+	getArrayEEPROM(EEPROM_NW_ENC_KEY, key, 16);
 #if DEBUG_SLIM == 1
 	printNOWEB();Serial.print(F("NwkSEncKey: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetNwkSEncKey(uint8_t *key) {
-	setEEPROM(EEPROM_NW_ENC_KEY, key, 16);
+	setArrayEEPROM(EEPROM_NW_ENC_KEY, key, 16);
 #if DEBUG_SLIM == 1
 	printNOWEB();Serial.print(F("WRITE NwkSEnc: "));printHex(key, 16);
 #endif

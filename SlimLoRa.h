@@ -6,25 +6,32 @@
 #include <util/atomic.h>
 
 // START OF USER DEFINED OPTIONS
+
+// Region. Valid Values: EU863, US902, AS920, AU915
+#define EU863
+
+// TTN or Helium
 #define NETWORK NET_TTN	// Two options: NET_HLM = helium, NET_TTN = TheThingsNetwork
 			// NET_TTN: RX2 SF9
 			// NET_HLM: RX2 SF12
 
-// I propose to you that you config your device on the console.helium.com to 5 seconds RX DELAY
+// I propose to you that you config your device on the console.helium.com to 5 seconds RX DELAY.
+// By Default HELIUM uses 1 sec of delay
 #define NET_HELIUM_RX_DELAY	5
+
 // Make sure this value is the same with TTN console.
 #define NET_TTN_RX_DELAY	5
 
-// Select EEPROM handling
-#define ARDUINO_EEPROM	0	// Uses more storage, but it helps debugging with static mapping of addresses.
+// Select Arduino style EEPROM handling: DOES NOT WORK, DON'T USE IT
+#define ARDUINO_EEPROM	0	// Uses static storage, but it helps debugging.
 
-// Debug SlimLoRa library. 0 to disable
-#define DEBUG_SLIM   	1  // Enabled this only to check values / registers. Probably it breaks timing!
+// Debug SlimLoRa library via Serial.print() 0 to disable
+#define DEBUG_SLIM   	0  // Enabled this only to check values / registers. Probably it breaks timing!
 #define DEBUG_TIMING 	0  // To experiment. Not used. Don't use it.
 
 // Enable LoRaWAN Over-The-Air Activation
 #define LORAWAN_OTAA_ENABLED    1
-// Store the session data to EEPROM
+// Store the session data to 0EPROM
 #define LORAWAN_KEEP_SESSION    1
 
 // Store counters every X times to protect EEPROM from constant writings
@@ -37,7 +44,7 @@
 #define LORAWAN_ADR_ACK_DELAY   32	// Wait XX times to consider connection lost.				Sane value: 32
 // END OF USER DEFINED OPTIONS
 
-// Drift adjustment. Default:	5 works with feather-32u4 and helium at 5 seconds RX delay
+// Drift adjustment. Default:	5 works with feather-32u4 TTN and helium at 5 seconds RX delay. Tested with TTN and SF7, SF8, SF9. Tested with Helium at SF10.
 #define SLIMLORA_DRIFT		5
 
 #if ARDUINO_EEPROM == 1
@@ -45,7 +52,7 @@
 #endif
 
 // Arduino library of eeprom is simpler / with less functionality than avr/eeprom.h
-// It needs extra work. We need to define the address of eache data.
+// It needs extra work. We need to define the address of each data.
 // It's better for future firmware updates. Data remains in same place in contrast of avr/eeprom.h
 #if ARDUINO_EEPROM == 1
 	#define EEPROM_OFFSET		  0			// Change this (not too high) if you feel that you gonna burn the EEPROM to use another area of EEPROM
@@ -64,8 +71,8 @@
 	#define EEPROM_SNWKSIKEY	108 + EEPROM_OFFSET	// 16 bytes array
 	#define EEPROM_NW_ENC_KEY	124 + EEPROM_OFFSET	// 16 bytes array
 	#define EEPROM_DOWNPACKET	140 + EEPROM_OFFSET	// 64 bytes array
-	#define EEPROM_DOWNPORT		204 + EEPROM_OFFSET	// 64 bytes array
-	#define EEPROM_END		268 + EEPROM_OFFSET	// last byte of SlimLoRa on EEPROM
+	#define EEPROM_DOWNPORT		204 + EEPROM_OFFSET	// 1 byte
+	#define EEPROM_END		205 + EEPROM_OFFSET	// last byte of SlimLoRa on EEPROM
 #endif
 
 #define MICROS_PER_SECOND               1000000
@@ -171,10 +178,12 @@
 
 // LoRaWAN delays in seconds
 #if NETWORK == NET_TTN
+#define RX_SECOND_WINDOW SF9BW125
 #define LORAWAN_JOIN_ACCEPT_DELAY1_MICROS   NET_TTN_RX_DELAY       * MICROS_PER_SECOND
 #define LORAWAN_JOIN_ACCEPT_DELAY2_MICROS   (NET_TTN_RX_DELAY + 1) * MICROS_PER_SECOND
 #endif
 #if NETWORK == NET_HELIUM
+#define RX_SECOND_WINDOW SF12BW125
 #define LORAWAN_JOIN_ACCEPT_DELAY1_MICROS   NET_HELIUM_RX_DELAY       * MICROS_PER_SECOND
 #define LORAWAN_JOIN_ACCEPT_DELAY2_MICROS   (NET_HELIUM_RX_DELAY + 1) * MICROS_PER_SECOND
 #endif
@@ -201,6 +210,8 @@
 #define LORAWAN_ERROR_INVALID_JOIN_NONCE    -7
 
 // LoRaWAN spreading factors
+// TODO for other regions. Example: DR0 for US902 is SF10BW125 and DR8 is SF12BW500
+// check https://www.thethingsnetwork.org/docs/lorawan/regional-parameters/
 #define SF7BW250    6
 #define SF7BW125    5
 #define SF8BW125    4
@@ -208,7 +219,6 @@
 #define SF10BW125   2
 #define SF11BW125   1
 #define SF12BW125   0
-
 
 typedef struct {
     uint8_t length;
@@ -234,8 +244,8 @@ class SlimLoRa {
     void SetPower(int8_t power);
     bool GetHasJoined();
     void GetDevAddr(uint8_t *dev_addr);
-//    void getEEPROM(uint8_t eepromAdr, uint8_t *arrayData, uint8_t size);
-//    void setEEPROM(uint8_t eepromAdr, uint8_t *arrayData, uint8_t size);
+    void getArrayEEPROM(uint16_t eepromAdr, uint8_t *arrayData, uint8_t size);
+    void setArrayEEPROM(uint16_t eepromAdr, uint8_t *arrayData, uint8_t size);
 #if DEBUG_SLIM == 1
     void printMAC(void);
     // debug values
