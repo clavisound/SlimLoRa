@@ -5,10 +5,16 @@
 # Tested
 
 - [x] Feather 32u4 EU868 region.
-- [x] Join on Helium with SF10. Success everytime on 1st window but not in first attempt.
-- [x] Join SF9 on Helium.
+- [x] Join SF9 on TTN and power 0dBm in different room. Success on 1st window.
+- [x] Join SF8 on TTN and power 0dBm in same room. Success on 1st window.
+- [x] Join SF7 on TTN and power 0dBm in different room. Success on 1st window.
+- [x] Join SF10 with Helium. Success everytime on 1st window but not in first attempt.
+- [x] ADR works. After join with SF9 in different room from gateway (RSSI -85), TTN sends SF7 (or SF8) ADR command and SlimLoRa conforms.
+- [x] Session restore works with Device address, AppSKey and NetworkKey. After Join, there is no need to rejoin if the device is powered off.
+- [x] ADR_ACK_LIMIT works.
 - [x] SetPower
 
+<<<<<<< HEAD
 # Semi-Working
 
 Session from EEPROM.
@@ -18,23 +24,31 @@ Session from EEPROM.
 Solution #1: Don't enable keep session.
 Solution #2: Erase the Join byte on EEPROM location. Track it with: `avr-objdump -D` on .eemem section.
 
+=======
+>>>>>>> arduino-eeprom
 # Untested
 
-- [ ] ADR.
+- [ ] Added battery Level to DevStatusAns, but need to tested it. How? Can I order TTN to request a DevStatusAns?
+- [ ] Test join with SF7-8 on Helium.
+- [ ] ABP.
 
-# Untested and TODO's (PR's welcome)
+# TODO's (PR's welcome) - In order of importance.
 
-- [ ] Add pin mappings infrastucture for other connections.
-- [x] Battery Level to DevStatusAns.
-- [ ] Join on TTN fails. Maybe my gateway is not normal. Should try with others.
-- [ ] Test join with SF11, SF12 on Helium and TTN.
-- [ ] Change SetPower style to LoRaWAN style.
-- [ ] Respect Dwell MAC command
+- [ ] Add pin mappings infrastucture for other boards.
+- [ ] Make DevNonce random.
+- [ ] Confirmed Uplink
+- [ ] Confirmed Downlink
+- [ ] Respect Dwell MAC command (only for US902?)
 - [ ] Respect Duty Cycle
 - [ ] Respect Join Back-off (not faster than 36 seconds)
+<<<<<<< HEAD
 - [ ] Test ADR_ACK_LIMIT
 - [ ] Confirmed Downlinks
 - [ ] Confirmed Uplinks
+=======
+- [ ] Change SetPower style to LoRaWAN style.
+- [ ] Random delay for TX.
+>>>>>>> arduino-eeprom
 
 # Maybe good ideas
 
@@ -48,22 +62,21 @@ Solution #2: Erase the Join byte on EEPROM location. Track it with: `avr-objdump
 
 - SF10 indoors working, outdoors not?
 
+# About EEPROM (store session)
+
+Store session works with two 'systems'. With static memory location (Arduino style; This is the DEFAULT) and dynamic memory locatiosn (AVR style)
+
+If you choose in SlimLoRa.h AVR style by disabling Arduino style with `ARDUINO_EEPROM 0` and compile with different options, or if you change part of your sketch relative to EEPROM (EEMEM) the address of the data are changing places! This is "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h. So... if you changing stuff on your sketch and your device is already joined: ERASE ALL THE EEPROM to re-join.
 ---
 
 **Note:**
 
-Original message from Hendrik Hagendorn.
+Original message from Hendrik Hagendorn [some parts deleted].
 
 This library evolved from a fun project [LoRa-ATtiny-Node](https://github.com/novag/LoRa-ATtiny-Node). It was never meant to run on more powerful UCs than an ATtiny85. This fork of the original library tries to support the Arduino ecosystem.
 
-It is currently still being adapted to the Arduino ecosystem and is **not ready for use**!
-
-If you are looking for a stable and proven LoRaWAN library, SlimLoRa is most likely not for you! Go for alternatives like the popular LMIC.
-
 SlimLoRa originated from a code base by Ideentron B.V.. Therefore its structure is similar to the TinyLoRa library.
 SlimLoRa is very different from LMIC. This does not mean it's better, it's different. E.g. SlimLoRa has no eventing system.
-
-Since it was a library optmized for the ATtiny85 many things have to be adjusted to work with the Arduino standard libraries. I do not have a lot of experience with Arduinos, so hints about best practices and contributions in general are appreciated.
 
 ---
 
