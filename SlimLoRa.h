@@ -26,7 +26,7 @@
 #define ARDUINO_EEPROM	1	// Uses static storage, but it helps debugging.
 
 // Debug SlimLoRa library via Serial.print() 0 to disable
-#define DEBUG_SLIM   	1  // Enabled this only to check values / registers.
+#define DEBUG_SLIM   	0  // Enabled this only to check values / registers.
 #define DEBUG_TIMING 	0  // To experiment. Not used. Don't use it.
 
 // Enable LoRaWAN Over-The-Air Activation
