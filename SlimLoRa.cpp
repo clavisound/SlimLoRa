@@ -56,11 +56,6 @@ uint8_t eeprom_lw_down_packet[64];
 uint8_t eeprom_lw_down_port;
 #endif
 
-// Variables to respect Duty Cycle
-uint32_t slimStartTXtime, slimEndTXtime;
-uint16_t slimCurrentTXms, slimTotalTXms;
-uint8_t  slimDownlinks; // maximum 10 per day. TTN rule.
-
 #ifdef EU863
 // Frequency band for europe
 const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
@@ -89,6 +84,9 @@ const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
     {0xE5, 0x8C, 0xF3}  // Downlink ??? MHz / 61.035 Hz = 15043827 = 0xE58CF3 // TODO 8 channels LoRa BW 500kHz, DR8 to DR13 starting at 923.300 MHz to 927.500 MHz, steps: 600KHz.
 };
 #endif
+
+
+// BEELAN https://github.com/ElectronicCats/Beelan-LoRaWAN/blob/82da458bf8f98e8bf0e4c4eb5b7dd1b66787d2ba/src/arduino-rfm/RFM95.cpp#L38
 
 #ifdef US902 // page 21 line 435: 64 chanels starting 902.300 MHz to 914.900 MHz steps: 200KHz. DR0 (SF10) to DR3 (SF7) only!
 const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
@@ -165,10 +163,29 @@ const uint8_t PROGMEM SlimLoRa::kSTable[16][16] = {
 	{0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16}
 };
 
-// TODO add pins for other boards.
+// TODO add pins for IRQ. (there is a gain?)
 SlimLoRa::SlimLoRa(uint8_t pin_nss) {
 	pin_nss_ = pin_nss;
 }
+
+#ifdef COUNT_TX_DURATION
+// return the Duration of transmission in ms.
+uint16_t SlimLoRa::GetTXms(){
+	return slimTotalTXms;
+}
+void SlimLoRa::CalculateTXms(){
+	// After RX done, calculate the TX ms duration here to not break RX timing windows.
+	// Also store the lastTXms duration (current transmission)
+	slimLastTXms   = slimEndTXtimestamp - slimStartTXtimestamp;
+	slimTotalTXms += slimLastTXms;
+}
+
+// erase the duration of TXms
+void SlimLoRa::ZeroTXms(){
+	slimTotalTXms = 0;
+	slimLastTXms = 0;
+}
+#endif
 
 #if DEBUG_SLIM == 1
 void printHex(uint8_t *value, uint8_t len){ 
@@ -250,17 +267,16 @@ void SlimLoRa::printMAC(){
 #else
 	Serial.print(F("\nABP DevAddr: "));printHex(DevAddr, 4);
 #endif // LORAWAN_OTAA_ENABLED
-	Serial.print(F("\nTx#: "));Serial.println(GetTxFrameCounter());
-	Serial.print(F("Rx#: "));Serial.println(GetRxFrameCounter());
-	Serial.print(F("Rx1 delay : "));Serial.print(GetRx1Delay());
-	Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print("s, RX2: ");Serial.print(LORAWAN_JOIN_ACCEPT_DELAY2_MICROS / 1000000);Serial.println("s, ");
-	Serial.print(F("Rx1 DR offset: "));Serial.println(GetRx1DataRateOffset());
-	Serial.print(F("Rx2 DR	   : "));Serial.println(rx2_data_rate_);
-	Serial.print(F("ADR_ACK_cnt  : "));Serial.println(adr_ack_counter_);
-	Serial.print(F("rx_microsstamp: "));Serial.println(rx_microsstampDEB);
-	Serial.print(F("rx_symbols	: "));Serial.println(rx_symbolsDEB);
-	Serial.print(F("devNonce DEC	: "));;Serial.print(GetDevNonce() >> 8);Serial.println(GetDevNonce());
-	Serial.print(F("joinDevNonce DEC: "));Serial.print(GetJoinNonce() >> 24);Serial.print(GetJoinNonce() >> 16);Serial.print(GetJoinNonce() >> 8);Serial.println(GetJoinNonce());
+	Serial.print(F("\nTx#\t: "));Serial.print(GetTxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(tx_frame_counter_);
+	Serial.print(F("Rx#\t: "));Serial.print(GetRxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(rx_frame_counter_);
+	Serial.print(F("RX1 delay\t: "));Serial.print(GetRx1Delay());Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print("s, RX2: ");Serial.print(LORAWAN_JOIN_ACCEPT_DELAY2_MICROS / 1000000);Serial.println("s, ");
+	Serial.print(F("Rx1 DR offset\t: "));Serial.println(GetRx1DataRateOffset());
+	Serial.print(F("Rx2 DR\t\t: "));Serial.println(rx2_data_rate_);
+	Serial.print(F("ADR_ACK_cnt\t: "));Serial.println(adr_ack_counter_);
+	Serial.print(F("rx_microsstamp\t: "));Serial.println(rx_microsstampDEB);
+	Serial.print(F("rx_symbols\t: "));Serial.println(rx_symbolsDEB);
+	Serial.print(F("devNonce DEC\t\t: "));;Serial.print(GetDevNonce() >> 8);Serial.println(GetDevNonce());
+	Serial.print(F("joinDevNonce DEC\t: "));Serial.print(GetJoinNonce() >> 24);Serial.print(GetJoinNonce() >> 16);Serial.print(GetJoinNonce() >> 8);Serial.println(GetJoinNonce());
 }
 #endif // DEBUG_SLIM
 
@@ -277,7 +293,7 @@ void SlimLoRa::Begin() {
 	// LoRa mode
 	RfmWrite(RFM_REG_OP_MODE, 0x80);
 
-	// PA_BOOST pin / +16 dBm output power. Upper limit for EU868
+	// +16 dBm output power. Upper limit for EU868
 	SetPower(16);
 
 	// Preamble length: 8 symbols
@@ -311,13 +327,24 @@ void SlimLoRa::Begin() {
 
 #if DEBUG_SLIM == 1
 	Serial.println(F("\nInit of RFM done."));
+	printMAC();
 #endif
 }
 
+// EVAL for accuracy
+//void wait_until(unsigned long microsstamp) __attribute__((optimize("-Ofast")));
 void wait_until(unsigned long microsstamp) {
 	long delta;
+
+	// optimization fast can help here?
+	// #pragma GCC optimize ("-Ofast")
+	// #pragma GCC push_options
+	// void function_to_optimize() {
+	// }
+	// #pragma GCC pop_options
 	
 	while (1) {
+		// overflow fail safe logic used. Described here: https://arduino.stackexchange.com/a/12588/59046
 		ATOMIC_BLOCK(ATOMIC_FORCEON) {
 			delta = microsstamp - micros();
 		}
@@ -403,6 +430,7 @@ void SlimLoRa::SetPower(int8_t power) {
   RfmWrite(RFM_REG_PA_CONFIG,DataPower);
 
 #if DEBUG_SLIM == 1
+  // delay(1000); // LoRa hangs here. WHY?
   Serial.print(F("Power (dBm): "));Serial.println(power);
 #endif // DEBUG_SLIM
 }
@@ -511,12 +539,6 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 	// Switch RFM to sleep
 	RfmWrite(RFM_REG_OP_MODE, 0x00);
 
-	/* TODO: store values, print later
-	// ATTENTION. This breaks timing for RX2!
-#if DEBUG_SLIM == 1
-#endif
-*/
-
 	switch (irq_flags & 0xC0) {
 		case RFM_STATUS_RX_TIMEOUT:
 			return RFM_ERROR_RX_TIMEOUT;
@@ -577,33 +599,36 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 		packet++;
 	}
 	
-	// TODO
-	// Store the start of TX time to respect duty cycle. We don't transmit more than 30 seconds (TTN rule)
-	// TODO check if millis are close to overflow. Is yes wait some seconds.
-	// #if DEBUG_SLIM == 1
-	// 	Serial.println(F(("millis close to overflow"));
-	// #endif
-	// startTXms = millis();
-	// if ( startTXms > OVERFLOW_MILLIS - 10000 ) {
-	//	delay(12000);
-	//
-	//	Re-read startTXms
-	//	startTXms = millis();
-	// }
+#ifdef COUNT_TX_DURATION
+	// Timestamp before TX.
+	slimStartTXtimestamp = millis();
+#endif
 
 	// Switch RFM to Tx
 	RfmWrite(RFM_REG_OP_MODE, 0x83);
 
-	// Wait for TxDone in the RegIrqFlags register
+	// Wait for TxDone in the RegIrqFlags register.
+	//
+	// START OF TinyLoRa
+	// EVAL it's better with _irq to TxDone?
+	//
+	// Switch _irq to TxDone
+	// RfmWrite(0x40, 0x40);
+	//
+	// white _irq to pull high
+	// while (digitalRead(_irq) == LOW) { }
+	// END OF TinyLoRa
 	while ((RfmRead(RFM_REG_IRQ_FLAGS) & RFM_STATUS_TX_DONE) != RFM_STATUS_TX_DONE);
 
+	// https://arduino.stackexchange.com/questions/77494/which-arduinos-support-atomic-block
 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
 		tx_done_micros_ = micros();
 	}
-	// TODO
-	// End of transmission.
-	// endTXms = millis();
-	// totalTXms += endTXms - startTXms;
+
+#ifdef COUNT_TX_DURATION
+	// EVAL: maybe this is breaking timing. Works with SF7 in same room.
+	slimEndTXtimestamp = millis();
+#endif
 
 	// Clear interrupt
 	RfmWrite(RFM_REG_IRQ_FLAGS, 0xFF);
@@ -797,7 +822,8 @@ int8_t SlimLoRa::Join() {
 	}
 	packet_length += 4;
 
-	channel_ = pseudo_byte_ & 0x01;
+	channel_ = pseudo_byte_ & 0b11; 		// Mask with first 4 channels.
+	if ( channel_ == 0b11 ) { channel_ = 0b10; }	// But we can join only on 868.100 868.300 and 868.500
 	RfmSendPacket(packet, packet_length, channel_, data_rate_);
 
 	if (!ProcessJoinAccept(1)) {
@@ -1006,9 +1032,12 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
 	} else {
 		rx_delay = CalculateRxDelay(rx2_data_rate_, LORAWAN_JOIN_ACCEPT_DELAY2_MICROS);
 		#ifdef US920 // TODO DR8 = SF12BW500
-			packet_length = RfmReceivePacket(packet, sizeof(packet), 8, rx2_data_rate_, tx_done_micros_ + rx_delay);
-		#endif
 		packet_length = RfmReceivePacket(packet, sizeof(packet), 8, rx2_data_rate_, tx_done_micros_ + rx_delay);
+		#endif
+
+		#ifdef EU863
+		packet_length = RfmReceivePacket(packet, sizeof(packet), 8, rx2_data_rate_, tx_done_micros_ + rx_delay);
+		#endif
 	}
 
 	if (packet_length <= 0) {
@@ -1102,6 +1131,9 @@ end:
 	}
 #endif
 
+#ifdef COUNT_TX_DURATION
+	CalculateTXms();
+#endif
 	return result;
 }
 #endif // LORAWAN_OTAA_ENABLED
@@ -1294,8 +1326,7 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 		goto end;
 	}
 
-	if (packet[0] != LORAWAN_MTYPE_UNCONFIRMED_DATA_DOWN
-			&& packet[0] != LORAWAN_MTYPE_CONFIRMED_DATA_DOWN) {
+	if (packet[0] != LORAWAN_MTYPE_UNCONFIRMED_DATA_DOWN && packet[0] != LORAWAN_MTYPE_CONFIRMED_DATA_DOWN) {
 		result = LORAWAN_ERROR_UNEXPECTED_MTYPE;
 		goto end;
 	}
@@ -1356,8 +1387,15 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 		ProcessFrameOptions(&packet[8], f_options_length);
 	}
 
+#if DEBUG_SLIM == 1
+	Serial.print(F("\nPort Down\t: "));Serial.print(port);
+	Serial.print(F("\nPacket RAW HEX\t: "));printHex(packet, packet_length);
+	if ( port == 11 ) {
+		EncryptPayload(&packet, payload_length, frame_counter, LORAWAN_DIRECTION_DOWN);
+	}
+	Serial.print(F("\nPacket Encrypted? HEX\t: "));printHex(packet, packet_length);
+#endif
 	// TODO store downlink port and payload.
-	
 	// TEMPORARY
 	// Store the received packet for debugging purposes.
 #if ARDUINO_EEPROM  == 1
@@ -1368,18 +1406,11 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 	eeprom_write_byte(eeprom_lw_down_port, port);
 #endif
 
-#if DEBUG_SLIM == 1
-	Serial.print(F("\nPort Down : "));Serial.print(port);
-	Serial.print(F("\nPacket RAW #1: "));printHex(packet, packet_length);
-	Serial.print(F("\nPacket RAW #2: "));printHex(packet, 64);
-#endif
-
 	result = 0;
 
 end:
 #if DEBUG_SLIM == 1
 	Serial.print(F("\n\nMAC error status: "));Serial.println(result);
-	Serial.print(F("Rx delay (us): "));Serial.println(rx_delay);
 	Serial.print(F("Rx counter   : "));Serial.println(GetRxFrameCounter());
 	if (window == 1) {
 		Serial.print(F("rx1_offset_dr: "));Serial.println(rx1_offset_dr);
@@ -1495,6 +1526,7 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
  * @param payload_length Length of data to be transmitted.
  */
 void SlimLoRa::SendData(uint8_t fport, uint8_t *payload, uint8_t payload_length) {
+
 	#ifdef US902
 	// TODO payloads for US902 https://www.thethingsnetwork.org/docs/lorawan/regional-parameters/#us902-928-maximum-payload-size
 	// SF10 11  bytes
@@ -1502,9 +1534,10 @@ void SlimLoRa::SendData(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	// SF 8 128 bytes
 	// SF 7 242 bytes
 	if ( payload_length > 11 ) {
-#if DEBUG_SLIM == 1
-	Serial.println(F("Big Payload, data not send."));
-#endif
+	#if DEBUG_SLIM == 1
+	// TODO check SF with dri
+		Serial.println(F("Big Payload (11 bytes), data not send."));
+	#endif
 		return -1;
 	}
 	#endif // US902
@@ -1517,6 +1550,10 @@ void SlimLoRa::SendData(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	if (ProcessDownlink(1)) {
 		ProcessDownlink(2);
 	}
+
+#ifdef COUNT_TX_DURATION
+	CalculateTXms();
+#endif
 }
 
 /**
@@ -1699,7 +1736,11 @@ void SlimLoRa::CalculateMic(const uint8_t *key, uint8_t *data, uint8_t *initial_
 	final_mic[2] = new_data[2];
 	final_mic[3] = new_data[3];
 
+	// Original
 	pseudo_byte_ = final_mic[3];
+	// clv based on micros value from 0 - 7
+	//pseudo_byte_ = micros();
+	//pseudo_byte_ = pseudo_byte_ >> 5; // 0 - 7
 }
 
 /**
@@ -2170,7 +2211,7 @@ uint8_t SlimLoRa::GetRx2DataRate() {
 #if LORAWAN_OTAA_ENABLED
 		return SF12BW125;	// default LORAWAN 1.0.3
 	#if NETWORK == NET_TTN		// TTN
-		return SF12BW125;	// TODO For some reason TTN transimits SF12 instead of SF9?
+		return SF9BW125;
 	#endif
 	#if NETWORK == NET_HLM		// Helium
 		return SF12BW125;
@@ -2178,7 +2219,7 @@ uint8_t SlimLoRa::GetRx2DataRate() {
 #else	// ABP settings
 		return SF12BW125;	// default LORAWAN 1.0.3
 	#if NETWORK == NET_TTN		// TTN
-		return SF12BW125;	// TODO For some reason TTN transimits SF12 instead of SF9?
+		return SF9BW125;
 	#endif
 	#if NETWORK == NET_HLM		// Helium
 		return SF12BW125;
@@ -2211,9 +2252,6 @@ uint8_t SlimLoRa::GetRx1Delay() {
 		value = NET_HELIUM_RX_DELAY;		// default for Helium
 		#endif
 	}
-	#if DEBUG_SLIM == 1
-	Serial.print(F("Rx1 Delay: "));Serial.println(value);
-	#endif
 	return value;
 }
 
@@ -2222,7 +2260,7 @@ void SlimLoRa::SetRx1Delay(uint8_t value) {
 	Serial.print(F("\nTOWRITE Rx1_delay: "));Serial.print(value);
 #endif
 	uint8_t temp_rx2_dr;
-	temp_rx2_dr = EEPROM.read(EEPROM_RX2_DR) & 0x0F;	// Get only the [0-3] bits
+	temp_rx2_dr = EEPROM.read(EEPROM_RX2_DR) & 0x0F;			// Get only the [0-3] bits
 	value = (value << 4) | temp_rx2_dr;					// shared byte with EEPROM_RX2_DATARATE
 	EEPROM.update(EEPROM_RX_DELAY, value);
 #if DEBUG_SLIM == 1

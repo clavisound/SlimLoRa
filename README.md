@@ -1,4 +1,4 @@
-# SlimLoRa Arduino library for EU868 (WIP, does not fully tested yet)
+# SlimLoRa Arduino library for EU868 (Basic functionality)
 
 ---
 
@@ -13,35 +13,41 @@
 - [x] Session restore works with Device address, AppSKey and NetworkKey. After Join, there is no need to rejoin if the device is powered off.
 - [x] ADR_ACK_LIMIT works.
 - [x] SetPower
-
-# Semi-Working
-
-Session from EEPROM.
-- [x] Restore works with Device address, AppSKey and NetworkKey. After Join, there is no need to rejoin if the device is powered off.
-- [ ] Something funny with RX counter happening?
-- [x] Added arduino eeprom style store and restore. I recommend `ARDUINO_EEPROM == 1` in `SlimLoRa.h`. When you use avr/eeprom.h style and you compile with different options, of if you change part of your skectch relative to EEPROM (EEMEM) the address of the data are changing places! This is a "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h.
+- [x] Added arduino eeprom style store and restore. I recommend `ARDUINO_EEPROM == 1` in `SlimLoRa.h`. When you use `avr/eeprom.h` style and you compile with different options, or if you change part of your sketch relative to EEPROM (EEMEM) the address of the data are changing places! This is a "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h.
 Solution #1: Erase ALL the EEPROM after uploading the new firmware.
 Solution #2: Hint you can track the EEPROM addresses with: `avr-objdump -D` on .eemem section.
 Solution #3: Don't enable keep session.
-Solutiin #4: use arduino style eeprom in SlimLoRa.h
+Solution #4: use arduino style eeprom in `SlimLoRa.h`
+- [x] Deep Sleep
+
+# Semi-Working
+
+- [x] Duty Cycle. Added GetTXms function to return the TOTAL duration of ALL transmissions. At SF7 1bytes reports 45-48ms vs 46ms [theoretical](https://avbentem.github.io/airtime-calculator/ttn/eu868/1) at SF8 reports 84ms vs 82ms (theoretical). SF7 5 bytes 52ms vs 51.5ms (theoretical). Application HAVE to read the value of GetTXms() after every transmission to check if the the Duty Cycle is respected. I decided to not respect Duty Cycle on SlimLoRa, since if the device is going to Deep Sleep and wakes up via a accelerometer on AVR MCU's freezes the timer0. I think the solution is the RTC.
 
 # Untested
 
-- [ ] Added battery Level to DevStatusAns, but need to tested it. How? Can I order TTN to request a DevStatusAns?
+- [ ] Added battery Level to DevStatusAns, but need to tested it. How?
 - [ ] Test join with SF7 SF8 SF9 on Helium.
 - [ ] ABP.
+- [ ] Something funny with RX counter happening?
+- [ ] Test timer with STM32's MCU's to enable Duty Cycle on SlimLoRa.
 
 # TODO's (PR's welcome) - In order of importance.
 
 - [ ] Add pin mappings infrastucture for other boards.
-- [ ] Respect Duty Cycle
 - [ ] Make DevNonce random.
 - [ ] Confirmed Uplink
 - [ ] Confirmed Downlink
+- [ ] Add compile options for battery status (unable to measure, connected to external power)
 - [ ] Respect Dwell MAC command (only for US902?)
 - [ ] Respect Join Back-off (not faster than 36 seconds)
 - [ ] Change SetPower style to LoRaWAN style.
 - [ ] Random delay for TX.
+
+# Undoable on AVR and Deep Sleep
+
+- [x] Respect Duty Cycle
+Since AVR on Deep Sleep freezes the timer0. SlimLoRa is unable to know about time.
 
 # Maybe good ideas
 
@@ -55,14 +61,11 @@ Solutiin #4: use arduino style eeprom in SlimLoRa.h
 
 - SF10 indoors working, outdoors not?
 
-# About EEPROM (store session)
-
-Store session works with two 'systems'. With static memory location (Arduino style; This is the DEFAULT) and dynamic memory locatiosn (AVR style).
-If you choose in SlimLoRa.h AVR style by disabling Arduino style with `ARDUINO_EEPROM 0` and compile with different options, or if you change part of your sketch relative to EEPROM (EEMEM) the address of the data are changing places! This is "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h. So... if you changing stuff on your sketch and your device is already joined: ERASE ALL THE EEPROM to re-join.
-
 # How to use it (mini-tutorial)
 
 Download the library and extract to Arduino/libraries folder. Rename SlimLoRa-master or SlimLoRa-VERSION to SlimLoRa. Read the details on examples. If something goes bad erase ALL the EEPROM and on SlimLoRa.h `#define ARDUINO_EEPROM 0`
+
+SlimLoRa changes the data of payload. Don't use payload data for program logic.
 
 ---
 

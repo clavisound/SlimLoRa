@@ -7,7 +7,8 @@
 
 // START OF USER DEFINED OPTIONS
 
-// Region. Valid Values: EU863, US902, AS920, AU915
+// Region. Valid Value: EU863. NOT USED needs further work: US902, AS920, AU915
+// https://github.com/TheThingsNetwork/lorawan-frequency-plans/
 #define EU863
 
 // TTN or Helium
@@ -42,6 +43,10 @@
 // https://lora-developers.semtech.com/documentation/tech-papers-and-guides/implementing-adaptive-data-rate-adr/implementing-adaptive-data-rate/
 #define LORAWAN_ADR_ACK_LIMIT   64	// Request downlink after those uplinks to verify we have connection.	Sane value: 64
 #define LORAWAN_ADR_ACK_DELAY   32	// Wait XX times to consider connection lost.				Sane value: 32
+
+// if you you want to save 6 bytes of RAM and you don't need to provision the Duty Cycle
+// because you transmitting only on high Data Rates (DR). You save 76 byte of flash memory if you comment this. RAM is the same.
+#define COUNT_TX_DURATION
 // END OF USER DEFINED OPTIONS
 
 // Drift adjustment. Default:	5 works with feather-32u4 TTN and helium at 5 seconds RX delay. Tested with TTN and SF7, SF8, SF9. Tested with Helium at SF10.
@@ -55,7 +60,7 @@
 // It needs extra work. We need to define the address of each data.
 // It's better for future firmware updates. Data remains in same place in contrast of avr/eeprom.h
 #if ARDUINO_EEPROM == 1
-	#define EEPROM_OFFSET		  0			// Change this (not too high) if you feel that you gonna burn the EEPROM to use another area of EEPROM
+	#define EEPROM_OFFSET		0			// Change this (not too high) if you feel that you gonna burn the EEPROM to use another area of EEPROM
 								// Be careful, maximum value around 800 (1024 - EEPROM_END).
 	#define EEPROM_DEVADDR		  0 + EEPROM_OFFSET	// 4 bytes array
 	#define EEPROM_TX_COUNTER	  4 + EEPROM_OFFSET	// 32 bytes but in practice 16 bytes: future proof 32 bytes
@@ -245,8 +250,15 @@ class SlimLoRa {
     void SetPower(int8_t power);
     bool GetHasJoined();
     void GetDevAddr(uint8_t *dev_addr);
+#ifdef COUNT_TX_DURATION
+    uint16_t GetTXms();
+    void    ZeroTXms();
+#endif // COUNT_TX_DURATION
+
+#if ARDUINO_EEPROM == 1
     void getArrayEEPROM(uint16_t eepromAdr, uint8_t *arrayData, uint8_t size);
     void setArrayEEPROM(uint16_t eepromAdr, uint8_t *arrayData, uint8_t size);
+#endif
 #if DEBUG_SLIM == 1
     void printMAC(void);
     // debug values
@@ -254,7 +266,9 @@ class SlimLoRa {
     uint32_t rx_microsstampDEB;
 #endif
 
-//  private: 		// TODO: re-enable this
+#if DEBUG_SLIM == 0
+//  private: // TODO enable this
+#endif
     uint8_t pin_nss_;	// TODO TinyLoRa irg_, rst_ bat_; bat=battery level pin
     uint8_t channel_ = 0;
     uint8_t data_rate_ = SF7BW125;
@@ -290,6 +304,13 @@ class SlimLoRa {
     void ProcessFrameOptions(uint8_t *options, uint8_t f_options_length);
     int8_t ProcessDownlink(uint8_t window);
     void Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length);
+#ifdef COUNT_TX_DURATION
+    // Variables to calculate TX time in ms
+    uint32_t slimStartTXtimestamp, slimEndTXtimestamp;
+    uint16_t slimLastTXms, slimTotalTXms;
+    void CalculateTXms();
+#endif
+    // Encryption
     void EncryptPayload(uint8_t *payload, uint8_t payload_length, unsigned int frame_counter, uint8_t direction);
     void CalculateMic(const uint8_t *key, uint8_t *data, uint8_t *initial_block, uint8_t *final_mic, uint8_t data_length);
     void CalculateMessageMic(uint8_t *data, uint8_t *final_mic, uint8_t data_length, unsigned int frame_counter, uint8_t direction);

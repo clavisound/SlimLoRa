@@ -1,5 +1,7 @@
  /*  
  * This sketch joins and sends the battery level every 15 minutes.
+ * It stores the MAC state in EEPROM. If the battery dies, the
+ * device does not re-joins.
  * 
  * You need 
  * To be in Europe! **Only EU868 region**. Sorry. Please feel free
@@ -22,7 +24,7 @@
  * #define EU863
  * #define LORAWAN_OTAA_ENABLED
  * #define LORAWAN_KEEP_SESSION
- * #define ARDUINO_EEPROM 0
+ * #define ARDUINO_EEPROM 1
  * 
  */
 
@@ -31,7 +33,8 @@
 #include "SlimLoRa.h"
 #include <Adafruit_SleepyDog.h>
   
-#define DEBUG_INO 1       // DEBUG via Serial.print. If you enable this, it's a battery killer. Disable DEBUG_INO and you will have deep sleep.
+#define DEBUG_INO 0       // DEBUG via Serial.print. If you enable this, it's a battery killer. Disable DEBUG_INO and you will have deep sleep.
+#define PHONEY    0       // don't transmit. for DEBUGing
 
 #define VBATPIN   A9
 
@@ -54,12 +57,13 @@ void setup() {
   
     delay(3000);
     #if DEBUG_INO == 1
+      Serial.begin(9600);
       while (! Serial);                 // don't start unless we have serial connection
       Serial.println(F("Starting"));
     #endif
 
     lora.Begin();
-    lora.SetDataRate(SF7BW125); // choose the Data Rate. SF10 must be ok. SF11 and SF12 are not welcome.
+    lora.SetDataRate(SF7BW125); // choose the Data Rate. SF11 and SF12 are not welcome.
     lora.SetPower(txPower);
     lora.SetAdrEnabled(1);      // 0 to disable. Network can still send ADR command to device. This is preference, not an order.
 

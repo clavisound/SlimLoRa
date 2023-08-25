@@ -25,15 +25,17 @@
 #include "SlimLoRa.h"
 #include <Adafruit_SleepyDog.h>
   
-#define DEBUG_INO 1       // DEBUG via Serial.print
-#define PHONEY    0       // don't transmit. for DEBUGing
+#define DEBUG_INO   1     // DEBUG via Serial.print
+
+#define PHONEY      0     // don't transmit. for DEBUGing
+#define KEYS_EXPORT 1     // export keys on log. Don't publish them!
 
 #define VBATPIN   A9
 
 uint8_t joinEfforts = 5; // how many times we will try to join.
 
 uint32_t joinStart, joinEnd, RXend, vbat;
-uint8_t dataRate, txPower = 0, payload[1], payload_length, vbatC;
+uint8_t dataRate, txPower = 14, payload[1], payload_length, vbatC;
 uint8_t fport = 1;
 
 SlimLoRa lora = SlimLoRa(8);    // OK for feather 32u4 (CS featherpin. Aka: nss_pin for SlimLoRa). TODO: support other pin configurations.
@@ -48,7 +50,7 @@ void setup() {
     #endif
 
     lora.Begin();
-    lora.SetDataRate(SF7BW125);
+    lora.SetDataRate(SF10BW125);
     lora.SetPower(txPower);
     lora.SetAdrEnabled(1); // 0 to disable. Network can still send ADR command to device. This is preference, not an order.
 

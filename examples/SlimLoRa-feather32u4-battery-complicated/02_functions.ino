@@ -88,12 +88,13 @@ void printMAC_EEPROM(){
                                           Serial.print(F("Rx1 DR Offset: "));Serial.println(lora.GetRx1DataRateOffset());
                                           Serial.print(F("DevNonce   : "));Serial.print(lora.GetDevNonce() >> 8);Serial.println(lora.GetDevNonce());
                                           Serial.print(F("JoinNonce  : "));Serial.print(lora.GetJoinNonce() >> 24);Serial.print(lora.GetJoinNonce() >> 16);Serial.print(lora.GetJoinNonce() >> 8);Serial.println(lora.GetJoinNonce());
-                                          /* FOR DEUB. DONT' publish on WEB
+      // Don't publish those values!
+      #if KEYS_EXPORT == 1
       lora.GetAppSKey(temp)              ;Serial.print(F("AppSKey     NOWEB"))    ;printHexB(temp, 16);
       lora.GetFNwkSIntKey(temp)          ;Serial.print(F("FNwkSIntKey NOWEB"));printHexB(temp, 16);
       lora.GetSNwkSIntKey(temp)          ;Serial.print(F("SNwkSIntKey NOWEB"));printHexB(temp, 16);
       lora.GetNwkSEncKey(temp)           ;Serial.print(F("NwkSEncKey  NOWEB")) ;printHexB(temp, 16);
-      */
+      #endif
 }
 
 #endif // DEBUG_INO
