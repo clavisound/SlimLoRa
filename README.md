@@ -67,6 +67,8 @@ Download the library and extract to Arduino/libraries folder. Rename SlimLoRa-ma
 
 SlimLoRa changes the data of payload. Don't use payload data for program logic.
 
+You can monitor the duty cycle with `GetTXms()` after every transmission. SlimLoRa will return with ms the duration of the LAST transmission. You have to add this to a variable to your program to keep track the Duty Cycle every day.
+
 ---
 
 **Note:**
