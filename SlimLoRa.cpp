@@ -822,8 +822,8 @@ int8_t SlimLoRa::Join() {
 	}
 	packet_length += 4;
 
-	channel_ = pseudo_byte_ & 0b11; 		// Mask with first 4 channels.
-	if ( channel_ == 0b11 ) { channel_ = 0b10; }	// But we can join only on 868.100 868.300 and 868.500
+	channel_ = pseudo_byte_ & 0b11; 		// Mask with first 4 channels [0-3].
+	if ( channel_ == 0b11 ) { channel_ = 0b10; }	// But we can join only on 3 channels: 868.100 868.300 and 868.500
 	RfmSendPacket(packet, packet_length, channel_, data_rate_);
 
 	if (!ProcessJoinAccept(1)) {
@@ -1514,7 +1514,10 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 		packet[packet_length++] = mic[i];
 	}
 
-	channel_ = pseudo_byte_ & 0x03;
+	channel_ = pseudo_byte_ & 0b111; // Channel 8 is downlink 0-7 is for uplinks. Mask with 0x07 (0b111) to use the first 8 channels.
+#if DEBUG_SLIM == 1
+	Serial.print(F("\nChannel: "));Serial.println(channel_);
+#endif
 	RfmSendPacket(packet, packet_length, channel_, data_rate_);
 }
 
@@ -1737,10 +1740,10 @@ void SlimLoRa::CalculateMic(const uint8_t *key, uint8_t *data, uint8_t *initial_
 	final_mic[3] = new_data[3];
 
 	// Original
-	pseudo_byte_ = final_mic[3];
+	// pseudo_byte_ = final_mic[3];
 	// clv based on micros value from 0 - 7
-	//pseudo_byte_ = micros();
-	//pseudo_byte_ = pseudo_byte_ >> 5; // 0 - 7
+	pseudo_byte_ = micros();
+	pseudo_byte_ = pseudo_byte_ >> 5; // 0 - 7
 }
 
 /**

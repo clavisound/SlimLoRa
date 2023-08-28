@@ -29,7 +29,7 @@ Solution #4: use arduino style eeprom in `SlimLoRa.h`
 - [ ] Added battery Level to DevStatusAns, but need to tested it. How?
 - [ ] Test join with SF7 SF8 SF9 on Helium.
 - [ ] ABP.
-- [ ] Something funny with RX counter happening?
+- [ ] Something funny with RX counter happening? It must be on par with server?
 - [ ] Test timer with STM32's MCU's to enable Duty Cycle on SlimLoRa.
 
 # TODO's (PR's welcome) - In order of importance.
