@@ -30,7 +30,6 @@ Solution #4: use arduino style eeprom in `SlimLoRa.h`
 - [ ] Test join with SF7 SF8 SF9 on Helium.
 - [ ] ABP.
 - [ ] Something funny with RX counter happening? It must be on par with server?
-- [ ] Test timer with STM32's MCU's to enable Duty Cycle on SlimLoRa.
 
 # TODO's (PR's welcome) - In order of importance.
 
@@ -40,7 +39,6 @@ Solution #4: use arduino style eeprom in `SlimLoRa.h`
 - [ ] Confirmed Downlink
 - [ ] Add compile options for battery status (unable to measure, connected to external power)
 - [ ] Respect Dwell MAC command (only for US902?)
-- [ ] Respect Join Back-off (not faster than 36 seconds)
 - [ ] Change SetPower style to LoRaWAN style.
 - [ ] Random delay for TX.
 
@@ -48,6 +46,7 @@ Solution #4: use arduino style eeprom in `SlimLoRa.h`
 
 - [x] Respect Duty Cycle
 Since AVR on Deep Sleep freezes the timer0. SlimLoRa is unable to know about time.
+- [x] Respect Join Back-off (not faster than 36 seconds). Must handle by application. In case of Deep Sleep SlimLoRa can't keep track the time.
 
 # Maybe good ideas
 
