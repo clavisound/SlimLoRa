@@ -173,9 +173,10 @@ SlimLoRa::SlimLoRa(uint8_t pin_nss) {
 uint16_t SlimLoRa::GetTXms(){
 	return slimTotalTXms;
 }
+
+// After RX done, calculate the TX ms duration here to not break RX timing windows.
+// Also store the lastTXms duration (current transmission)
 void SlimLoRa::CalculateTXms(){
-	// After RX done, calculate the TX ms duration here to not break RX timing windows.
-	// Also store the lastTXms duration (current transmission)
 	slimLastTXms   = slimEndTXtimestamp - slimStartTXtimestamp;
 	slimTotalTXms += slimLastTXms;
 }
@@ -358,18 +359,6 @@ void SlimLoRa::SetDataRate(uint8_t dr) {
 	data_rate_ = dr;
 }
 
-void SlimLoRa::ForceTxFrameCounter(uint16_t t_fc) {
-	tx_frame_counter_ = t_fc;
-	SetTxFrameCounter(t_fc);
-#if DEBUG_SLIM == 1
-	printMAC();
-#endif
-}
-
-void SlimLoRa::ForceRxFrameCounter(uint16_t r_fc) {
-	tx_frame_counter_ = r_fc;
-}
-
 /**************************************************************************/
 /*! 
 	@brief Sets the TX power
@@ -449,13 +438,7 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 	uint8_t modem_config_3, irq_flags, packet_length, read_length;
 
 	// Wait for start time
-#if DEBUG_TIMING == 1
-	// Maybe it breaks timing.
-	rx_microsstampDEB = rx_microstamp;
 	wait_until(rx_microsstamp - LORAWAN_RX_SETUP_MICROS);
-#else
-	wait_until(rx_microsstamp - LORAWAN_RX_SETUP_MICROS);
-#endif
 
 	// Switch RFM to standby
 	RfmWrite(RFM_REG_OP_MODE, 0x81);
@@ -476,13 +459,7 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 	RfmWrite(RFM_REG_MODEM_CONFIG_1, pgm_read_byte(&(kDataRateTable[dri][0])));
 
 	// Spreading Factor / Tx Continuous Mode / Crc
-#if DEBUG_TIMING == 1
-	// maximize RX timeout with 2 on LSB
-	//RfmWrite(RFM_REG_MODEM_CONFIG_2, pgm_read_byte(&(kDataRateTable[dri][1])) | 0x02 );
 	RfmWrite(RFM_REG_MODEM_CONFIG_2, pgm_read_byte(&(kDataRateTable[dri][1])));
-#else
-	RfmWrite(RFM_REG_MODEM_CONFIG_2, pgm_read_byte(&(kDataRateTable[dri][1])));
-#endif
 
 	// Automatic Gain Control / Low Data Rate Optimize
 	modem_config_3 = pgm_read_byte(&(kDataRateTable[dri][2]));
@@ -492,23 +469,13 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 	RfmWrite(RFM_REG_MODEM_CONFIG_3, modem_config_3);
 
 	// Rx timeout
-#if DEBUG_TIMING == 1
-	//RfmWrite(RFM_REG_SYMB_TIMEOUT_LSB, 0xFF); // maximize wait
 	RfmWrite(RFM_REG_SYMB_TIMEOUT_LSB, rx_symbols_);
-#else
-	RfmWrite(RFM_REG_SYMB_TIMEOUT_LSB, rx_symbols_);
-#endif
 
 	// Clear interrupts
 	RfmWrite(RFM_REG_IRQ_FLAGS, 0xFF);
 
 	// Wait for rx time
-#if DEBUG_TIMING == 1
 	wait_until(rx_microsstamp);
-#else
-	wait_until(rx_microsstamp);
-#endif
-
 
 	// Switch RFM to Rx
 	RfmWrite(RFM_REG_OP_MODE, 0x86);
@@ -724,9 +691,6 @@ int32_t SlimLoRa::CalculateRxWindowOffset(int16_t micros_per_half_symbol) {
 		rx_symbols = LORAWAN_RX_MIN_SYMBOLS;
 	}
 	rx_symbols_ = rx_symbols;
-#if DEBUG_TIMING == 1
-	rx_symbolsDEB = rx_symbols;
-#endif
 
 	return (8 - rx_symbols) * micros_per_half_symbol - LORAWAN_RX_MARGIN_MICROS;
 }
@@ -1515,9 +1479,6 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	}
 
 	channel_ = pseudo_byte_ & 0b111; // Channel 8 is downlink 0-7 is for uplinks. Mask with 0x07 (0b111) to use the first 8 channels.
-#if DEBUG_SLIM == 1
-	Serial.print(F("\nChannel: "));Serial.println(channel_);
-#endif
 	RfmSendPacket(packet, packet_length, channel_, data_rate_);
 }
 
@@ -2301,9 +2262,6 @@ void SlimLoRa::SetHasJoined(bool value) {
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nWRITE EEPROM: joined"));
 	uint16_t temp = &eeprom_lw_has_joined;
-	Serial.print(F("\nEEPROM join address #1:  "));Serial.print(temp);
-	// EVAL
-	Serial.print(F("\nEEPROM join address #2: "));Serial.print(int()&eeprom_lw_has_joined);
 #endif
 }
 #endif // LORAWAN_KEEP_SESSION

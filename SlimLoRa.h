@@ -60,7 +60,7 @@
 // It needs extra work. We need to define the address of each data.
 // It's better for future firmware updates. Data remains in same place in contrast of avr/eeprom.h
 #if ARDUINO_EEPROM == 1
-	#define EEPROM_OFFSET		0			// Change this (not too high) if you feel that you gonna burn the EEPROM to use another area of EEPROM
+	#define EEPROM_OFFSET		  0			// Change this (not too high) if you feel that you gonna burn the EEPROM to use another area of EEPROM
 								// Be careful, maximum value around 800 (1024 - EEPROM_END).
 	#define EEPROM_DEVADDR		  0 + EEPROM_OFFSET	// 4 bytes array
 	#define EEPROM_TX_COUNTER	  4 + EEPROM_OFFSET	// 32 bytes but in practice 16 bytes: future proof 32 bytes
@@ -241,8 +241,6 @@ class SlimLoRa {
     SlimLoRa(uint8_t pin_nss); // TODO: TinyLoRa rfm_dio0 (7), rfm_nss (8), rfm_rst (4)
     void Begin(void);
     bool HasJoined(void);
-    void ForceTxFrameCounter(uint16_t t_cf);
-    void ForceRxFrameCounter(uint16_t r_cf);
     int8_t Join();
     void SendData(uint8_t fport, uint8_t *payload, uint8_t payload_length);
     void SetAdrEnabled(bool enabled);
@@ -261,13 +259,10 @@ class SlimLoRa {
 #endif
 #if DEBUG_SLIM == 1
     void printMAC(void);
-    // debug values
-    uint8_t  rx_symbolsDEB;
-    uint32_t rx_microsstampDEB;
 #endif
 
 #if DEBUG_SLIM == 0
-//  private: // TODO enable this
+  private:
 #endif
     uint8_t pin_nss_;	// TODO TinyLoRa irg_, rst_ bat_; bat=battery level pin
     uint8_t channel_ = 0;
