@@ -168,7 +168,7 @@ SlimLoRa::SlimLoRa(uint8_t pin_nss) {
 	pin_nss_ = pin_nss;
 }
 
-#ifdef COUNT_TX_DURATION
+#if COUNT_TX_DURATION == 1
 // return the Duration of transmission in ms.
 uint16_t SlimLoRa::GetTXms(){
 	return slimTotalTXms;
@@ -186,7 +186,7 @@ void SlimLoRa::ZeroTXms(){
 	slimTotalTXms = 0;
 	slimLastTXms = 0;
 }
-#endif
+#endif // COUNT_TX_DURATION == 1
 
 #if DEBUG_SLIM == 1
 void printHex(uint8_t *value, uint8_t len){ 
@@ -274,8 +274,6 @@ void SlimLoRa::printMAC(){
 	Serial.print(F("Rx1 DR offset\t: "));Serial.println(GetRx1DataRateOffset());
 	Serial.print(F("Rx2 DR\t\t: "));Serial.println(rx2_data_rate_);
 	Serial.print(F("ADR_ACK_cnt\t: "));Serial.println(adr_ack_counter_);
-	Serial.print(F("rx_microsstamp\t: "));Serial.println(rx_microsstampDEB);
-	Serial.print(F("rx_symbols\t: "));Serial.println(rx_symbolsDEB);
 	Serial.print(F("devNonce DEC\t\t: "));;Serial.print(GetDevNonce() >> 8);Serial.println(GetDevNonce());
 	Serial.print(F("joinDevNonce DEC\t: "));Serial.print(GetJoinNonce() >> 24);Serial.print(GetJoinNonce() >> 16);Serial.print(GetJoinNonce() >> 8);Serial.println(GetJoinNonce());
 }
@@ -319,6 +317,7 @@ void SlimLoRa::Begin() {
 #if LORAWAN_KEEP_SESSION && LORAWAN_OTAA_ENABLED
 	has_joined_	   = GetHasJoined();
 #endif
+
 #if LORAWAN_KEEP_SESSION
 	tx_frame_counter_ = GetTxFrameCounter();
 	rx_frame_counter_ = GetRxFrameCounter();
@@ -332,7 +331,7 @@ void SlimLoRa::Begin() {
 #endif
 }
 
-// EVAL for accuracy
+// EVAL for accuracy (FAIL: does not compile)
 //void wait_until(unsigned long microsstamp) __attribute__((optimize("-Ofast")));
 void wait_until(unsigned long microsstamp) {
 	long delta;
@@ -566,8 +565,8 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 		packet++;
 	}
 	
-#ifdef COUNT_TX_DURATION
-	// Timestamp before TX.
+#if COUNT_TX_DURATION == 1
+	// Timestamp before TX. Don't to anything else to protect timing.
 	slimStartTXtimestamp = millis();
 #endif
 
@@ -592,7 +591,7 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 		tx_done_micros_ = micros();
 	}
 
-#ifdef COUNT_TX_DURATION
+#if COUNT_TX_DURATION == 1
 	// EVAL: maybe this is breaking timing. Works with SF7 in same room.
 	slimEndTXtimestamp = millis();
 #endif
@@ -1095,7 +1094,7 @@ end:
 	}
 #endif
 
-#ifdef COUNT_TX_DURATION
+#if COUNT_TX_DURATION == 1
 	CalculateTXms();
 #endif
 	return result;
@@ -1355,7 +1354,8 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 	Serial.print(F("\nPort Down\t: "));Serial.print(port);
 	Serial.print(F("\nPacket RAW HEX\t: "));printHex(packet, packet_length);
 	if ( port == 11 ) {
-		EncryptPayload(&packet, payload_length, frame_counter, LORAWAN_DIRECTION_DOWN);
+		// BUG: This brakes compiling. WHY? Function not found.
+	//	EncryptPayload(&packet, payload_length, frame_counter, LORAWAN_DIRECTION_DOWN);
 	}
 	Serial.print(F("\nPacket Encrypted? HEX\t: "));printHex(packet, packet_length);
 #endif
@@ -1515,7 +1515,7 @@ void SlimLoRa::SendData(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 		ProcessDownlink(2);
 	}
 
-#ifdef COUNT_TX_DURATION
+#if COUNT_TX_DURATION == 1
 	CalculateTXms();
 #endif
 }

@@ -46,7 +46,7 @@
 
 // if you you want to save 6 bytes of RAM and you don't need to provision the Duty Cycle
 // because you transmitting only on high Data Rates (DR). You save 76 byte of flash memory if you comment this. RAM is the same.
-#define COUNT_TX_DURATION
+#define COUNT_TX_DURATION	1
 // END OF USER DEFINED OPTIONS
 
 // Drift adjustment. Default:	5 works with feather-32u4 TTN and helium at 5 seconds RX delay. Tested with TTN and SF7, SF8, SF9. Tested with Helium at SF10.
@@ -188,6 +188,7 @@
 #define LORAWAN_JOIN_ACCEPT_DELAY1_MICROS   NET_TTN_RX_DELAY       * MICROS_PER_SECOND
 #define LORAWAN_JOIN_ACCEPT_DELAY2_MICROS   (NET_TTN_RX_DELAY + 1) * MICROS_PER_SECOND
 #endif
+
 #if NETWORK == NET_HELIUM
 #define RX_SECOND_WINDOW SF12BW125
 #define LORAWAN_JOIN_ACCEPT_DELAY1_MICROS   NET_HELIUM_RX_DELAY       * MICROS_PER_SECOND
@@ -248,7 +249,7 @@ class SlimLoRa {
     void SetPower(int8_t power);
     bool GetHasJoined();
     void GetDevAddr(uint8_t *dev_addr);
-#ifdef COUNT_TX_DURATION
+#if COUNT_TX_DURATION == 1
     uint16_t GetTXms();
     void    ZeroTXms();
 #endif // COUNT_TX_DURATION
@@ -261,7 +262,7 @@ class SlimLoRa {
     void printMAC(void);
 #endif
 
-#if DEBUG_SLIM == 0
+#if DEBUG_SLIM == 0 // for debuging, make everything public.
   private:
 #endif
     uint8_t pin_nss_;	// TODO TinyLoRa irg_, rst_ bat_; bat=battery level pin
@@ -276,6 +277,9 @@ class SlimLoRa {
     uint16_t rx_frame_counter_ = 0;
     uint8_t adr_ack_counter_ = 0;
     uint8_t pseudo_byte_;
+#if COUNT_TX_DURATION == 1
+    uint16_t slimLastTXms, slimTotalTXms;
+#endif
     fopts_t pending_fopts_ = {0};
     fopts_t sticky_fopts_ = {0};
     uint8_t rx_symbols_ = LORAWAN_RX_MIN_SYMBOLS;
@@ -299,10 +303,9 @@ class SlimLoRa {
     void ProcessFrameOptions(uint8_t *options, uint8_t f_options_length);
     int8_t ProcessDownlink(uint8_t window);
     void Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length);
-#ifdef COUNT_TX_DURATION
+#if COUNT_TX_DURATION == 1
     // Variables to calculate TX time in ms
     uint32_t slimStartTXtimestamp, slimEndTXtimestamp;
-    uint16_t slimLastTXms, slimTotalTXms;
     void CalculateTXms();
 #endif
     // Encryption
