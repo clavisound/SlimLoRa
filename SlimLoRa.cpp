@@ -60,8 +60,8 @@ uint8_t eeprom_lw_down_port;
 // Frequency band for europe
 const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
 	{ 0xD9, 0x06, 0x8B }, // Channel 0 868.100 MHz / 61.035 Hz = 14222987 = 0xD9068B
-	{ 0xD9, 0x13, 0x58 }, // Channel 1 868.300 MHz / 61.035 Hz = 14226264 = 0xD91358
-	{ 0xD9, 0x20, 0x24 }, // Channel 2 868.500 MHz / 61.035 Hz = 14229540 = 0xD92024
+	{ 0xD9, 0x13, 0x58 }, // Channel 1 868.300 MHz / 61.035 Hz = 14226264 = 0xD91358 less used by SlimLoRa?
+	{ 0xD9, 0x20, 0x24 }, // Channel 2 868.500 MHz / 61.035 Hz = 14229540 = 0xD92024 less used by SlimLoRa? #2
 	{ 0xD8, 0xC6, 0x8B }, // Channel 3 867.100 MHz / 61.035 Hz = 14206603 = 0xD8C68B
 	{ 0xD8, 0xD3, 0x58 }, // Channel 4 867.300 MHz / 61.035 Hz = 14209880 = 0xD8D358
 	{ 0xD8, 0xE0, 0x24 }, // Channel 5 867.500 MHz / 61.035 Hz = 14213156 = 0xD8E024
@@ -205,6 +205,24 @@ void printHex(uint8_t *value, uint8_t len){
   	Serial.println();
 }
 
+#if LORAWAN_OTAA_ENABLED == 0
+void printDevAddr(){
+  	Serial.print(F("\nMSB: 0x"));
+	for (int8_t i = 0; i < 4; i++ ) {
+		if (DevAddr[i] == 0x0 ) { Serial.print(F("00")); continue; }
+		if (DevAddr[i] <= 0xF ) { Serial.print(F("0")); Serial.print(DevAddr[i], HEX);continue; }
+  		Serial.print(DevAddr[i], HEX);
+		}
+  	Serial.print(F("\nLSB: 0x"));
+	for (int8_t i = 4 - 1; i >= 0; i-- ) {
+		if (DevAddr[i] == 0x0 ) { Serial.print(F("00")); continue; }
+		if (DevAddr[i] <= 0xF ) { Serial.print(F("0")); Serial.print(DevAddr[i], HEX); continue; }
+  		Serial.print(DevAddr[i], HEX);
+		}
+  	Serial.println();
+}
+#endif // LORAWA_OTAA_ENABLED == 0
+
 // Mark data in Serial log that must be kept secret.
 void printNOWEB(){
 	Serial.print(F("\n NOWEB "));
@@ -265,17 +283,18 @@ void SlimLoRa::getArrayEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t s
 void SlimLoRa::printMAC(){
 #if LORAWAN_OTAA_ENABLED
 	Serial.print(F("\n\nMAC STATE\nJoin: "));Serial.print(has_joined_);
+	Serial.print(F("devNonce DEC\t\t: "));;Serial.print(GetDevNonce() >> 8);Serial.println(GetDevNonce());
+	Serial.print(F("joinDevNonce DEC\t: "));Serial.print(GetJoinNonce() >> 24);Serial.print(GetJoinNonce() >> 16);Serial.print(GetJoinNonce() >> 8);Serial.println(GetJoinNonce());
 #else
-	Serial.print(F("\nABP DevAddr: "));printHex(DevAddr, 4);
+	Serial.print(F("\nABP DevAddr: "));printDevAddr();
 #endif // LORAWAN_OTAA_ENABLED
 	Serial.print(F("\nTx#\t: "));Serial.print(GetTxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(tx_frame_counter_);
 	Serial.print(F("Rx#\t: "));Serial.print(GetRxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(rx_frame_counter_);
 	Serial.print(F("RX1 delay\t: "));Serial.print(GetRx1Delay());Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print("s, RX2: ");Serial.print(LORAWAN_JOIN_ACCEPT_DELAY2_MICROS / 1000000);Serial.println("s, ");
 	Serial.print(F("Rx1 DR offset\t: "));Serial.println(GetRx1DataRateOffset());
-	Serial.print(F("Rx2 DR\t\t: "));Serial.println(rx2_data_rate_);
+	Serial.print(F("Rx2 DR RAM\t: "));Serial.println(rx2_data_rate_);
+	Serial.print(F("Rx2 DR EEPROM\t: "));Serial.println(GetRx2DataRate());
 	Serial.print(F("ADR_ACK_cnt\t: "));Serial.println(adr_ack_counter_);
-	Serial.print(F("devNonce DEC\t\t: "));;Serial.print(GetDevNonce() >> 8);Serial.println(GetDevNonce());
-	Serial.print(F("joinDevNonce DEC\t: "));Serial.print(GetJoinNonce() >> 24);Serial.print(GetJoinNonce() >> 16);Serial.print(GetJoinNonce() >> 8);Serial.println(GetJoinNonce());
 }
 #endif // DEBUG_SLIM
 
@@ -375,9 +394,9 @@ void SlimLoRa::SetDataRate(uint8_t dr) {
 void SlimLoRa::SetPower(int8_t power) {
 
   // values to be packed in one byte
-  bool PaBoost;
-  int8_t OutputPower; // 0-15
-  int8_t MaxPower; // 0-7
+  bool PaBoost;		// TODO: merge those to one byte
+  int8_t OutputPower;	// 0-15
+  int8_t MaxPower;	// 0-7
 
   // this value goes to the register (packed bytes)
   uint8_t DataPower;
@@ -418,7 +437,6 @@ void SlimLoRa::SetPower(int8_t power) {
   RfmWrite(RFM_REG_PA_CONFIG,DataPower);
 
 #if DEBUG_SLIM == 1
-  // delay(1000); // LoRa hangs here. WHY?
   Serial.print(F("Power (dBm): "));Serial.println(power);
 #endif // DEBUG_SLIM
 }
@@ -1108,7 +1126,7 @@ end:
  * @param f_options_length Length of the frame options section.
  */
 void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
-	uint8_t status, new_rx1_dr_offset, new_rx2_dr, tx_power;
+	uint8_t status, new_rx1_dr_offset, new_rx2_dr;
 
 	if (f_options_length == 0) {
 		return;
@@ -2220,9 +2238,6 @@ uint8_t SlimLoRa::GetRx1Delay() {
 }
 
 void SlimLoRa::SetRx1Delay(uint8_t value) {
-#if DEBUG_SLIM == 1
-	Serial.print(F("\nTOWRITE Rx1_delay: "));Serial.print(value);
-#endif
 	uint8_t temp_rx2_dr;
 	temp_rx2_dr = EEPROM.read(EEPROM_RX2_DR) & 0x0F;			// Get only the [0-3] bits
 	value = (value << 4) | temp_rx2_dr;					// shared byte with EEPROM_RX2_DATARATE

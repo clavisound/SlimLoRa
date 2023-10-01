@@ -27,12 +27,11 @@
 #define ARDUINO_EEPROM	1	// Uses static storage, but it helps debugging.
 
 // Debug SlimLoRa library via Serial.print() 0 to disable
-#define DEBUG_SLIM   	0  // Enabled this only to check values / registers.
-#define DEBUG_TIMING 	0  // To experiment. Not used. Don't use it.
+#define DEBUG_SLIM   	1  // Enabled this only to check values / registers.
 
 // Enable LoRaWAN Over-The-Air Activation
 #define LORAWAN_OTAA_ENABLED    1
-// Store the session data to 0EPROM
+// Store the session data to EEPROM
 #define LORAWAN_KEEP_SESSION    1
 
 // Store counters every X times to protect EEPROM from constant writings
@@ -41,8 +40,8 @@
 
 // LoRaWAN ADR
 // https://lora-developers.semtech.com/documentation/tech-papers-and-guides/implementing-adaptive-data-rate-adr/implementing-adaptive-data-rate/
-#define LORAWAN_ADR_ACK_LIMIT   64	// Request downlink after those uplinks to verify we have connection.	Sane value: 64
-#define LORAWAN_ADR_ACK_DELAY   32	// Wait XX times to consider connection lost.				Sane value: 32
+#define LORAWAN_ADR_ACK_LIMIT   64	// Request downlink after XX uplinks to verify we have connection.	Minimum sane value: 64
+#define LORAWAN_ADR_ACK_DELAY   32	// Wait XX times to consider connection lost.				Minimum sane value: 32
 
 // if you you want to save 6 bytes of RAM and you don't need to provision the Duty Cycle
 // because you transmitting only on high Data Rates (DR). You save 76 byte of flash memory if you comment this. RAM is the same.
@@ -60,8 +59,9 @@
 // It needs extra work. We need to define the address of each data.
 // It's better for future firmware updates. Data remains in same place in contrast of avr/eeprom.h
 #if ARDUINO_EEPROM == 1
-	#define EEPROM_OFFSET		  0			// Change this (not too high) if you feel that you gonna burn the EEPROM to use another area of EEPROM
+	#define EEPROM_OFFSET		  0//NOWEB			// Change this (not too high) if you feel that you gonna burn the EEPROM to use another area of EEPROM
 								// Be careful, maximum value around 800 (1024 - EEPROM_END).
+								// EEPROM reliability for AVR's. Around 1.000.000 writes.
 	#define EEPROM_DEVADDR		  0 + EEPROM_OFFSET	// 4 bytes array
 	#define EEPROM_TX_COUNTER	  4 + EEPROM_OFFSET	// 32 bytes but in practice 16 bytes: future proof 32 bytes
 	#define EEPROM_RX_COUNTER	 36 + EEPROM_OFFSET	// 32 bytes but in practice 16 bytes: future proof 32 bytes
@@ -184,15 +184,15 @@
 
 // LoRaWAN delays in seconds
 #if NETWORK == NET_TTN
-#define RX_SECOND_WINDOW SF9BW125
-#define LORAWAN_JOIN_ACCEPT_DELAY1_MICROS   NET_TTN_RX_DELAY       * MICROS_PER_SECOND
-#define LORAWAN_JOIN_ACCEPT_DELAY2_MICROS   (NET_TTN_RX_DELAY + 1) * MICROS_PER_SECOND
+	#define RX_SECOND_WINDOW SF9BW125
+	#define LORAWAN_JOIN_ACCEPT_DELAY1_MICROS   NET_TTN_RX_DELAY       * MICROS_PER_SECOND
+	#define LORAWAN_JOIN_ACCEPT_DELAY2_MICROS   (NET_TTN_RX_DELAY + 1) * MICROS_PER_SECOND
 #endif
 
 #if NETWORK == NET_HELIUM
-#define RX_SECOND_WINDOW SF12BW125
-#define LORAWAN_JOIN_ACCEPT_DELAY1_MICROS   NET_HELIUM_RX_DELAY       * MICROS_PER_SECOND
-#define LORAWAN_JOIN_ACCEPT_DELAY2_MICROS   (NET_HELIUM_RX_DELAY + 1) * MICROS_PER_SECOND
+	#define RX_SECOND_WINDOW SF12BW125
+	#define LORAWAN_JOIN_ACCEPT_DELAY1_MICROS   NET_HELIUM_RX_DELAY       * MICROS_PER_SECOND
+	#define LORAWAN_JOIN_ACCEPT_DELAY2_MICROS   (NET_HELIUM_RX_DELAY + 1) * MICROS_PER_SECOND
 #endif
 
 #define LORAWAN_RX_ERROR_MICROS             10000   // 10 ms
@@ -249,6 +249,16 @@ class SlimLoRa {
     void SetPower(int8_t power);
     bool GetHasJoined();
     void GetDevAddr(uint8_t *dev_addr);
+    bool adr_enabled_ = true;
+    uint8_t data_rate_ = SF7BW125;
+    uint16_t tx_frame_counter_ = 0;
+    uint16_t rx_frame_counter_ = 0;
+    uint8_t adr_ack_counter_ = 0;
+    uint8_t pseudo_byte_;
+    uint8_t tx_power;
+#if COUNT_TX_DURATION == 1
+    uint16_t slimLastTXms, slimTotalTXms;
+#endif
 #if COUNT_TX_DURATION == 1
     uint16_t GetTXms();
     void    ZeroTXms();
@@ -267,19 +277,10 @@ class SlimLoRa {
 #endif
     uint8_t pin_nss_;	// TODO TinyLoRa irg_, rst_ bat_; bat=battery level pin
     uint8_t channel_ = 0;
-    uint8_t data_rate_ = SF7BW125;
     uint8_t rx1_data_rate_offset_ = 0;
-    uint8_t rx2_data_rate_;
+    uint8_t rx2_data_rate_ = RX_SECOND_WINDOW;
     uint32_t rx1_delay_micros_;
     bool has_joined_ = false;
-    bool adr_enabled_ = true;
-    uint16_t tx_frame_counter_ = 0;
-    uint16_t rx_frame_counter_ = 0;
-    uint8_t adr_ack_counter_ = 0;
-    uint8_t pseudo_byte_;
-#if COUNT_TX_DURATION == 1
-    uint16_t slimLastTXms, slimTotalTXms;
-#endif
     fopts_t pending_fopts_ = {0};
     fopts_t sticky_fopts_ = {0};
     uint8_t rx_symbols_ = LORAWAN_RX_MIN_SYMBOLS;
