@@ -9,6 +9,9 @@
 - [x] Join SF8 on TTN and power 0dBm in same room. Success on 1st window.
 - [x] Join SF7 on TTN and power 0dBm in different room. Success on 1st window.
 - [x] Join SF10 with Helium. Success everytime on 1st window but not in first attempt.
+Megabrick testing:
+- [ ] FAIL with SF7 and power 13dBm in different room and an antenna.
+- [x] Join with SF9 and power 13dBm in different room and an antenna.
 - [x] ADR works. After join with SF9 in different room from gateway (RSSI -85), TTN sends SF7 (or SF8) ADR command and SlimLoRa conforms.
 - [x] Session restore works with Device address, AppSKey and NetworkKey. After Join, there is no need to rejoin if the device is powered off.
 - [x] ADR_ACK_LIMIT works.
