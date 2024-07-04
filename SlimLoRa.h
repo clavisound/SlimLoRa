@@ -241,6 +241,7 @@ class SlimLoRa {
   public:
     SlimLoRa(uint8_t pin_nss); // TODO: TinyLoRa rfm_dio0 (7), rfm_nss (8), rfm_rst (4)
     void Begin(void);
+    void sleep(void);
     bool HasJoined(void);
     int8_t Join();
     void SendData(uint8_t fport, uint8_t *payload, uint8_t payload_length);

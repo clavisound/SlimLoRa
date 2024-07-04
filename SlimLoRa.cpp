@@ -350,6 +350,11 @@ void SlimLoRa::Begin() {
 #endif
 }
 
+// TODO this routine resides in some places.
+void SlimLoRa::sleep() {
+	RfmWrite(RFM_REG_OP_MODE, 0x00);
+}
+
 // EVAL for accuracy (FAIL: does not compile)
 //void wait_until(unsigned long microsstamp) __attribute__((optimize("-Ofast")));
 void wait_until(unsigned long microsstamp) {
