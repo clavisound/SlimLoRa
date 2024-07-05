@@ -2,6 +2,8 @@
 
 ---
 
+![CI](https://github.com/clavisound/SlimLoRa/actions/workflows/main.yml/badge.svg)
+
 # Tested
 
 - [x] Feather 32u4 EU868 region.
