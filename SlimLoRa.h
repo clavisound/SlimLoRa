@@ -12,7 +12,7 @@
 #define EU863
 
 // TTN or Helium
-#define NETWORK NET_TTN	// Two options: NET_HLM = helium, NET_TTN = TheThingsNetwork
+#define NETWORK 'NET_TTN'	// Two options: NET_HLM = helium, NET_TTN = TheThingsNetwork
 			// NET_TTN: RX2 SF9
 			// NET_HLM: RX2 SF12
 
@@ -27,7 +27,7 @@
 #define ARDUINO_EEPROM	1	// Uses static storage, but it helps debugging.
 
 // Debug SlimLoRa library via Serial.print() 0 to disable
-#define DEBUG_SLIM   	1  // Enabled this only to check values / registers.
+#define DEBUG_SLIM   	0  // Enabled this only to check values / registers.
 
 // Enable LoRaWAN Over-The-Air Activation
 #define LORAWAN_OTAA_ENABLED    1
@@ -59,7 +59,7 @@
 // It needs extra work. We need to define the address of each data.
 // It's better for future firmware updates. Data remains in same place in contrast of avr/eeprom.h
 #if ARDUINO_EEPROM == 1
-	#define EEPROM_OFFSET		  0//NOWEB			// Change this (not too high) if you feel that you gonna burn the EEPROM to use another area of EEPROM
+	#define EEPROM_OFFSET		  0			// Change this (not too high) if you feel that you gonna burn the EEPROM to use another area of EEPROM
 								// Be careful, maximum value around 800 (1024 - EEPROM_END).
 								// EEPROM reliability for AVR's. Around 1.000.000 writes.
 	#define EEPROM_DEVADDR		  0 + EEPROM_OFFSET	// 4 bytes array
@@ -183,13 +183,13 @@
 #define LORAWAN_JOIN_ACCEPT_MAX_SIZE        28
 
 // LoRaWAN delays in seconds
-#if NETWORK == NET_TTN
+#if NETWORK == 'NET_TTN'
 	#define RX_SECOND_WINDOW SF9BW125
 	#define LORAWAN_JOIN_ACCEPT_DELAY1_MICROS   NET_TTN_RX_DELAY       * MICROS_PER_SECOND
 	#define LORAWAN_JOIN_ACCEPT_DELAY2_MICROS   (NET_TTN_RX_DELAY + 1) * MICROS_PER_SECOND
 #endif
 
-#if NETWORK == NET_HELIUM
+#if NETWORK == 'NET_HELIUM'
 	#define RX_SECOND_WINDOW SF12BW125
 	#define LORAWAN_JOIN_ACCEPT_DELAY1_MICROS   NET_HELIUM_RX_DELAY       * MICROS_PER_SECOND
 	#define LORAWAN_JOIN_ACCEPT_DELAY2_MICROS   (NET_HELIUM_RX_DELAY + 1) * MICROS_PER_SECOND

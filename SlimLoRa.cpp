@@ -2089,17 +2089,17 @@ uint8_t SlimLoRa::GetRx2DataRate() {
 	if (value == 0xFF) {
 #if LORAWAN_OTAA_ENABLED
 		return SF12BW125;
-	#if NETWORK == NET_TTN // TTN
+	#if NETWORK == 'NET_TTN' // TTN
 		return RX_SECOND_WINDOW;
 	#endif // TTN
-	#if NETWORK == NET_HELIUM // Helium
+	#if NETWORK == 'NET_HELIUM' // Helium
 		return RX_SECOND_WINDOW;
 	#endif // HELIUM
 #else
-	#if NETWORK == NET_TTN // TTN
+	#if NETWORK == 'NET_TTN' // TTN
 		return RX_SECOND_WINDOW;
 	#endif // TTN
-	#if NETWORK == NET_TTN // TTN
+	#if NETWORK == 'NET_TTN' // TTN
 		return RX_SECOND_WINDOW;
 	#endif // Helium
 #endif // LORAWAN_OTAA_ENABLED
@@ -2197,18 +2197,18 @@ uint8_t SlimLoRa::GetRx2DataRate() {
 	if (value == 0x0F) {	// probably erased EEPROM.
 #if LORAWAN_OTAA_ENABLED
 		return SF12BW125;	// default LORAWAN 1.0.3
-	#if NETWORK == NET_TTN		// TTN
+	#if NETWORK == 'NET_TTN'	// TTN
 		return SF9BW125;
 	#endif
-	#if NETWORK == NET_HLM		// Helium
+	#if NETWORK == 'NET_HLM'	// Helium
 		return SF12BW125;
 	#endif
 #else	// ABP settings
 		return SF12BW125;	// default LORAWAN 1.0.3
-	#if NETWORK == NET_TTN		// TTN
+	#if NETWORK == 'NET_TTN'	// TTN
 		return SF9BW125;
 	#endif
-	#if NETWORK == NET_HLM		// Helium
+	#if NETWORK == 'NET_HLM'	// Helium
 		return SF12BW125;
 	#endif
 #endif // LORAWAN_OTAA_ENABLED
@@ -2231,11 +2231,11 @@ uint8_t SlimLoRa::GetRx1Delay() {
 	uint8_t value;
        	value = EEPROM.read(EEPROM_RX_DELAY) >> 4;	// shared byte with EEPROM_RX2_DATARATE
 	if ( value == 0 || value >= 0xF ) {		// probably erased EEPROM
-		#if NETWORK == NET_TTN
+		#if NETWORK == 'NET_TTN'
 		value = NET_TTN_RX_DELAY;		// default for TTN
 		#endif
 
-		#if NETWORK == NET_HELIUM
+		#if NETWORK == 'NET_HELIUM'
 		value = NET_HELIUM_RX_DELAY;		// default for Helium
 		#endif
 	}
