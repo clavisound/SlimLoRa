@@ -243,14 +243,14 @@ void SlimLoRa::setArrayEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t s
     EEPROM.update(eepromAddr + i, arrayData[i]);
 #if DEBUG_SLIM == 1
     if ( i == 0 ) {
-   Serial.print("\nWRITE EEPROM Address: 0x");Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
+   Serial.print(F("\nWRITE EEPROM Address: 0x"));Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
     } else {
    Serial.print(F(", "));Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
     }
 #endif
    }
 #if DEBUG_SLIM == 1
-   Serial.print("\nWRITE: ");printHex(arrayData, size);
+   Serial.print(F("\nWRITE: "));printHex(arrayData, size);
 #endif
 }
 
@@ -267,14 +267,14 @@ void SlimLoRa::getArrayEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t s
     arrayData[i] = EEPROM.read(eepromAddr + i);
 #if DEBUG_SLIM == 1
     if ( i == 0 ) {
-   Serial.print("\nREAD EEPROM Address->Value: 0x");Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
+   Serial.print(F("\nREAD EEPROM Address->Value: 0x"));Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
     } else {
    Serial.print(F(", "));Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
     }
 #endif
    }
 #if DEBUG_SLIM == 1
-   Serial.print("\nread: ");printHex(arrayData, size);
+   Serial.print(F("\nread: "));printHex(arrayData, size);
 #endif
 }
 #endif // ARDUINO_EEPROM == 1
@@ -282,16 +282,18 @@ void SlimLoRa::getArrayEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t s
 #if DEBUG_SLIM == 1
 void SlimLoRa::printMAC(){
 #if LORAWAN_OTAA_ENABLED
-	Serial.print(F("\n\nMAC STATE\nJoin: "));Serial.print(has_joined_);
-	Serial.print(F("devNonce DEC\t\t: "));;Serial.print(GetDevNonce() >> 8);Serial.println(GetDevNonce());
-	Serial.print(F("joinDevNonce DEC\t: "));Serial.print(GetJoinNonce() >> 24);Serial.print(GetJoinNonce() >> 16);Serial.print(GetJoinNonce() >> 8);Serial.println(GetJoinNonce());
+	Serial.print(F("\n\nEEPROM Addr: "));Serial.print(EEPROM_OFFSET);
+	Serial.print(F("\nMAC\nJoin: "));Serial.print(has_joined_);
+	Serial.print(F("\ndevNonce DEC\t\t: "));;Serial.print(GetDevNonce() >> 8);Serial.print(GetDevNonce());
+	Serial.print(F("\njoinDevNonce DEC\t: "));Serial.print(GetJoinNonce() >> 24);Serial.print(GetJoinNonce() >> 16);Serial.print(GetJoinNonce() >> 8);Serial.println(GetJoinNonce());
 #else
 	Serial.print(F("\nABP DevAddr: "));printDevAddr();
 #endif // LORAWAN_OTAA_ENABLED
 	Serial.print(F("\nTx#\t: "));Serial.print(GetTxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(tx_frame_counter_);
 	Serial.print(F("Rx#\t: "));Serial.print(GetRxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(rx_frame_counter_);
-	Serial.print(F("RX1 delay\t: "));Serial.print(GetRx1Delay());Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print("s, RX2: ");Serial.print(LORAWAN_JOIN_ACCEPT_DELAY2_MICROS / 1000000);Serial.println("s, ");
-	Serial.print(F("Rx1 DR offset\t: "));Serial.println(GetRx1DataRateOffset());
+	Serial.print(F("RX1 delay\t: "));Serial.print(GetRx1Delay());Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print(F("s, RX2: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY2_MICROS / 1000000);Serial.println("s, ");
+//	Serial.print(F("\nCalculated delay: "));Serial.print(CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS));
+	Serial.print(F("\nRx1 DR offset\t: "));Serial.println(GetRx1DataRateOffset());
 	Serial.print(F("Rx2 DR RAM\t: "));Serial.println(rx2_data_rate_);
 	Serial.print(F("Rx2 DR EEPROM\t: "));Serial.println(GetRx2DataRate());
 	Serial.print(F("ADR_ACK_cnt\t: "));Serial.println(adr_ack_counter_);
@@ -340,7 +342,7 @@ void SlimLoRa::Begin() {
 #if LORAWAN_KEEP_SESSION
 	tx_frame_counter_ = GetTxFrameCounter();
 	rx_frame_counter_ = GetRxFrameCounter();
-	rx2_data_rate_	= GetRx2DataRate();
+	rx2_data_rate_	  = GetRx2DataRate();
 	rx1_delay_micros_ = GetRx1Delay() * MICROS_PER_SECOND;
 #endif
 
