@@ -282,17 +282,22 @@ void SlimLoRa::getArrayEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t s
 #if DEBUG_SLIM == 1
 void SlimLoRa::printMAC(){
 #if LORAWAN_OTAA_ENABLED
+	uint8_t dev_addr[4], app_s_key[16], nwk_s_key[16];
 	Serial.print(F("\n\nEEPROM Addr: "));Serial.print(EEPROM_OFFSET);
 	Serial.print(F("\nMAC\nJoin: "));Serial.print(has_joined_);
 	Serial.print(F("\ndevNonce DEC\t\t: "));;Serial.print(GetDevNonce() >> 8);Serial.print(GetDevNonce());
 	Serial.print(F("\njoinDevNonce DEC\t: "));Serial.print(GetJoinNonce() >> 24);Serial.print(GetJoinNonce() >> 16);Serial.print(GetJoinNonce() >> 8);Serial.println(GetJoinNonce());
+	GetDevAddr(dev_addr);
+	GetNwkSEncKey(nwk_s_key);
+	//GetFNwkSIntKey(); // not used
+	GetAppSKey(app_s_key);
 #else
 	Serial.print(F("\nABP DevAddr: "));printDevAddr();
 #endif // LORAWAN_OTAA_ENABLED
 	Serial.print(F("\nTx#\t: "));Serial.print(GetTxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(tx_frame_counter_);
 	Serial.print(F("Rx#\t: "));Serial.print(GetRxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(rx_frame_counter_);
 	Serial.print(F("RX1 delay\t: "));Serial.print(GetRx1Delay());Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print(F("s, RX2: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY2_MICROS / 1000000);Serial.println("s, ");
-//	Serial.print(F("\nCalculated delay: "));Serial.print(CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS));
+       	//Serial.print(F("\nCalculated delay: "));Serial.print(CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS));
 	Serial.print(F("\nRx1 DR offset\t: "));Serial.println(GetRx1DataRateOffset());
 	Serial.print(F("Rx2 DR RAM\t: "));Serial.println(rx2_data_rate_);
 	Serial.print(F("Rx2 DR EEPROM\t: "));Serial.println(GetRx2DataRate());
@@ -382,6 +387,10 @@ void wait_until(unsigned long microsstamp) {
 
 void SlimLoRa::SetDataRate(uint8_t dr) {
 	data_rate_ = dr;
+}
+
+uint8_t SlimLoRa::GetDataRate() {
+	return data_rate_;
 }
 
 /**************************************************************************/
@@ -1436,7 +1445,7 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 
 	// ADR backoff
 	if (adr_enabled_ && adr_ack_counter_ >= LORAWAN_ADR_ACK_LIMIT + LORAWAN_ADR_ACK_DELAY) {
-		if ( data_rate_ < SF12BW125 ) {
+		if ( data_rate_ > SF12BW125 ) {
 			data_rate_++;
 		}
 	SetPower(16);

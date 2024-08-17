@@ -42,6 +42,7 @@ Solution #4: use arduino style eeprom in `SlimLoRa.h`
 
 # TODO's (PR's welcome) - In order of importance.
 
+- [ ] More regions. Currently on EU868
 - [ ] Add pin mappings infrastucture for other boards.
 - [ ] Make DevNonce random.
 - [ ] Confirmed Uplink

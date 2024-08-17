@@ -247,6 +247,7 @@ class SlimLoRa {
     void SendData(uint8_t fport, uint8_t *payload, uint8_t payload_length);
     void SetAdrEnabled(bool enabled);
     void SetDataRate(uint8_t dr);
+    uint8_t GetDataRate();
     void SetPower(int8_t power);
     bool GetHasJoined();
     void GetDevAddr(uint8_t *dev_addr);
