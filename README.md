@@ -4,6 +4,14 @@
 
 ![CI](https://github.com/clavisound/SlimLoRa/actions/workflows/main.yml/badge.svg)
 
+# Uncomplete LoRaWAN library
+
+This library is suitable for testing. It has basic functionality like Join and MAC commands for DR / DF and power. It does not support user downlinks, only partial MAC commands downlinks. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs around 52kBytes of program flash), or LMIC (around 36kBytes of program flash.)
+
+SlimLoRa needs around 13kBytes. SlimLoRa can give moderm LoRaWAN life to old μCU's like ATmega 328 with 32kBytes of flash.
+
+![SlimLoRa MAC response in MAC command via Helium](https://krg.etraq.eu/minisites/lora/mac-command-response_crop.png)
+
 # Tested
 
 - [x] Feather 32u4 EU868 region.
@@ -32,6 +40,7 @@ Solution #4: use arduino style eeprom in `SlimLoRa.h`
 
 - [x] Duty Cycle. Added GetTXms function to return the TOTAL duration of ALL transmissions. At SF7 1bytes reports 45-48ms vs 46ms [theoretical](https://avbentem.github.io/airtime-calculator/ttn/eu868/1) at SF8 reports 84ms vs 82ms (theoretical). SF7 5 bytes 52ms vs 51.5ms (theoretical). Application HAVE to read the value of GetTXms() after every transmission to check if the the Duty Cycle is respected. I decided to not respect Duty Cycle on SlimLoRa, since if the device is going to Deep Sleep and wakes up via a accelerometer on AVR MCU's freezes the timer0. I think the solution is the RTC.
 - [x] Power to the people. Several values made public. Take care to not write them or you may loose access to the network. Instead of using getters I selected to make public some variables.
+- [x] MAC Commands. 
 
 # Untested
 
@@ -42,6 +51,7 @@ Solution #4: use arduino style eeprom in `SlimLoRa.h`
 
 # TODO's (PR's welcome) - In order of importance.
 
+- [ ] Channel Mask MAC Command. It always respond with OK message, but the mask is NOT applied.
 - [ ] More regions. Currently on EU868
 - [ ] Add pin mappings infrastucture for other boards.
 - [ ] Make DevNonce random.
@@ -68,7 +78,7 @@ Since AVR on Deep Sleep freezes the timer0. SlimLoRa is unable to know about tim
 
 # How to use it (mini-tutorial)
 
-Download the library and extract to Arduino/libraries folder. Rename SlimLoRa-master or SlimLoRa-VERSION to SlimLoRa. Read the details on examples. If something goes bad erase ALL the EEPROM and re-try join.
+Download the library and extract to Arduino/libraries folder or install via the library manager of Arduino IDE. For manual install: Rename SlimLoRa-master or SlimLoRa-VERSION to SlimLoRa. Read the details on examples. If something goes bad erase ALL the EEPROM and re-try join.
 
 SlimLoRa changes the data of payload. Don't use payload data for program logic.
 

@@ -60,15 +60,30 @@ uint8_t eeprom_lw_down_port;
 // Frequency band for europe
 const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
 	{ 0xD9, 0x06, 0x8B }, // Channel 0 868.100 MHz / 61.035 Hz = 14222987 = 0xD9068B
-	{ 0xD9, 0x13, 0x58 }, // Channel 1 868.300 MHz / 61.035 Hz = 14226264 = 0xD91358 less used by SlimLoRa?
-	{ 0xD9, 0x20, 0x24 }, // Channel 2 868.500 MHz / 61.035 Hz = 14229540 = 0xD92024 less used by SlimLoRa? #2
+	{ 0xD9, 0x13, 0x58 }, // Channel 1 868.300 MHz / 61.035 Hz = 14226264 = 0xD91358
+	{ 0xD9, 0x20, 0x24 }, // Channel 2 868.500 MHz / 61.035 Hz = 14229540 = 0xD92024
 	{ 0xD8, 0xC6, 0x8B }, // Channel 3 867.100 MHz / 61.035 Hz = 14206603 = 0xD8C68B
-	{ 0xD8, 0xD3, 0x58 }, // Channel 4 867.300 MHz / 61.035 Hz = 14209880 = 0xD8D358
+	{ 0xD8, 0xD3, 0x58 }, // Channel 4 867.300 MHz / 61.035 Hz = 14209880 = 0xD8D358 // TODO: CFlist start p. 27
 	{ 0xD8, 0xE0, 0x24 }, // Channel 5 867.500 MHz / 61.035 Hz = 14213156 = 0xD8E024
 	{ 0xD8, 0xEC, 0xF1 }, // Channel 6 867.700 MHz / 61.035 Hz = 14216433 = 0xD8ECF1
 	{ 0xD8, 0xF9, 0xBE }, // Channel 7 867.900 MHz / 61.035 Hz = 14219710 = 0xD8F9BE
 	{ 0xD9, 0x61, 0xBE }  // Downlink  869.525 MHz / 61.035 Hz = 14246334 = 0xD961BE
 };
+
+// First 3 channels are enabled by LoRaWAN spec. p. 24 of regional parameters 1.0.3
+// normally uint16_t but SlimLoRa uses only 8 channels.
+uint8_t kFrequencyTableChMask = 0x07;	// 0b0000111
+/*bool PROGMEM SlimLoRa::kFrequencyTableSwitches[8] = {
+	{ 1 }, // Channel 0 
+	{ 1 }, // Channel 1
+	{ 1 }, // Channel 2
+	{ 0 }, // Channel 3
+	{ 0 }, // Channel 4
+	{ 0 }, // Channel 5
+	{ 0 }, // Channel 6
+	{ 0 }, // Channel 7
+};
+*/
 #endif
 
 #ifdef AU915 // According to Regional Parameters of LoRaWAN 1.0.3 spec page: 37 line 850 there is 64 channels starting from 915.200 MHz to 927.800 MHz with 200MHz steps.
@@ -1157,7 +1172,9 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				i += LORAWAN_FOPT_LINK_CHECK_ANS_SIZE;
 				break;
 			case LORAWAN_FOPT_LINK_ADR_REQ:
+				// TODO ChMask p. 24
 				status = 0x1;
+
 				new_rx2_dr = options[i + 1] >> 4;
 				tx_power = options[i + 1] & 0xF;
 
@@ -1387,9 +1404,8 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nPort Down\t: "));Serial.print(port);
 	Serial.print(F("\nPacket RAW HEX\t: "));printHex(packet, packet_length);
-	if ( port == 11 ) {
-		// BUG: This brakes compiling. WHY? Function not found.
-	//	EncryptPayload(&packet, payload_length, frame_counter, LORAWAN_DIRECTION_DOWN);
+	if ( port >= 1 && port < 224 ) { // 224 is special case
+		EncryptPayload(&packet[8], payload_length, frame_counter, LORAWAN_DIRECTION_DOWN);
 	}
 	Serial.print(F("\nPacket Encrypted? HEX\t: "));printHex(packet, packet_length);
 #endif
@@ -1411,9 +1427,9 @@ end:
 	Serial.print(F("\n\nMAC error status: "));Serial.println(result);
 	Serial.print(F("Rx counter   : "));Serial.println(GetRxFrameCounter());
 	if (window == 1) {
-		Serial.print(F("rx1_offset_dr: "));Serial.println(rx1_offset_dr);
+		Serial.print(F("Window 1, rx1_offset_dr: "));Serial.println(rx1_offset_dr);
 	} else {
-		Serial.print(F("rx2_DR: "));Serial.println(rx2_data_rate_);
+		Serial.print(F("Window 2, rx2_DR: "));Serial.println(rx2_data_rate_);
 	}
 	#if LORAWAN_OTAA_ENABLED
 	Serial.print(F("\nDevAddr after RX windows: "));printHex(dev_addr, 4);

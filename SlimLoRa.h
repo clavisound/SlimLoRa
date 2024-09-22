@@ -13,8 +13,8 @@
 
 // TTN or Helium
 #define NETWORK 'NET_TTN'	// Two options: NET_HLM = helium, NET_TTN = TheThingsNetwork
-			// NET_TTN: RX2 SF9
-			// NET_HLM: RX2 SF12
+				// NET_TTN: RX2 SF9
+				// NET_HLM: RX2 SF12
 
 // I propose to you that you config your device on the console.helium.com to 5 seconds RX DELAY.
 // By Default HELIUM uses 1 sec of delay
@@ -35,12 +35,12 @@
 #define LORAWAN_KEEP_SESSION    1
 
 // Store counters every X times to protect EEPROM from constant writings
-#define EEPROM_WRITE_TX_COUNT	3	// SlimLoRa default: 10
-#define EEPROM_WRITE_RX_COUNT	9	// SlimLoRa default: 3
+#define EEPROM_WRITE_TX_COUNT	200	// SlimLoRa default: 10
+#define EEPROM_WRITE_RX_COUNT	10	// SlimLoRa default: 3
 
 // LoRaWAN ADR
 // https://lora-developers.semtech.com/documentation/tech-papers-and-guides/implementing-adaptive-data-rate-adr/implementing-adaptive-data-rate/
-#define LORAWAN_ADR_ACK_LIMIT   64	// Request downlink after XX uplinks to verify we have connection.	Minimum sane value: 64
+#define LORAWAN_ADR_ACK_LIMIT   164	// Request downlink after XX uplinks to verify we have connection.	Minimum sane value: 64
 #define LORAWAN_ADR_ACK_DELAY   32	// Wait XX times to consider connection lost.				Minimum sane value: 32
 
 // if you you want to save 6 bytes of RAM and you don't need to provision the Duty Cycle
@@ -258,6 +258,8 @@ class SlimLoRa {
     uint8_t adr_ack_counter_ = 0;
     uint8_t pseudo_byte_;
     uint8_t tx_power;
+    uint16_t GetTxFrameCounter();
+    void SetTxFrameCounter(uint16_t count);
 #if COUNT_TX_DURATION == 1
     uint16_t slimLastTXms, slimTotalTXms;
 #endif
@@ -289,6 +291,7 @@ class SlimLoRa {
     unsigned long tx_done_micros_;
     int8_t last_packet_snr_;
     static const uint8_t kFrequencyTable[9][3];
+    uint8_t kFrequencyTableChMask;
     static const uint8_t kDataRateTable[7][3];
     static const uint32_t kDRMicrosPerHalfSymbol[7];
     static const uint8_t kSTable[16][16];
@@ -326,8 +329,6 @@ class SlimLoRa {
     void AesCalculateRoundKey(uint8_t round, uint8_t *round_key);
 
     // EEPROM
-    uint16_t GetTxFrameCounter();
-    void SetTxFrameCounter(uint16_t count);
     uint16_t GetRxFrameCounter();
     void SetRxFrameCounter(uint16_t count);
     uint8_t GetRx1DataRateOffset();
