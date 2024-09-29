@@ -299,7 +299,7 @@ void SlimLoRa::printMAC(){
 #if LORAWAN_OTAA_ENABLED
 	uint8_t dev_addr[4], app_s_key[16], nwk_s_key[16];
 	Serial.print(F("\n\nEEPROM Addr: "));Serial.print(EEPROM_OFFSET);
-	Serial.print(F("\nMAC\nJoin: "));Serial.print(has_joined_);
+	Serial.print(F("\nMAC\nJoin: "));Serial.print(GetHasJoined());
 	Serial.print(F("\ndevNonce DEC\t\t: "));;Serial.print(GetDevNonce() >> 8);Serial.print(GetDevNonce());
 	Serial.print(F("\njoinDevNonce DEC\t: "));Serial.print(GetJoinNonce() >> 24);Serial.print(GetJoinNonce() >> 16);Serial.print(GetJoinNonce() >> 8);Serial.println(GetJoinNonce());
 	GetDevAddr(dev_addr);
@@ -2467,10 +2467,14 @@ bool SlimLoRa::GetHasJoined() {
 void SlimLoRa::SetHasJoined(bool value) {
 	uint8_t temp;
 	EEPROM.get(EEPROM_JOINED, temp);		// Same address with DR1_OFFSET. Keep the first bits.
-	temp |= ( value << 7 );
+	if ( value == true ) {
+		temp = ( ( value << 7 ) | temp );
+	} else {
+		temp = ( ( value << 7 ) & temp );
+	}
 	EEPROM.write(EEPROM_JOINED, temp);
 	#if DEBUG_SLIM == 1
-	Serial.print(F("\nWRITE EEPROM: joined. RAW value: "));Serial.print(temp);
+	Serial.print(F("\nWRITE EEPROM: joined: ")); Serial.print(value);Serial.print(F(", RAW value: "));Serial.print(temp, BIN);
 	#endif
 }
 #endif // LORAWAN_KEEP_SESSION
