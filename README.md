@@ -6,11 +6,11 @@
 
 # Uncomplete LoRaWAN library
 
-This library is suitable for testing. It has basic functionality like Join and MAC commands for DR / DF and power. It does not support user downlinks, only partial MAC commands downlinks. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs around 52kBytes of program flash), or LMIC (around 36kBytes of program flash.)
+This library is suitable for testing. It has basic functionality like Join and MAC commands for DR / DF and power. It does not support user downlinks. It supports only partial MAC commands downlinks. I plan to add support for all MAC commands. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs around 52kBytes of program flash), or LMIC (around 36kBytes of program flash.)
 
 SlimLoRa needs around 13kBytes. SlimLoRa can give moderm LoRaWAN life to old μCU's like ATmega 328 with 32kBytes of flash.
 
-![SlimLoRa MAC response in MAC command via Helium](https://krg.etraq.eu/minisites/lora/mac-command-response_crop.png)
+![SlimLoRa MAC response in MAC command via Helium](https://krg.etraq.eu/minisites/lora/mac-command-response_crop.png "SlimLora response to MAC LINKADR REQ command.")
 
 # Tested
 
