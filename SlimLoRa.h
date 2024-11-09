@@ -11,10 +11,21 @@
 // https://github.com/TheThingsNetwork/lorawan-frequency-plans/
 #define EU863
 
+// NbTrans (re-transmissions). Normally 1 max is 15
+// Olivier Seller for static devices proposes 4.
+// See TTN conference Amsterdam 24 at 7 minute presentation.
+#define NBTRANS	1
+
 // TTN or Helium
-#define NETWORK 'NET_TTN'	// Two options: NET_HLM = helium, NET_TTN = TheThingsNetwork
+#define NETWORK 'NET_HELIUM'	// Two options: NET_HLM = helium, NET_TTN = TheThingsNetwork
 				// NET_TTN: RX2 SF9
 				// NET_HLM: RX2 SF12
+
+// TODO: https://github.com/Xinyuan-LilyGO/tbeam-helium-mapper/blob/00cec9c130d4452839dcf933905f5624d9711e41/main/main.cpp#L195
+// Helium requires a FCount reset sometime before hitting 0xFFFF
+// 50,000 makes it obvious it was intentional
+// #define MAX_FCOUNT 50000
+// I think helium needs re-join. EVAL with chripstack
 
 // I propose to you that you config your device on the console.helium.com to 5 seconds RX DELAY.
 // By Default HELIUM uses 1 sec of delay
@@ -91,6 +102,7 @@
 #define RFM_REG_FR_LSB                  0x08
 #define RFM_REG_PA_CONFIG               0x09 
 #define RFM_REG_PA_DAC                  0x4D ///<PA Higher Power Settings
+#define RFM_REG_OCP_TRIM		0x0B
 #define RFM_REG_FIFO_ADDR_PTR           0x0D
 #define RFM_REG_FIFO_TX_BASE_ADDR       0x0E
 #define RFM_REG_FIFO_RX_BASE_ADDR       0x0F
@@ -120,6 +132,10 @@
 #define RFM_STATUS_RX_DONE              0x40
 #define RFM_STATUS_RX_DONE_CRC_ERROR    0x60
 #define RFM_STATUS_RX_TIMEOUT           0x80
+
+// RFM vars
+#define RFM_OCP_TRIM_OFF		0x00
+#define RFM_OCP_TRIM_ON			0x20
 
 #define RFM_ERROR_RX_TIMEOUT    -1
 #define RFM_ERROR_CRC           -2
@@ -177,6 +193,10 @@
 #define LORAWAN_FOPT_TX_PARAM_SETUP_REQ_SIZE    1
 #define LORAWAN_FOPT_DL_CHANNEL_REQ_SIZE        4
 #define LORAWAN_FOPT_DEVICE_TIME_ANS_SIZE       5
+#define LORAWAN_PORT_SIZE			1
+#define LORAWAN_MIC_SIZE			4
+#define LORAWAN_MAC_AND_FRAME_HEADER		8 // MAC Header is 1 byte. Frame header is 7..22 bytes
+#define LORAWAN_START_OF_FRM_PAYLOAD		10
 
 // LoRaWAN Join packet sizes
 #define LORAWAN_JOIN_REQUEST_SIZE           18
@@ -207,6 +227,15 @@
 #define LORAWAN_EU868_TX_POWER_MAX          7
 #define LORAWAN_EU868_RX1_DR_OFFSET_MAX     5
 
+// IN865 region settings
+#define LORAWAN_IN865_TX_POWER_MAX          10
+//#define LORAWAN_IN865_RX1_DR_OFFSET_MAX     5
+
+// US902 region settings
+#define LORAWAN_US902_TX_POWER_MAX          14
+//#define LORAWAN_US902_RX1_DR_OFFSET_MAX     5
+
+
 // LoRaWAN Error
 #define LORAWAN_ERROR_NO_PACKET_RECEIVED    -1
 #define LORAWAN_ERROR_SIZE_EXCEEDED         -2
@@ -219,6 +248,7 @@
 // LoRaWAN spreading factors
 // TODO for other regions. Example: DR0 for US902 is SF10BW125 and DR8 is SF12BW500
 // check https://www.thethingsnetwork.org/docs/lorawan/regional-parameters/
+#define FSK	    7 // TODO
 #define SF7BW250    6
 #define SF7BW125    5
 #define SF8BW125    4
@@ -248,7 +278,7 @@ class SlimLoRa {
     void SetAdrEnabled(bool enabled);
     void SetDataRate(uint8_t dr);
     uint8_t GetDataRate();
-    void SetPower(int8_t power);
+    void SetPower(uint8_t power);
     bool GetHasJoined();
     void GetDevAddr(uint8_t *dev_addr);
     bool adr_enabled_ = true;
@@ -260,6 +290,8 @@ class SlimLoRa {
     uint8_t tx_power;
     uint16_t GetTxFrameCounter();
     void SetTxFrameCounter(uint16_t count);
+
+    uint8_t margin, GwCnt; // For LinkCheckAns
 #if COUNT_TX_DURATION == 1
     uint16_t slimLastTXms, slimTotalTXms;
 #endif
@@ -272,11 +304,19 @@ class SlimLoRa {
     void getArrayEEPROM(uint16_t eepromAdr, uint8_t *arrayData, uint8_t size);
     void setArrayEEPROM(uint16_t eepromAdr, uint8_t *arrayData, uint8_t size);
 #endif
+
+	uint8_t downlinkData[12]; // hardcoded to 12 bytes
+	uint8_t downlinkSize;
+			
 #if DEBUG_SLIM == 1
-    void printMAC(void);
+	void printMAC(void);
+	void printDownlink(void);
+	uint8_t packet[64];
+	int8_t packet_length;
+	uint8_t f_options_length, port, payload_length;
 #endif
 
-#if DEBUG_SLIM == 0 // for debuging, make everything public.
+#if DEBUG_SLIM == 0 // if not debuging, those are private. If debugging everything is public
   private:
 #endif
     uint8_t pin_nss_;	// TODO TinyLoRa irg_, rst_ bat_; bat=battery level pin
@@ -290,8 +330,13 @@ class SlimLoRa {
     uint8_t rx_symbols_ = LORAWAN_RX_MIN_SYMBOLS;
     unsigned long tx_done_micros_;
     int8_t last_packet_snr_;
+    
+    // TODO store to EEPROM
+    uint8_t ChMask; // TODO US needs an array of 5 elements. p. 33 of Regional Parameters
+    uint8_t NbTrans = NBTRANS;
+    uint8_t NbTrans_counter; // This is not needed to store in EEPROM
+
     static const uint8_t kFrequencyTable[9][3];
-    uint8_t kFrequencyTableChMask;
     static const uint8_t kDataRateTable[7][3];
     static const uint32_t kDRMicrosPerHalfSymbol[7];
     static const uint8_t kSTable[16][16];
@@ -314,6 +359,7 @@ class SlimLoRa {
     uint32_t slimStartTXtimestamp, slimEndTXtimestamp;
     void CalculateTXms();
 #endif
+    void setCurrentLimit(uint8_t currentLimit);
     // Encryption
     void EncryptPayload(uint8_t *payload, uint8_t payload_length, unsigned int frame_counter, uint8_t direction);
     void CalculateMic(const uint8_t *key, uint8_t *data, uint8_t *initial_block, uint8_t *final_mic, uint8_t data_length);

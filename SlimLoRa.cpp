@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Michales Michaloudes
+ * Copyright (c) 2021-2024 Michales Michaloudes
  * Copyright (c) 2018-2021 Hendrik Hagendorn
  * Copyright (c) 2015-2016 Ideetron B.V. - AES routines
  *
@@ -58,44 +58,36 @@ uint8_t eeprom_lw_down_port;
 
 #ifdef EU863
 // Frequency band for europe
+// TODO remove PROGMEM code to enable CFlist and New Channel Req
 const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
 	{ 0xD9, 0x06, 0x8B }, // Channel 0 868.100 MHz / 61.035 Hz = 14222987 = 0xD9068B
 	{ 0xD9, 0x13, 0x58 }, // Channel 1 868.300 MHz / 61.035 Hz = 14226264 = 0xD91358
 	{ 0xD9, 0x20, 0x24 }, // Channel 2 868.500 MHz / 61.035 Hz = 14229540 = 0xD92024
-	{ 0xD8, 0xC6, 0x8B }, // Channel 3 867.100 MHz / 61.035 Hz = 14206603 = 0xD8C68B
-	{ 0xD8, 0xD3, 0x58 }, // Channel 4 867.300 MHz / 61.035 Hz = 14209880 = 0xD8D358 // TODO: CFlist start p. 27
+	{ 0xD8, 0xC6, 0x8B }, // Channel 3 867.100 MHz / 61.035 Hz = 14206603 = 0xD8C68B // TODO: CFlist start p. 27
+	{ 0xD8, 0xD3, 0x58 }, // Channel 4 867.300 MHz / 61.035 Hz = 14209880 = 0xD8D358
 	{ 0xD8, 0xE0, 0x24 }, // Channel 5 867.500 MHz / 61.035 Hz = 14213156 = 0xD8E024
 	{ 0xD8, 0xEC, 0xF1 }, // Channel 6 867.700 MHz / 61.035 Hz = 14216433 = 0xD8ECF1
 	{ 0xD8, 0xF9, 0xBE }, // Channel 7 867.900 MHz / 61.035 Hz = 14219710 = 0xD8F9BE
 	{ 0xD9, 0x61, 0xBE }  // Downlink  869.525 MHz / 61.035 Hz = 14246334 = 0xD961BE
 };
 
-// First 3 channels are enabled by LoRaWAN spec. p. 24 of regional parameters 1.0.3
-// normally uint16_t but SlimLoRa uses only 8 channels.
-uint8_t kFrequencyTableChMask = 0x07;	// 0b0000111
-/*bool PROGMEM SlimLoRa::kFrequencyTableSwitches[8] = {
-	{ 1 }, // Channel 0 
-	{ 1 }, // Channel 1
-	{ 1 }, // Channel 2
-	{ 0 }, // Channel 3
-	{ 0 }, // Channel 4
-	{ 0 }, // Channel 5
-	{ 0 }, // Channel 6
-	{ 0 }, // Channel 7
-};
-*/
+// First 3 channels are enabled by default
+// LoRaWAN spec. p. 24 of regional parameters 1.0.3
+// TODO restore to 0x07 and re-test value after join.
+//uint16_t ChMask = 0x07;	// 0b0000111
+uint16_t ChMask = 0xFF;
 #endif
 
 #ifdef AU915 // According to Regional Parameters of LoRaWAN 1.0.3 spec page: 37 line 850 there is 64 channels starting from 915.200 MHz to 927.800 MHz with 200MHz steps.
 const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
     {0xE5, 0x33, 0x5A}, // Channel 0 916.800 MHz / 61.035 Hz = 15020890 = 0xE5335A
-    {0xE5, 0x40, 0x26}, // Channel 2 917.000 MHz / 61.035 Hz = 15024166 = 0xE54026
-    {0xE5, 0x4C, 0xF3}, // Channel 3 917.200 MHz / 61.035 Hz = 15027443 = 0xE54CF3
-    {0xE5, 0x59, 0xC0}, // Channel 4 917.400 MHz / 61.035 Hz = 15030720 = 0xE559C0
-    {0xE5, 0x66, 0x8D}, // Channel 5 917.600 MHz / 61.035 Hz = 15033997 = 0xE5668D
-    {0xE5, 0x73, 0x5A}, // Channel 6 917.800 MHz / 61.035 Hz = 15037274 = 0xE5735A
-    {0xE5, 0x80, 0x27}, // Channel 7 918.000 MHz / 61.035 Hz = 15040551 = 0xE58027
-    {0xE5, 0x8C, 0xF3}, // Channel 8 918.200 MHz / 61.035 Hz = 15043827 = 0xE58CF3
+    {0xE5, 0x40, 0x26}, // Channel 1 917.000 MHz / 61.035 Hz = 15024166 = 0xE54026
+    {0xE5, 0x4C, 0xF3}, // Channel 2 917.200 MHz / 61.035 Hz = 15027443 = 0xE54CF3
+    {0xE5, 0x59, 0xC0}, // Channel 3 917.400 MHz / 61.035 Hz = 15030720 = 0xE559C0
+    {0xE5, 0x66, 0x8D}, // Channel 4 917.600 MHz / 61.035 Hz = 15033997 = 0xE5668D
+    {0xE5, 0x73, 0x5A}, // Channel 5 917.800 MHz / 61.035 Hz = 15037274 = 0xE5735A
+    {0xE5, 0x80, 0x27}, // Channel 6 918.000 MHz / 61.035 Hz = 15040551 = 0xE58027
+    {0xE5, 0x8C, 0xF3}, // Channel 7 918.200 MHz / 61.035 Hz = 15043827 = 0xE58CF3
     {0xE5, 0x8C, 0xF3}  // Downlink ??? MHz / 61.035 Hz = 15043827 = 0xE58CF3 // TODO 8 channels LoRa BW 500kHz, DR8 to DR13 starting at 923.300 MHz to 927.500 MHz, steps: 600KHz.
 };
 #endif
@@ -178,7 +170,7 @@ const uint8_t PROGMEM SlimLoRa::kSTable[16][16] = {
 	{0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16}
 };
 
-// TODO add pins for IRQ. (there is a gain?)
+// TODO add pins for IRQ.
 SlimLoRa::SlimLoRa(uint8_t pin_nss) {
 	pin_nss_ = pin_nss;
 }
@@ -218,6 +210,14 @@ void printHex(uint8_t *value, uint8_t len){
   		Serial.print(value[i], HEX);
 		}
   	Serial.println();
+}
+
+void SlimLoRa::printDownlink(){
+	Serial.print(F("\nPort Down\t: "));Serial.print(port);
+	Serial.print(F("\nfopts.length\t: "));Serial.print(f_options_length);
+	Serial.print(F("\nPacket Length\t: "));Serial.print(packet_length);
+	Serial.print(F("\nPayload Length\t: "));Serial.print(payload_length);
+	Serial.flush();
 }
 
 #if LORAWAN_OTAA_ENABLED == 0
@@ -299,7 +299,7 @@ void SlimLoRa::printMAC(){
 #if LORAWAN_OTAA_ENABLED
 	uint8_t dev_addr[4], app_s_key[16], nwk_s_key[16];
 	Serial.print(F("\n\nEEPROM Addr: "));Serial.print(EEPROM_OFFSET);
-	Serial.print(F("\nMAC\nJoin: "));Serial.print(GetHasJoined());
+	Serial.print(F("\nMAC Join: "));Serial.print(GetHasJoined());
 	Serial.print(F("\ndevNonce DEC\t\t: "));;Serial.print(GetDevNonce() >> 8);Serial.print(GetDevNonce());
 	Serial.print(F("\njoinDevNonce DEC\t: "));Serial.print(GetJoinNonce() >> 24);Serial.print(GetJoinNonce() >> 16);Serial.print(GetJoinNonce() >> 8);Serial.println(GetJoinNonce());
 	GetDevAddr(dev_addr);
@@ -309,6 +309,8 @@ void SlimLoRa::printMAC(){
 #else
 	Serial.print(F("\nABP DevAddr: "));printDevAddr();
 #endif // LORAWAN_OTAA_ENABLED
+	Serial.print(F("\nNbTrans_counter\t: "));Serial.print(NbTrans_counter);
+	Serial.print(F("\nNbTrans\t: "));Serial.print(NbTrans);
 	Serial.print(F("\nTx#\t: "));Serial.print(GetTxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(tx_frame_counter_);
 	Serial.print(F("Rx#\t: "));Serial.print(GetRxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(rx_frame_counter_);
 	Serial.print(F("RX1 delay\t: "));Serial.print(GetRx1Delay());Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print(F("s, RX2: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY2_MICROS / 1000000);Serial.println("s, ");
@@ -344,6 +346,9 @@ void SlimLoRa::Begin() {
 	// LoRa sync word
 	RfmWrite(RFM_REG_SYNC_WORD, 0x34);
 
+	// EVAL
+//	SetCurrentLimit(60);
+
 	// Errata Note - 2.3 Receiver Spurious Reception
 	detect_optimize = RfmRead(RFM_REG_DETECT_OPTIMIZE);
 	RfmWrite(RFM_REG_DETECT_OPTIMIZE, (detect_optimize & 0x78) | 0x03);
@@ -358,6 +363,8 @@ void SlimLoRa::Begin() {
 #if LORAWAN_KEEP_SESSION && LORAWAN_OTAA_ENABLED
 	has_joined_	   = GetHasJoined();
 #endif
+	
+	NbTrans_counter = NbTrans;
 
 #if LORAWAN_KEEP_SESSION
 	tx_frame_counter_ = GetTxFrameCounter();
@@ -372,9 +379,38 @@ void SlimLoRa::Begin() {
 #endif
 }
 
-// TODO this routine resides in some places.
+// This function is only usefull to gain some mA during setup on application.
+// It offers a useless jump in library. It's better not to use it.
 void SlimLoRa::sleep() {
 	RfmWrite(RFM_REG_OP_MODE, 0x00);
+}
+
+/* Copied from RadioLib project
+      \brief Sets current limit for over current protection at transmitter amplifier. Allowed values range from 45 to 120 mA in 5 mA steps and 120 to 240 mA in 10 mA steps.
+      \param currentLimit Current limit to be set (in mA).
+*/
+
+void SlimLoRa::setCurrentLimit(uint8_t currentLimit) {
+  // check allowed range
+  if(!(((currentLimit >= 45) && (currentLimit <= 240)) || (currentLimit == 0))) {
+    currentLimit = 60; // default value. Taken from RadioLib
+  }
+
+  // Switch RFM to standby
+  RfmWrite(RFM_REG_OP_MODE, 0x81);
+
+  // set OCP limit
+  uint8_t raw;
+  if(currentLimit == 0) {
+    // limit set to 0, disable OCP
+  	RfmWrite(RFM_REG_OCP_TRIM, RFM_OCP_TRIM_OFF);
+  } else if(currentLimit <= 120) {
+    raw = (currentLimit - 45) / 5;
+  	RfmWrite(RFM_REG_OCP_TRIM, RFM_OCP_TRIM_ON | raw);
+  } else if(currentLimit <= 240) {
+    raw = (currentLimit + 30) / 10;
+  	RfmWrite(RFM_REG_OCP_TRIM, RFM_OCP_TRIM_ON | raw);
+  }
 }
 
 // EVAL for accuracy (FAIL: does not compile)
@@ -414,15 +450,15 @@ uint8_t SlimLoRa::GetDataRate() {
 	@param power How much TX power in dBm
 */
 /**************************************************************************/
-// Valid values in dBm are: -80, +1 to +17 and +20.
+// Valid values in dBm are: 80, +1 to +17 and +20.
 //
 // 18-19dBm are undefined in doc but maybe possible. Here are ignored.
 // Chip works with three modes. This function offer granularity of 1dBm
-// but the chips is capable of more.
+// but the chip is capable of more.
 //
 // -4.2 to 0 is in reality -84 to -80dBm
 
-void SlimLoRa::SetPower(int8_t power) {
+void SlimLoRa::SetPower(uint8_t power) {
 
   // values to be packed in one byte
   bool PaBoost;		// TODO: merge those to one byte
@@ -433,20 +469,47 @@ void SlimLoRa::SetPower(int8_t power) {
   uint8_t DataPower;
 
   // 1st possibility -80
-  if ( power == -80 ) { // force -80dBm (lower power)
-	PaBoost = 0;
-	MaxPower = 0;
-	OutputPower = 0;
+  if ( power == 80 ) { // force -80dBm (lower power)
+  	RfmWrite(RFM_REG_PA_CONFIG, 0);
+
+	#ifdef EU863
+		tx_power = 7; // fake -14dBm report.
+	#endif
+
+  	return;
   // 2nd possibility: range 1 to 17dBm 
   } else if ( power >= 0 && power < 2 ) { // assume 1 db is given.
 	PaBoost = 1;
 	MaxPower = 7;
 	OutputPower = 1;
+	// Store LoRaWAN style tx_power
+	tx_power = 7;
   } else if ( power >= 2 && power <=17 ) {
 	PaBoost = 1;
 	MaxPower = 7;
 	// formula to find the OutputPower.
 	OutputPower = power - 2;
+
+	// Store LoRaWAN style tx_power to be on-par with the protocol.
+	if ( power > 14 ) { 
+		tx_power = 0;
+	} else {
+		// EU868, AS923, KR920, RU864 14dB attenuation.
+		// TODO: #ifdef (EU863 | AS923 ...)
+		#ifdef EU863
+			tx_power = ((LORAWAN_EU868_TX_POWER_MAX * 2) - power) / 2;
+		#endif
+
+		// IN865 20dB attenuation
+		#ifdef IN865
+			tx_power = ((LORAWAN_IN865_TX_POWER_MAX * 2) - power) / 2;
+		#endif
+		
+		#ifdef US920
+		// US902 28dB attenuation
+			tx_power = ((LORAWAN_US902_TX_POWER_MAX * 2) - power) / 2;
+		#endif
+	}
   }
 
   // 3rd possibility. 20dBm. Special case
@@ -476,7 +539,7 @@ void SlimLoRa::SetPower(int8_t power) {
  * Function for receiving a packet using the RFM
  *
  * @param packet Pointer to RX packet array.
- * @param packet_max_length Maximum number of bytes to read from RX packet.
+ * @param packet_max_length Maximum number of bytes to read from RX packet. project
  * @param channel The frequency table channel index.
  * @param dri The data rate table index.
  * @param rx_microsstamp Listen until rx_microsstamp elapsed.
@@ -575,6 +638,8 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
  * @param dri The data rate table index.
  */
 void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t channel, uint8_t dri) {
+	// TODO if dri is FSK re-init modem.
+	
 	uint8_t modem_config_3;
 
 	// Switch RFM to standby
@@ -636,12 +701,15 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 	while ((RfmRead(RFM_REG_IRQ_FLAGS) & RFM_STATUS_TX_DONE) != RFM_STATUS_TX_DONE);
 
 	// https://arduino.stackexchange.com/questions/77494/which-arduinos-support-atomic-block
+	// disable interrupts.
 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
 		tx_done_micros_ = micros();
 	}
 
 #if COUNT_TX_DURATION == 1
-	// EVAL: maybe this is breaking timing. Works with SF7 in same room.
+	// EVAL: maybe this is breaking timing.
+	// Works with SF7 JOIN and TTN GW 	in same room 	and initial delay of 5s
+	// Works with SF8 JOIN and Helium GW	in outdoors 	and initial delay of 5s
 	slimEndTXtimestamp = millis();
 #endif
 
@@ -651,9 +719,24 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 	// Switch RFM to sleep
 	RfmWrite(RFM_REG_OP_MODE, 0x00);
 
-	// Saves memory cycles, at worst EEPROM_WRITE_TX_COUNT lost packets
-	if (++tx_frame_counter_ % EEPROM_WRITE_TX_COUNT == 0) {
+	// BUG: this is not needed when Join. But Join calls this RfmSendPacket
+	// NbTrans controls the fCnt
+	if ( NbTrans_counter > 0 ) {
+		NbTrans_counter--;
+	}
+
+	// Increase tx_frame_counter if NbTrans_counter is 0 and reset NbTrans_counter
+	// p. 19 l. 520
+	// TODO fCnt don't increase if we have CONFIRMED_DATA_UP without ACK
+	// semi TODO fCnt don't increase if we havee UNCONFIRMED_DATA_UP and NbTrans to do.
+	if ( NbTrans_counter == 0 ) {
+		tx_frame_counter_++;
+		NbTrans_counter = NbTrans;
+	}
+
 #if LORAWAN_KEEP_SESSION
+	// Saves memory cycles. We jump at worst case scenario EEPROM_WRITE_TX_COUNT fCnt.
+	if (tx_frame_counter_ % EEPROM_WRITE_TX_COUNT == 0) {
 		SetTxFrameCounter(tx_frame_counter_);
 #endif
 	}
@@ -789,12 +872,19 @@ bool SlimLoRa::HasJoined() {
  *
  * @return 0 or an error code.
  */
+// TODO: back-off according to 1.0.3:
+// a. 36 secs for 1st hour, 36 secs for next 11 hours, 8.7 secs after that.
+// b. random delay between re-tries.
 int8_t SlimLoRa::Join() {
 	uint8_t packet[1 + LORAWAN_JOIN_REQUEST_SIZE + 4];
 	uint8_t packet_length;
 
 	uint16_t dev_nonce;
 	uint8_t mic[4];
+
+	// Reset RX2 DR to network default
+	// You need this if you can't control the EEPROM.
+	// rx2_data_rate_	  = RX_SECOND_WINDOW;
 
 	packet[0] = LORAWAN_MTYPE_JOIN_REQUEST;
 
@@ -836,6 +926,12 @@ int8_t SlimLoRa::Join() {
 
 	channel_ = pseudo_byte_ & 0b11; 		// Mask with first 4 channels [0-3].
 	if ( channel_ == 0b11 ) { channel_ = 0b10; }	// But we can join only on 3 channels: 868.100 868.300 and 868.500
+#if DEBUG_SLIM == 1
+	Serial.print(F("\nMAC before join: "));printMAC();
+#endif
+	// This is hack. NbTrans_counter is decreased in RfmSendPacket.
+	NbTrans_counter++;
+
 	RfmSendPacket(packet, packet_length, channel_, data_rate_);
 
 	if (!ProcessJoinAccept(1)) {
@@ -1112,6 +1208,7 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
 	dev_addr[3] = packet[7];
 	SetDevAddr(dev_addr);
 
+	// Get DLSettings (p. 35)
 	rx1_data_rate_offset_ = (packet[11] & 0x70) >> 4;
 	SetRx1DataRateOffset(rx1_data_rate_offset_);
 
@@ -1121,6 +1218,11 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
 	SetRx1Delay(packet[12] & 0xF);
 	rx1_delay_micros_ = GetRx1Delay() * MICROS_PER_SECOND;
 
+	// TODO optional CFlist
+	// if packet[13] exists. aka: check packet_length
+	// regional parameters p. 27
+
+	// reset counters
 	tx_frame_counter_ = 1;
 	SetTxFrameCounter(1);
 
@@ -1128,6 +1230,7 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
 	SetRxFrameCounter(0);
 
 	adr_ack_counter_ = 0;
+	NbTrans_counter = NbTrans;
 
 	has_joined_ = true;
 #if LORAWAN_KEEP_SESSION
@@ -1139,6 +1242,7 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
 end:
 #if DEBUG_SLIM == 1
 	if ( result == 0 ) {
+	Serial.print(F("\nPacket Length: "));Serial.println(packet_length);
 	Serial.print(F("\nJoined on window: "));Serial.println(window);printMAC();
 	}
 #endif
@@ -1157,55 +1261,121 @@ end:
  * @param f_options_length Length of the frame options section.
  */
 void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
-	uint8_t status, new_rx1_dr_offset, new_rx2_dr;
+	uint8_t status, new_rx1_dr_offset, new_rx2_dr; // new_rx2_dr is also used as a temp value
 
+	// No I already made the check
+	/*
 	if (f_options_length == 0) {
 		return;
 	}
+	*/
 
 	for (uint8_t i = 0; i < f_options_length; i++) {
-#if DEBUG_SLIM == 1
-	Serial.print(F("\n\nProcessing MAC command: "));Serial.println(options[i]);
-#endif
+
+	#if DEBUG_SLIM == 1
+	Serial.print(F("\nProcessing MAC: "));Serial.println(options[i]);
+	#endif
+
 		switch (options[i]) {
 			case LORAWAN_FOPT_LINK_CHECK_ANS:
+				// EVAL p. 23
+				margin = options[i + 1];
+				GwCnt  = options[i + 2];
+
+				#if DEBUG_SLIM == 1
+				Serial.print(F("\nmargin/GwCnt: "));Serial.print(margin);Serial.print(F("/"));Serial.println(GwCnt);
+				#endif
+
 				i += LORAWAN_FOPT_LINK_CHECK_ANS_SIZE;
+
 				break;
 			case LORAWAN_FOPT_LINK_ADR_REQ:
-				// TODO ChMask p. 24
-				status = 0x1;
+				// ChMask p. 24 and NbTrans. RP p. 18
 
-				new_rx2_dr = options[i + 1] >> 4;
-				tx_power = options[i + 1] & 0xF;
+				// check ChMaskCntrl
+				// read Redundancy byte, grab only ChMaskCntl
+				new_rx2_dr = ( options[i + 4] >> 4 ) & 0b111;
+
+				#if DEBUG_SLIM == 1
+				Serial.print(F("\nChMaskCntl: "));Serial.println(new_rx2_dr);
+				#endif
+
+				// ignore ChMask, enable all channels
+				if ( new_rx2_dr == 6 ) { 
+					// TODO for other regions.
+					#ifdef EU863
+					ChMask = 0xFF;
+					#endif
+
+					status = 0x1; // enable ChMask ACK
+				}
+
+				// Apply ChMask
+				if ( new_rx2_dr == 0 ) { 
+					// BUG? Always zero?
+					ChMask = (uint16_t) options[i + 2] << 8 | options[i + 3];
+					#if DEBUG_SLIM == 1
+					Serial.print(F("ChMask: "));Serial.println(ChMask, BIN);
+					#endif
+
+					status = 0x1; // enable ChMask ACK
+				}
+
+				// report error
+				if ( new_rx2_dr != 0 && new_rx2_dr != 6 ) {
+					status = 0x0; // disable ChMask ACK
+				}
+
+				// NbTrans value
+				NbTrans = options[i + 4] & 0xF;
+				if ( NbTrans == 0 ) { NbTrans = NBTRANS; }
+				NbTrans_counter = NbTrans;
+
+				new_rx2_dr = options[i + 1] >> 4; 
+				tx_power   = options[i + 1] & 0xF;
 
 				if (new_rx2_dr == 0xF || (new_rx2_dr >= SF12BW125 && new_rx2_dr <= SF7BW250)) { // Reversed table index
-					status |= 0x2;
+					status |= 0x2;	// DR ACK
 				}
+				// tx_power = 15 or less than 7
+				// TODO: other regions.
 				if (tx_power == 0xF || tx_power <= LORAWAN_EU868_TX_POWER_MAX) {
-					status |= 0x4;
+					status |= 0x4; // Power ACK
 				}
-
-				if (status == 0x7) {
+				if (status == 0x7 || status == 0x6) {
 					if (new_rx2_dr != 0xF) {
 						data_rate_ = new_rx2_dr;
 					}
 					if (tx_power != 0xF) {
-						RfmWrite(RFM_REG_PA_CONFIG, 0xF0 | (14 - tx_power * 2));
+						// 0xF0 = PA_BOOST 1, MAX_POWER 7 
+						// p. 104
+						// TODO: other regions
+						#ifdef EU863
+						RfmWrite(RFM_REG_PA_CONFIG, 0xF0 | ((LORAWAN_EU868_TX_POWER_MAX * 2) - tx_power * 2));
+						#endif
 					}
 				}
 
 				pending_fopts_.fopts[pending_fopts_.length++] = LORAWAN_FOPT_LINK_ADR_ANS;
 				pending_fopts_.fopts[pending_fopts_.length++] = status;
 
+				#if DEBUG_SLIM == 1
+				Serial.print(F("NbTrans: "));Serial.println(NbTrans);
+				#endif
+
 				i += LORAWAN_FOPT_LINK_ADR_REQ_SIZE;
 				break;
 			case LORAWAN_FOPT_DUTY_CYCLE_REQ:
+				// TODO p. 26 1/2^value[0-15]. 0 is no duty cycle.
 				i += LORAWAN_FOPT_DUTY_CYCLE_REQ_SIZE;
 				break;
 			case LORAWAN_FOPT_RX_PARAM_SETUP_REQ:
+				// TODO p. 27
+				// Handle erroneous values from network.
 				status = 0x1;
-				new_rx1_dr_offset = (options[i + 1] & 0x70) >> 4;
-				new_rx2_dr = options[i + 1] & 0xF;
+
+				new_rx1_dr_offset 	= (options[i + 1] & 0x70) >> 4;
+				new_rx2_dr 		= options[i + 1] & 0xF;
 
 				if (new_rx1_dr_offset <= LORAWAN_EU868_RX1_DR_OFFSET_MAX) {
 					status |= 0x4;
@@ -1221,6 +1391,11 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 					rx2_data_rate_ = new_rx2_dr;
 					SetRx2DataRate(rx2_data_rate_);
 				}
+
+				#if DEBUG_SLIM == 1
+				Serial.print(F("\nRX1_DR_OFFSET: "));Serial.println(rx1_data_rate_offset_);
+				Serial.print(F("RX2_DR: "));Serial.println(rx2_data_rate_);
+				#endif
 
 				sticky_fopts_.fopts[sticky_fopts_.length++] = LORAWAN_FOPT_RX_PARAM_SETUP_ANS;
 				sticky_fopts_.fopts[sticky_fopts_.length++] = status;
@@ -1262,16 +1437,34 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				#else
 					pending_fopts_.fopts[pending_fopts_.length++] = 0xFF; // Unable to measure the battery level.
 				#endif //ARDUINO_AVR_FEATHER32U4
+				
+
+				#if DEBUG_SLIM == 1
+				Serial.print(F("\nSTATUS TODO: vbat / SNR: "));Serial.print(vbat);Serial.print(F("/"));Serial.println((last_packet_snr_ & 0x80) >> 2 | last_packet_snr_ & 0x1F);
+				#endif
 
 				pending_fopts_.fopts[pending_fopts_.length++] = (last_packet_snr_ & 0x80) >> 2 | last_packet_snr_ & 0x1F;
 
 				i += LORAWAN_FOPT_DEV_STATUS_REQ_SIZE;
 				break;
 			case LORAWAN_FOPT_NEW_CHANNEL_REQ:
+				// TODO p. 28
+				// Not supported yet. Have to implement 
+				// a: FSK, 
+				// b: remove the channels from PROGMEM
+				// c: and create a function to create channels.
+				status = 0;
+				pending_fopts_.fopts[pending_fopts_.length++] = LORAWAN_FOPT_NEW_CHANNEL_ANS;
+				pending_fopts_.fopts[pending_fopts_.length++] = status;
+
 				i += LORAWAN_FOPT_NEW_CHANNEL_REQ_SIZE;
 				break;
 			case LORAWAN_FOPT_RX_TIMING_SETUP_REQ:
-				SetRx1Delay(options[i + 1] & 0xF);
+				// spec p. 30
+				new_rx2_dr = (options[i + 1] & 0xF);
+				// zero value = 1
+				if ( new_rx2_dr == 0 ) { new_rx2_dr = 1; }
+				SetRx1Delay(new_rx2_dr);
 				rx1_delay_micros_ = GetRx1Delay() * MICROS_PER_SECOND;
 
 				sticky_fopts_.fopts[sticky_fopts_.length++] = LORAWAN_FOPT_RX_TIMING_SETUP_ANS;
@@ -1279,12 +1472,23 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				i += LORAWAN_FOPT_RX_TIMING_SETUP_REQ_SIZE;
 				break;
 			case LORAWAN_FOPT_TX_PARAM_SETUP_REQ:
+				// TODO. p. 30, not for EU
 				i += LORAWAN_FOPT_TX_PARAM_SETUP_REQ_SIZE;
 				break;
 			case LORAWAN_FOPT_DL_CHANNEL_REQ:
+				// TODO p. 28
+				// https://learn.semtech.com/mod/book/view.php?id=173&chapterid=144
+				// Not needed for US and AUS regions.
+				// clv
+				// sticky_fopts_.fopts[sticky_fopts_.length++] = LORAWAN_FOPT_DL_CHANNEL_ANS;
+				// report not accepted. SlimLoRa does not support new frequency for downlink.
+				// TODO make kFrequencyTable dynamic so we can accept a new downlink frequency
+				// pending_fopts_.fopts[pending_fopts_.length++] = 0;
+
 				i += LORAWAN_FOPT_DL_CHANNEL_REQ_SIZE;
 				break;
 			case LORAWAN_FOPT_DEVICE_TIME_ANS:
+				// TODO p. 32
 				i += LORAWAN_FOPT_DEVICE_TIME_ANS_SIZE;
 				break;
 			default:
@@ -1302,12 +1506,15 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 	int8_t result;
 	uint8_t rx1_offset_dr;
+	uint8_t temp;
 	uint32_t rx_delay;
 
+#if DEBUG_SLIM == 0
 	uint8_t packet[64];
 	int8_t packet_length;
 
 	uint8_t f_options_length, port, payload_length;
+#endif
 
 	uint16_t frame_counter;
 
@@ -1380,41 +1587,110 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 	sticky_fopts_.length = 0;
 
 	// Saves memory cycles, we could loose more than EEPROM_WRITE_RX_COUNT packets if we don't receive a packet at all
-	rx_frame_counter_ = frame_counter + 1;
+	rx_frame_counter_++; 
 	if (rx_frame_counter_ % EEPROM_WRITE_RX_COUNT == 0) {
 		SetRxFrameCounter(rx_frame_counter_);
 	}
 
 	// Reset ADR acknowledge counter
-	adr_ack_counter_ = 0;
+	adr_ack_counter_ = 0; 
+
+	// Reset NbTrans, we received downlink
+	NbTrans_counter = NbTrans;
+
+	// EVAL
+	// f_options_length = packet[5] & 0xF; // p. 17
+
+	port = packet[LORAWAN_MAC_AND_FRAME_HEADER + f_options_length];
+
+	#if DEBUG_SLIM == 1
+		printDownlink();
+	#endif
 
 	// Parse MAC commands from payload if packet on port 0
-	port = packet[8 + f_options_length];
 	if (port == 0) {
-		payload_length = packet_length - 8 - f_options_length - 4;
-		EncryptPayload(&packet[8 + f_options_length + 1], payload_length, frame_counter, LORAWAN_DIRECTION_DOWN);
+		payload_length = packet_length - LORAWAN_MAC_AND_FRAME_HEADER - f_options_length - LORAWAN_MIC_SIZE;
+		EncryptPayload(&packet[LORAWAN_MAC_AND_FRAME_HEADER + f_options_length + LORAWAN_PORT_SIZE], payload_length, frame_counter, LORAWAN_DIRECTION_DOWN);
 
-		ProcessFrameOptions(&packet[8 + f_options_length + 1], payload_length);
-	} else {
+	#if DEBUG_SLIM == 1
+		printDownlink();
+	#endif
+
+		ProcessFrameOptions(&packet[LORAWAN_MAC_AND_FRAME_HEADER + f_options_length + LORAWAN_PORT_SIZE], payload_length);
+
+	#if DEBUG_SLIM == 1
+		printDownlink();
+	#endif
+
+	}
+	//
+	// This does not goes well with my procedure to read downlink application data.
+	// EEPROM corruption, hung and restart.
+       /*	else {
+	#if DEBUG_SLIM == 1
+		Serial.print(F("\nMAC else port: "));Serial.println(port);Serial.flush();
+	#endif
 		// Process MAC commands
-		f_options_length = packet[5] & 0xF;
+		f_options_length = packet[4] & 0xF;
 		ProcessFrameOptions(&packet[8], f_options_length);
+	}
+	*/
+
+	// application downlink
+	if ( port > 0 && port < 224 ) { // port 0 and 224 are special case
+		
+		// Process MAC commands
+		f_options_length = packet[5] & 0xF; // p. 17
+		if ( f_options_length > 0 ) {
+		#if DEBUG_SLIM == 1
+			Serial.print(F("\nFrame Options Mode"));
+			Serial.print(F("\nPacket RAW HEX"));printHex(packet, packet_length);
+			printDownlink();
+		#endif
+			ProcessFrameOptions(&packet[LORAWAN_MAC_AND_FRAME_HEADER], f_options_length);
+		}
+
+		#if DEBUG_SLIM == 1
+			Serial.print(F("\nPacket RAW HEX"));printHex(packet, packet_length);
+			printDownlink();
+		#endif
+
+		// EVAL sometimes payload_length is something like 179.
+		// stollen from MAC command
+		payload_length = packet_length - LORAWAN_MAC_AND_FRAME_HEADER - f_options_length - LORAWAN_MIC_SIZE;
+		//payload_length = packet_length - 8 - f_options_length - 4;
+		#if DEBUG_SLIM == 1
+			Serial.print(F("\nPacket RAW HEX"));printHex(packet, packet_length);
+			printDownlink();
+		#endif
+
+		// Decrypt data after MAC, Frame Header, Frame Options and Port.
+		EncryptPayload(&packet[LORAWAN_MAC_AND_FRAME_HEADER + f_options_length + LORAWAN_PORT_SIZE], payload_length, frame_counter, LORAWAN_DIRECTION_DOWN);
+
+		// Store downlink payload to downlinkData. Skip MAC header and Device Address.
+		// Data starts at 10th byte and ends 4 bytes - before MIC;
+		downlinkSize = 0;
+		for ( temp = LORAWAN_START_OF_FRM_PAYLOAD - 1; temp < packet_length - LORAWAN_MIC_SIZE; temp++) {
+			downlinkData[downlinkSize] = packet[temp];
+			downlinkSize++;
+		}
+		#if DEBUG_SLIM == 1
+			Serial.print(F("\nDownlinkData"));printHex(downlinkData, downlinkSize);
+		#endif
 	}
 
 #if DEBUG_SLIM == 1
-	Serial.print(F("\nPort Down\t: "));Serial.print(port);
-	Serial.print(F("\nPacket RAW HEX\t: "));printHex(packet, packet_length);
-	if ( port >= 1 && port < 224 ) { // 224 is special case
-		EncryptPayload(&packet[8], payload_length, frame_counter, LORAWAN_DIRECTION_DOWN);
-	}
-	Serial.print(F("\nPacket Encrypted? HEX\t: "));printHex(packet, packet_length);
+	Serial.print(F("\nPacket decrypted HEX"));printHex(packet, packet_length);
+	printDownlink();
 #endif
-	// TODO store downlink port and payload.
 	// TEMPORARY
 	// Store the received packet for debugging purposes.
 #if ARDUINO_EEPROM  == 1
-	EEPROM.put (EEPROM_DOWNPACKET, packet);
-	EEPROM.update(EEPROM_DOWNPORT, port);
+	// Important. Otherwise corrupted EEPROM
+	/*if ( packet_length > 64 ) { packet_length = 64; }
+	setArrayEEPROM(EEPROM_DOWNPACKET, packet, packet_length ); // We have place for 64
+	//EEPROM.put(EEPROM_DOWNPORT, port);
+	*/
 #else
 	eeprom_write_block(eeprom_lw_down_packet, packet, 64);
 	eeprom_write_byte(eeprom_lw_down_port, port);
@@ -1424,15 +1700,17 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 end:
 #if DEBUG_SLIM == 1
-	Serial.print(F("\n\nMAC error status: "));Serial.println(result);
-	Serial.print(F("Rx counter   : "));Serial.println(GetRxFrameCounter());
+	Serial.print(F("\n\nMAC status\t: "));Serial.println(result);
+	Serial.print(F("Rx counter\t: "));Serial.println(GetRxFrameCounter());
 	if (window == 1) {
-		Serial.print(F("Window 1, rx1_offset_dr: "));Serial.println(rx1_offset_dr);
+		Serial.print(F("Window 1, rx1_DR: "));Serial.println(rx1_offset_dr);
 	} else {
 		Serial.print(F("Window 2, rx2_DR: "));Serial.println(rx2_data_rate_);
 	}
+	Serial.flush();
 	#if LORAWAN_OTAA_ENABLED
 	Serial.print(F("\nDevAddr after RX windows: "));printHex(dev_addr, 4);
+	Serial.flush();
 	#endif // LORAWAN_OTAA_ENABLED
 #endif
 	return result;
@@ -1459,12 +1737,13 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	// Encrypt the data
 	EncryptPayload(payload, payload_length, tx_frame_counter_, LORAWAN_DIRECTION_UP);
 
-	// ADR backoff
+	// ADR back-off
 	if (adr_enabled_ && adr_ack_counter_ >= LORAWAN_ADR_ACK_LIMIT + LORAWAN_ADR_ACK_DELAY) {
 		if ( data_rate_ > SF12BW125 ) {
 			data_rate_++;
 		}
-	SetPower(16);
+		// EVAL: I think the order is important for the HOPE
+		SetPower(16);
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nADR backoff, DR: "));Serial.print(data_rate_);
 #endif
@@ -1489,8 +1768,10 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	packet[packet_length] = 0;
 	if (adr_enabled_) {
 		packet[packet_length] |= LORAWAN_FCTRL_ADR;
-
-		if (adr_ack_counter_ >= LORAWAN_ADR_ACK_LIMIT) {
+	
+		// Request ACK if data_rate is higher than 0 and adr_ack_counter_ is over the limit
+		// p. 17
+		if (adr_ack_counter_ >= LORAWAN_ADR_ACK_LIMIT && data_rate_ > 0 ) {
 			packet[packet_length] |= LORAWAN_FCTRL_ADR_ACK_REQ;
 		}
 	}
@@ -1528,7 +1809,15 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 		packet[packet_length++] = mic[i];
 	}
 
-	channel_ = pseudo_byte_ & 0b111; // Channel 8 is downlink 0-7 is for uplinks. Mask with 0x07 (0b111) to use the first 8 channels.
+	// TODO: other regions
+	#ifdef EU863
+	channel_ = pseudo_byte_ & 0b111; 		// Channel 9 [8] is downlink. Channels [0-7] are for uplinks. Mask with 0x07 (0b111) to use the first 8 channels.
+	// TODO this is valid for 8 channels, not for 16. Need to move downlink to another variable.
+	// This is wrong ChMask is switches, channel_ is DEC.
+	// Solution: compare number of pseudo_byte_ [0-7] with shifts on ChMask
+	//channel_ = pseudo_byte_ & 0b111;	// Channel 9 [8] is downlink. Channels [0-7] are for uplinks. Mask with 0x07 (0b111) to use the first 8 channels.
+	#endif
+
 	RfmSendPacket(packet, packet_length, channel_, data_rate_);
 }
 
@@ -1557,7 +1846,7 @@ void SlimLoRa::SendData(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	#endif // US902
 
 #if DEBUG_SLIM == 1
-	Serial.println(F("SendData"));printMAC();
+	Serial.println(F("\n*SendData"));printMAC();
 #endif
 	Transmit(fport, payload, payload_length);
 
@@ -2174,6 +2463,8 @@ uint16_t SlimLoRa::GetTxFrameCounter() {
 }
 
 void SlimLoRa::SetTxFrameCounter(uint16_t count) {
+	// BUG: Why it does not work?
+	//EEPROM.update(EEPROM_TX_COUNTER, count);
 	EEPROM.put(EEPROM_TX_COUNTER, count);
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nWRITE Tx#: "));Serial.print(count >> 8);Serial.print(count);
