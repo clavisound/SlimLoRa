@@ -4,63 +4,82 @@
 
 ![CI](https://github.com/clavisound/SlimLoRa/actions/workflows/main.yml/badge.svg)
 
-# Uncomplete LoRaWAN library
+# LoRaWAN library for classic AVR's with 32Kbytes of flash
 
-This library is suitable for testing. It has basic functionality like Join and MAC commands for DR / DF and power. It does not support user downlinks. It supports only partial MAC commands downlinks. I plan to add support for all MAC commands. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs around 52kBytes of program flash), or LMIC (around 36kBytes of program flash.)
+This library targets LoRaWAN-1.0.3 specification. It supports Join, most important MAC commands - like DR and power - and downlinks for user application. Applcations downlinks are limited to maximum of 16 bytes. I think it's more than enough. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs around 52kBytes of program flash), or LMIC (around 36kBytes of program flash.)
 
-SlimLoRa needs around 13kBytes. SlimLoRa can give moderm LoRaWAN life to old μCU's like ATmega 328 with 32kBytes of flash.
+SlimLoRa needs around 12558 Bytes (13kBytes) but it's getting bigger with the support of MAC commands. SlimLoRa gives LoRaWAN life to old μCU's like ATmega 328 with 32kBytes of flash.
 
-![SlimLoRa MAC response in MAC command via Helium](https://krg.etraq.eu/minisites/lora/mac-command-response_crop.png "SlimLora response to MAC LINKADR REQ command.")
+This library is ported to Arduino and I try to evolve it to comply with all MAC commands and other LoRaWAN specifications, but the majority of work was done by Hendrik Hagendorn and Ideetron B.V. Thanks to both of them.
+![SlimLoRa MAC response in MAC command via Helium original console](https://krg.etraq.eu/minisites/lora/mac-command-response_crop.png)
 
-# Tested
+# Working
 
-- [x] Feather 32u4 EU868 region.
-- [x] Join SF9 on TTN and power 0dBm in different room. Success on 1st window.
-- [x] Join SF8 on TTN and power 0dBm in same room. Success on 1st window.
-- [x] Join SF7 on TTN and power 0dBm in different room. Success on 1st window.
-- [x] Join SF10 with Helium. Success everytime on 1st window but not in first attempt.
-Megabrick testing:
-- [ ] FAIL with SF7 and power 13dBm in different room and an antenna.
-- [x] Join with SF9 and power 13dBm in different room and an antenna.
-- [x] ADR works. After join with SF9 in different room from gateway (RSSI -85), TTN sends SF7 (or SF8) ADR command and SlimLoRa conforms.
-- [x] Session restore works with Device address, AppSKey and NetworkKey. After Join, there is no need to rejoin if the device is powered off.
-- [x] ADR_ACK_LIMIT works.
+- [x] OTAA join with Feather 32u4 EU868 region. Europe only.
+  - [x] TTN joins
+    - [x] Join SF9 on TTN and power 0dBm in different room. Success on 1st window.
+    - [x] Join SF8 on TTN and power 0dBm in same room. Success on 1st window.
+    - [x] Join SF7 on TTN and power 0dBm in different room. Success on 1st window.
+      - [x] Megabrick joins
+        - [ ] FAIL with SF7 and power 13dBm in different room and an antenna.
+        - [x] Join with SF9 and power 13dBm in different room and an antenna.
+  - [x] Heliun Joins
+    - [x] old console
+      - [x] Join SF10 with Helium. Success everytime on 1st window but not in first attempt.
+    - [x] chripstack Console
+      - [x] Join SF8 with Helium chripstack outdors. Success on 1st window in second or third attempt.
 - [x] SetPower
-- [x] Added arduino eeprom style store and restore. I recommend `ARDUINO_EEPROM == 1` in `SlimLoRa.h`. When you use `avr/eeprom.h` style and you compile with different options, or if you change part of your sketch relative to EEPROM (EEMEM) the address of the data are changing places! This is a "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h. With avr style if you change your sketch, maybe you need to re-join. With arduino eeprom style you don't need to re-join.
+- [x] Deep Sleep
+- [x] Restore session from EEPROM (arduino style)
+- [x] Downlink for application.
+- [x] NbTrans
+
+## EEPROM handling to consider
+I recommend `ARDUINO_EEPROM == 1` in `SlimLoRa.h` otherwise when you use `avr/eeprom.h` style and you compile with different options, or if you change part of your sketch relative to EEPROM (EEMEM) the **address of the data are changing places!** This is a "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h. With avr style if you change your sketch, maybe you need to re-join. With arduino eeprom style you don't need to re-join.
 
 Solutions with avr style.
-Solution #1: Erase ALL the EEPROM after uploading the new firmware.
-Solution #2: Hint you can track the EEPROM addresses with: `avr-objdump -D` on .eemem section.
-Solution #3: Don't enable keep session.
-Solution #4: use arduino style eeprom in `SlimLoRa.h`
 
-- [x] Deep Sleep
+- Solution #1: Erase ALL the EEPROM after uploading the new firmware.
+- Solution #2: Hint: You can track the EEPROM addresses with: `avr-objdump -D` on .eemem section.
+- Solution #3: Don't enable keep session.
+- Solution #4: use arduino style eeprom in `SlimLoRa.h`
 
 # Semi-Working
 
-- [x] Duty Cycle. Added GetTXms function to return the TOTAL duration of ALL transmissions. At SF7 1bytes reports 45-48ms vs 46ms [theoretical](https://avbentem.github.io/airtime-calculator/ttn/eu868/1) at SF8 reports 84ms vs 82ms (theoretical). SF7 5 bytes 52ms vs 51.5ms (theoretical). Application HAVE to read the value of GetTXms() after every transmission to check if the the Duty Cycle is respected. I decided to not respect Duty Cycle on SlimLoRa, since if the device is going to Deep Sleep and wakes up via a accelerometer on AVR MCU's freezes the timer0. I think the solution is the RTC.
+- [x] Duty Cycle. Added GetTXms function to return the TOTAL duration of ALL transmissions. At SF7 1byte reports 45-48ms vs 46ms [theoretical](https://avbentem.github.io/airtime-calculator/ttn/eu868/1) at SF8 reports 84ms vs 82ms (theoretical). SF7 5 bytes reports 52ms vs 51.5ms (theoretical). Application HAVE to read the value of GetTXms() after every transmission to check if the the Duty Cycle is respected. I decided to not respect Duty Cycle on SlimLoRa, since if the device is going to Deep Sleep and wakes up via a accelerometer on AVR MCU's freezes the timer0. I think the solution is the RTC or to read a time from GPS.
 - [x] Power to the people. Several values made public. Take care to not write them or you may loose access to the network. Instead of using getters I selected to make public some variables.
 - [x] MAC Commands. 
 
-# Untested
+# MAC commands supported.
 
-- [ ] Added battery Level to DevStatusAns, but need to tested it. How?
-- [ ] Test join with SF7 SF8 SF9 on Helium.
-- [ ] ABP.
-- [ ] Something funny with RX counter happening? It must be on par with server?
+- [x] ADR for Data Rate and TxPower. After join with SF9 in different room from gateway (RSSI -85), TTN sends SF7 (or SF8) ADR command and SlimLoRa conforms.
+- [x] ADR_ACK_LIMIT
+- [x] NbTrans
+
+# MAC commands added but untested
+
+- [ ] Channel Mask
+- [ ] Added battery Level to DevStatusAns. Battery status is working, I think margin is wrong.
+
+# untested modes
+
+- [ ] ABP
+- [ ] AVR style EERPOM
 
 # TODO's (PR's welcome) - In order of importance.
 
-- [ ] Channel Mask MAC Command. It always respond with OK message, but the mask is NOT applied.
-- [ ] More regions. Currently on EU868
-- [ ] Add pin mappings infrastucture for other boards.
-- [ ] Make DevNonce random.
+- [ ] CFlist
+- [ ] Join back-off
 - [ ] Confirmed Uplink
 - [ ] Confirmed Downlink
+- [ ] Make DevNonce random.
+- [ ] More regions. Currently only EU868
+- [ ] Add pin mappings infrastucture for other boards.
 - [ ] Add compile options for battery status (unable to measure, connected to external power)
 - [ ] Respect Dwell MAC command (only for US902?)
-- [ ] Change SetPower style to LoRaWAN style.
 - [ ] Random delay for TX.
+- [ ] Duty Cycle per channel.
+- [ ] extern variable for Duty Cycle if the application can provide time.
 
 # Undoable on AVR and Deep Sleep
 
@@ -71,10 +90,6 @@ Since AVR on Deep Sleep freezes the timer0. SlimLoRa is unable to know about tim
 # Maybe good ideas
 
 - [ ] 32-bit Frame Counter.
-
-# I can't test it.
-
-- [ ] Add regions. Only works with EU868.
 
 # How to use it (mini-tutorial)
 
