@@ -1,4 +1,4 @@
-# SlimLoRa Arduino library for EU868 (Basic functionality)
+# SlimLoRa - Propably the easiest and smallest footprint LoRaWAN library for Arduino library and EU868.
 
 ---
 
