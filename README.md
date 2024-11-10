@@ -28,11 +28,29 @@ This library is ported to Arduino and I try to evolve it to comply with all MAC 
       - [x] Join SF10 with Helium. Success everytime on 1st window but not in first attempt.
     - [x] chripstack Console
       - [x] Join SF8 with Helium chripstack outdors. Success on 1st window in second or third attempt.
+- [x] Downlinks
+  - [x] Helium on 2nd window (SF12) always works.
 - [x] SetPower
 - [x] Deep Sleep
 - [x] Restore session from EEPROM (arduino style)
 - [x] Downlink for application.
+- [x] NbTrans - edit SlimLoRa.h to config.
+
+# MAC commands supported.
+
+- [x] ADR for Data Rate and TxPower. After join with SF9 in different room from gateway (RSSI -85), TTN sends SF7 (or SF8) ADR command and SlimLoRa conforms.
+- [x] ADR_ACK_LIMIT
 - [x] NbTrans
+
+# MAC commands added but untested
+
+- [ ] Channel Mask
+- [ ] Added battery Level to DevStatusAns. Battery status is working, I think margin is wrong.
+
+# Untested
+
+- [ ] ABP
+- [ ] AVR style EERPOM
 
 ## EEPROM handling to consider
 I recommend `ARDUINO_EEPROM == 1` in `SlimLoRa.h` otherwise when you use `avr/eeprom.h` style and you compile with different options, or if you change part of your sketch relative to EEPROM (EEMEM) the **address of the data are changing places!** This is a "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h. With avr style if you change your sketch, maybe you need to re-join. With arduino eeprom style you don't need to re-join.
@@ -49,22 +67,6 @@ Solutions with avr style.
 - [x] Duty Cycle. Added GetTXms function to return the TOTAL duration of ALL transmissions. At SF7 1byte reports 45-48ms vs 46ms [theoretical](https://avbentem.github.io/airtime-calculator/ttn/eu868/1) at SF8 reports 84ms vs 82ms (theoretical). SF7 5 bytes reports 52ms vs 51.5ms (theoretical). Application HAVE to read the value of GetTXms() after every transmission to check if the the Duty Cycle is respected. I decided to not respect Duty Cycle on SlimLoRa, since if the device is going to Deep Sleep and wakes up via a accelerometer on AVR MCU's freezes the timer0. I think the solution is the RTC or to read a time from GPS.
 - [x] Power to the people. Several values made public. Take care to not write them or you may loose access to the network. Instead of using getters I selected to make public some variables.
 - [x] MAC Commands. 
-
-# MAC commands supported.
-
-- [x] ADR for Data Rate and TxPower. After join with SF9 in different room from gateway (RSSI -85), TTN sends SF7 (or SF8) ADR command and SlimLoRa conforms.
-- [x] ADR_ACK_LIMIT
-- [x] NbTrans
-
-# MAC commands added but untested
-
-- [ ] Channel Mask
-- [ ] Added battery Level to DevStatusAns. Battery status is working, I think margin is wrong.
-
-# untested modes
-
-- [ ] ABP
-- [ ] AVR style EERPOM
 
 # TODO's (PR's welcome) - In order of importance.
 
