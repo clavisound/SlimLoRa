@@ -4,14 +4,15 @@
 
 ![CI](https://github.com/clavisound/SlimLoRa/actions/workflows/main.yml/badge.svg)
 
-# LoRaWAN library for classic AVR's with 32Kbytes of flash
+# Easy to use LoRaWAN library for classic AVR's with 32Kbytes of flash. Session stored to EEPROM, you only need to join once.
 
-This library targets LoRaWAN-1.0.3 specification. It supports Join, most important MAC commands - like DR and power - and downlinks for user application. Applcations downlinks are limited to maximum of 16 bytes. I think it's more than enough. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs around 52kBytes of program flash), or LMIC (around 36kBytes of program flash.)
+This library is probably the most easy to use LoRaWAN library. The target is LoRaWAN-1.0.3 specification. It supports OTAA / Join, most important MAC commands - like DR, power, NBtrans, downlinks for user application and session is stored to EEPROM. Applications downlinks are limited to maximum of 16 bytes. I think it's more than enough. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs around 52kBytes of program flash), or LMIC (around 36kBytes of program flash).
 
-SlimLoRa needs around 12558 Bytes (13kBytes) but it's getting bigger with the support of MAC commands. SlimLoRa gives LoRaWAN life to old μCU's like ATmega 328 with 32kBytes of flash.
+SlimLoRa needs around 12558 Bytes (13kBytes) but it's getting bigger with the support of MAC commands and more LoRaWAN specification to be added. SlimLoRa gives LoRaWAN life to old μCU's like ATmega 328 with 32kBytes of flash.
 
-This library is ported to Arduino and I try to evolve it to comply with all MAC commands and other LoRaWAN specifications, but the majority of work was done by Hendrik Hagendorn and Ideetron B.V. Thanks to both of them.
-![SlimLoRa MAC response in MAC command via Helium original console](https://krg.etraq.eu/minisites/lora/mac-command-response_crop.png)
+[SlimLoRa MAC response in MAC command via Helium original console.](https://krg.etraq.eu/minisites/lora/mac-command-response_crop.png)
+
+The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks to both of them.
 
 # Working
 
@@ -35,6 +36,8 @@ This library is ported to Arduino and I try to evolve it to comply with all MAC 
 - [x] Restore session from EEPROM (arduino style)
 - [x] Downlink for application.
 - [x] NbTrans - edit SlimLoRa.h to config.
+- [x] Most important MAC commands - more to follow
+- [x] Session saved to EEPROM. You only need to join once on the lifetime of the device.
 
 # MAC commands supported.
 
@@ -44,7 +47,6 @@ This library is ported to Arduino and I try to evolve it to comply with all MAC 
 
 # MAC commands added but untested
 
-- [ ] Channel Mask
 - [ ] Added battery Level to DevStatusAns. Battery status is working, I think margin is wrong.
 
 # Untested
@@ -70,12 +72,14 @@ Solutions with avr style.
 
 # TODO's (PR's welcome) - In order of importance.
 
+- [ ] Channel Mask
 - [ ] CFlist
+- [ ] Save more session data to EEPROM like NBtrans.
 - [ ] Join back-off
 - [ ] Confirmed Uplink
 - [ ] Confirmed Downlink
 - [ ] Make DevNonce random.
-- [ ] More regions. Currently only EU868
+- [ ] More regions. Currently only EU868 is working.
 - [ ] Add pin mappings infrastucture for other boards.
 - [ ] Add compile options for battery status (unable to measure, connected to external power)
 - [ ] Respect Dwell MAC command (only for US902?)
