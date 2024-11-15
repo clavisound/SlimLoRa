@@ -29,6 +29,7 @@ The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks 
       - [x] Join SF10 with Helium. Success everytime on 1st window but not in first attempt.
     - [x] chripstack Console
       - [x] Join SF8 with Helium chripstack outdors. Success on 1st window in second or third attempt.
+      - [x] Join SF9 with Helium chripstack outdors. Success on 1st window.
 - [x] Downlinks
   - [x] Helium on 2nd window (SF12) always works.
 - [x] SetPower

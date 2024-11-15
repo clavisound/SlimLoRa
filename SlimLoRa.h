@@ -70,25 +70,28 @@
 // It needs extra work. We need to define the address of each data.
 // It's better for future firmware updates. Data remains in same place in contrast of avr/eeprom.h
 #if ARDUINO_EEPROM == 1
-	#define EEPROM_OFFSET		  0			// Change this (not too high) if you feel that you gonna burn the EEPROM to use another area of EEPROM
-								// Be careful, maximum value around 800 (1024 - EEPROM_END).
+	#define EEPROM_OFFSET		  0	// Change this fom 0 to EEPROM size - 152 if you feel 
+						// that you gonna burn the EEPROM to use another area
+						// of EEPROM
 								// EEPROM reliability for AVR's. Around 1.000.000 writes.
 	#define EEPROM_DEVADDR		  0 + EEPROM_OFFSET	// 4 bytes array
-	#define EEPROM_TX_COUNTER	  4 + EEPROM_OFFSET	// 32 bytes but in practice 16 bytes: future proof 32 bytes
-	#define EEPROM_RX_COUNTER	 36 + EEPROM_OFFSET	// 32 bytes but in practice 16 bytes: future proof 32 bytes
-	#define EEPROM_RX1DR_OFFSET	 68 + EEPROM_OFFSET	// 1 byte but I need 3 bits (decimal 7 [0-3]
-	#define EEPROM_JOINED		 68 + EEPROM_OFFSET	// SAME ADDRESS WITH EEPROM_RX1DR_OFFSET: 1 bit (byte) [7]
-	#define EEPROM_RX2_DR		 69 + EEPROM_OFFSET	// 1 byte but I need 4 bits (decimal 15) [0-3]
-	#define EEPROM_RX_DELAY		 69 + EEPROM_OFFSET	// SAME ADDRESS WITH EEPROM_RX2_DR. Nibble. I need 4 bits (decimal 15) [4-7]
-	#define EEPROM_DEVNONCE		 70 + EEPROM_OFFSET	// 2 bytes
-	#define EEPROM_JOINNONCE	 72 + EEPROM_OFFSET	// 4 bytes
-	#define EEPROM_APPSKEY		 76 + EEPROM_OFFSET	// 16 bytes array
-	#define EEPROM_FNWKSIKEY	 92 + EEPROM_OFFSET	// 16 bytes array
-	#define EEPROM_SNWKSIKEY	108 + EEPROM_OFFSET	// 16 bytes array
-	#define EEPROM_NW_ENC_KEY	124 + EEPROM_OFFSET	// 16 bytes array
-	#define EEPROM_DOWNPACKET	140 + EEPROM_OFFSET	// 64 bytes array
-	#define EEPROM_DOWNPORT		204 + EEPROM_OFFSET	// 1 byte
-	#define EEPROM_END		205 + EEPROM_OFFSET	// last byte of SlimLoRa on EEPROM
+	#define EEPROM_TX_COUNTER	  4 + EEPROM_OFFSET	// 4 bytes but in practice 2 bytes: future proof 4 bytes
+	#define EEPROM_RX_COUNTER	  8 + EEPROM_OFFSET	// 4 bytes but in practice 2 bytes: future proof 4 bytes
+	#define EEPROM_RX1DR_OFFSET	 12 + EEPROM_OFFSET	// 1 byte but I need 3 bits (decimal 7 [0-3]
+	#define EEPROM_JOINED		 12 + EEPROM_OFFSET	// SAME ADDRESS WITH EEPROM_RX1DR_OFFSET: 1 bit (byte) [7]
+	#define EEPROM_RX2_DR		 13 + EEPROM_OFFSET	// 1 byte but I need 4 bits (decimal 15) [0-3]
+	#define EEPROM_RX_DELAY		 13 + EEPROM_OFFSET	// SAME ADDRESS WITH EEPROM_RX2_DR. Nibble. I need 4 bits (decimal 15) [4-7]
+	#define EEPROM_DEVNONCE		 14 + EEPROM_OFFSET	// 2 bytes
+	#define EEPROM_JOINNONCE	 16 + EEPROM_OFFSET	// 4 bytes
+	#define EEPROM_APPSKEY		 20 + EEPROM_OFFSET	// 16 bytes array
+	#define EEPROM_FNWKSIKEY	 36 + EEPROM_OFFSET	// 16 bytes array
+	#define EEPROM_SNWKSIKEY	 52 + EEPROM_OFFSET	// 16 bytes array
+	#define EEPROM_NW_ENC_KEY	 68 + EEPROM_OFFSET	// 16 bytes array
+	#define EEPROM_NBTRANS		 84 + EEPROM_OFFSET	// 4 bits [0-15]. 4 BITS to spare
+	#define EEPROM_CHMASK		 85 + EEPROM_OFFSET	// 2 bytes
+	#define EEPROM_DOWNPACKET	 87 + EEPROM_OFFSET	// 64 bytes array
+	#define EEPROM_DOWNPORT		151 + EEPROM_OFFSET	// 1 byte
+	#define EEPROM_END		151 + EEPROM_OFFSET	// last byte of SlimLoRa on EEPROM
 #endif
 
 #define MICROS_PER_SECOND               1000000
@@ -158,7 +161,7 @@
 #define LORAWAN_DIRECTION_UP                0
 #define LORAWAN_DIRECTION_DOWN              1
 
-#define LORAWAN_UPLINK_CHANNEL_COUNT        8
+#define LORAWAN_UPLINK_CHANNEL_COUNT        8 // Valid Values 8 or 16. Used for ChMask
 
 // LoRaWAN frame options
 #define LORAWAN_FOPT_LINK_CHECK_REQ         0x02
@@ -307,13 +310,14 @@ class SlimLoRa {
 
 	uint8_t downlinkData[12]; // hardcoded to 12 bytes
 	uint8_t downlinkSize;
+	uint8_t downPort;
 			
 #if DEBUG_SLIM == 1
 	void printMAC(void);
 	void printDownlink(void);
 	uint8_t packet[64];
 	int8_t packet_length;
-	uint8_t f_options_length, port, payload_length;
+	uint8_t f_options_length, payload_length;
 #endif
 
 #if DEBUG_SLIM == 0 // if not debuging, those are private. If debugging everything is public
@@ -331,10 +335,9 @@ class SlimLoRa {
     unsigned long tx_done_micros_;
     int8_t last_packet_snr_;
     
-    // TODO store to EEPROM
-    uint8_t ChMask; // TODO US needs an array of 5 elements. p. 33 of Regional Parameters
+    uint16_t ChMask;
     uint8_t NbTrans = NBTRANS;
-    uint8_t NbTrans_counter; // This is not needed to store in EEPROM
+    uint8_t NbTrans_counter;
 
     static const uint8_t kFrequencyTable[9][3];
     static const uint8_t kDataRateTable[7][3];
@@ -354,6 +357,7 @@ class SlimLoRa {
     void ProcessFrameOptions(uint8_t *options, uint8_t f_options_length);
     int8_t ProcessDownlink(uint8_t window);
     void Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length);
+    void defaultChannel();
 #if COUNT_TX_DURATION == 1
     // Variables to calculate TX time in ms
     uint32_t slimStartTXtimestamp, slimEndTXtimestamp;
@@ -383,6 +387,10 @@ class SlimLoRa {
     void SetRx2DataRate(uint8_t value);
     uint8_t GetRx1Delay();
     void SetRx1Delay(uint8_t value);
+    void GetChMask();
+    void SetChMask();
+    void GetNbTrans();
+    void SetNbTrans();
 
 #if LORAWAN_KEEP_SESSION
     void SetHasJoined(bool value);
