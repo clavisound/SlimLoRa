@@ -1,10 +1,9 @@
-# SlimLoRa - Propably the easiest and smallest footprint LoRaWAN library for Arduino library and EU868.
 
 ---
 
 ![CI](https://github.com/clavisound/SlimLoRa/actions/workflows/main.yml/badge.svg)
 
-# Easy to use LoRaWAN library for classic AVR's with 32Kbytes of flash. Session stored to EEPROM, you only need to join once.
+# SlimLoRa - Propably the easiest and smallest footprint LoRaWAN library for Arduino library and EU868.
 
 This library is probably the most easy to use LoRaWAN library. The target is LoRaWAN-1.0.3 specification. It supports OTAA / Join, most important MAC commands - like DR, power, NBtrans, downlinks for user application and session is stored to EEPROM. Applications downlinks are limited to maximum of 16 bytes. I think it's more than enough. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs around 52kBytes of program flash), or LMIC (around 36kBytes of program flash).
 
