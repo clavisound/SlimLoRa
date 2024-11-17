@@ -44,6 +44,7 @@ The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks 
 - [x] ADR for Data Rate and TxPower. After join with SF9 in different room from gateway (RSSI -85), TTN sends SF7 (or SF8) ADR command and SlimLoRa conforms.
 - [x] ADR_ACK_LIMIT
 - [x] NbTrans
+- [x] Channel Mask
 
 # MAC commands added but untested
 
@@ -72,9 +73,7 @@ Solutions with avr style.
 
 # TODO's (PR's welcome) - In order of importance.
 
-- [ ] Channel Mask
 - [ ] CFlist
-- [ ] Save more session data to EEPROM like NBtrans.
 - [ ] Join back-off
 - [ ] Confirmed Uplink
 - [ ] Confirmed Downlink
