@@ -17,7 +17,7 @@
 #define NBTRANS	1
 
 // TTN or Helium
-#define NETWORK 'NET_HELIUM'	// Two options: NET_HLM = helium, NET_TTN = TheThingsNetwork
+#define NETWORK 'NET_TTN'	// Two options: NET_HLM = helium, NET_TTN = TheThingsNetwork
 				// NET_TTN: RX2 SF9
 				// NET_HLM: RX2 SF12
 
@@ -28,11 +28,11 @@
 // I think helium needs re-join. EVAL with chripstack
 
 // I propose to you that you config your device on the console.helium.com to 5 seconds RX DELAY.
-// By Default HELIUM uses 1 sec of delay
-#define NET_HELIUM_RX_DELAY	5
-
 // Make sure this value is the same with TTN console.
 #define NET_TTN_RX_DELAY	5
+
+// By Default HELIUM uses 1 sec of delay, but join is always at 5 seconds
+#define NET_HELIUM_RX_DELAY	5
 
 // Select Arduino style EEPROM handling.
 #define ARDUINO_EEPROM	1	// Uses static storage, but it helps debugging.
@@ -48,6 +48,9 @@
 // Store counters every X times to protect EEPROM from constant writings
 #define EEPROM_WRITE_TX_COUNT	200	// SlimLoRa default: 10
 #define EEPROM_WRITE_RX_COUNT	10	// SlimLoRa default: 3
+
+// downlink size payload. You can gain some flash / RAM memory here
+#define DOWNLINK_PAYLOAD_SIZE	12	// more than 51 bytes is impossible in SF12
 
 // LoRaWAN ADR
 // https://lora-developers.semtech.com/documentation/tech-papers-and-guides/implementing-adaptive-data-rate-adr/implementing-adaptive-data-rate/
@@ -161,7 +164,8 @@
 #define LORAWAN_DIRECTION_UP                0
 #define LORAWAN_DIRECTION_DOWN              1
 
-#define LORAWAN_UPLINK_CHANNEL_COUNT        8 // Valid Values 8 or 16. Used for ChMask
+#define LORAWAN_UPLINK_CHANNEL_COUNT        8 // Valid Value only 8. 
+					      // In future downlink channel must move to another index - not 8 or in another variable.
 
 // LoRaWAN frame options
 #define LORAWAN_FOPT_LINK_CHECK_REQ         0x02
@@ -199,7 +203,7 @@
 #define LORAWAN_PORT_SIZE			1
 #define LORAWAN_MIC_SIZE			4
 #define LORAWAN_MAC_AND_FRAME_HEADER		8 // MAC Header is 1 byte. Frame header is 7..22 bytes
-#define LORAWAN_START_OF_FRM_PAYLOAD		10
+#define LORAWAN_START_OF_FRM_PAYLOAD		9
 
 // LoRaWAN Join packet sizes
 #define LORAWAN_JOIN_REQUEST_SIZE           18
@@ -308,7 +312,7 @@ class SlimLoRa {
     void setArrayEEPROM(uint16_t eepromAdr, uint8_t *arrayData, uint8_t size);
 #endif
 
-	uint8_t downlinkData[12]; // hardcoded to 12 bytes
+	uint8_t downlinkData[DOWNLINK_PAYLOAD_SIZE];
 	uint8_t downlinkSize;
 	uint8_t downPort;
 			

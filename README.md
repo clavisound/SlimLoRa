@@ -45,8 +45,9 @@ The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks 
 - [x] ADR_ACK_LIMIT
 - [x] NbTrans
 - [x] Channel Mask
+- [x] RxTimingSetup
 
-# MAC commands added but untested
+## MAC commands added but untested
 
 - [ ] Added battery Level to DevStatusAns. Battery status is working, I think margin is wrong.
 
@@ -73,18 +74,18 @@ Solutions with avr style.
 
 # TODO's (PR's welcome) - In order of importance.
 
-- [ ] CFlist
 - [ ] Join back-off
 - [ ] Confirmed Uplink
 - [ ] Confirmed Downlink
+- [ ] Extern variable for Duty Cycle if the application can provide time.
 - [ ] Make DevNonce random.
 - [ ] More regions. Currently only EU868 is working.
 - [ ] Add pin mappings infrastucture for other boards.
 - [ ] Add compile options for battery status (unable to measure, connected to external power)
-- [ ] Respect Dwell MAC command (only for US902?)
 - [ ] Random delay for TX.
 - [ ] Duty Cycle per channel.
-- [ ] extern variable for Duty Cycle if the application can provide time.
+- [ ] Respect Dwell MAC command (only for US902?)
+- [ ] CFlist only for US and AS?
 
 # Undoable on AVR and Deep Sleep
 

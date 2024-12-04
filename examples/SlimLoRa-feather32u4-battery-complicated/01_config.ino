@@ -1,6 +1,6 @@
 #define HLM // TTN or HLM (helium) MSB values
 
-// JS DECODER for Helium or TTN
+// JS DECODER for TTN or Helium.
 /*
 
 function Decoder(bytes, port) {

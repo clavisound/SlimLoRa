@@ -1,5 +1,8 @@
  /*  
- * This sketch joins and sends the battery level every 15 minutes.
+ * This sketch joins and sends the battery level every 5 minutes.
+ * It accepts downlinks to change this interval.
+ * 
+ * Send a downlink to port 1 with range of 0-255
  * 
  * You need 
  * To be in Europe! **Only EU868 region**. Sorry. Please feel free
@@ -24,19 +27,20 @@
 
 #include "SlimLoRa.h"
 #include <Adafruit_SleepyDog.h>
-  
+
+// program behaviour
 #define DEBUG_INO   1     // DEBUG via Serial.print
-
 #define PHONEY      0     // don't transmit. for DEBUGing
-#define KEYS_EXPORT 1     // export keys on log. Don't publish them!
 
+// pin to measure battery voltage - works with Feather32u4
 #define VBATPIN   A9
 
 uint8_t joinEfforts = 5; // how many times we will try to join.
 
-uint32_t joinStart, joinEnd, RXend, vbat;
-uint8_t dataRate, txPower = 14, payload[1], payload_length, vbatC;
+uint32_t joinStart, joinEnd, RXend, vbat, newfCnt;
+uint8_t dataRate, txPower = 8, payload[1], payload_length, vbatC;
 uint8_t fport = 1;
+uint8_t minutes = 5;
 
 SlimLoRa lora = SlimLoRa(8);    // OK for feather 32u4 (CS featherpin. Aka: nss_pin for SlimLoRa). TODO: support other pin configurations.
 
@@ -50,9 +54,13 @@ void setup() {
     #endif
 
     lora.Begin();
-    lora.SetDataRate(SF10BW125);
+    lora.SetDataRate(SF7BW125);
     lora.SetPower(txPower);
     lora.SetAdrEnabled(1); // 0 to disable. Network can still send ADR command to device. This is preference, not an order.
+
+    // increase fCnt after reset
+    newfCnt = lora.GetTxFrameCounter() + EEPROM_WRITE_TX_COUNT;
+    lora.SetTxFrameCounter(newfCnt);
 
     // for DEBUG only, don't use this.
     //lora.ForceTxFrameCounter(3);
@@ -61,12 +69,11 @@ void setup() {
 
     // Show data stored in EEPROM
     #if DEBUG_INO == 1
-      printMAC_EEPROM();
-      Serial.println(F("Disconnect / power off the device and study the log. You have 30 seconds time.\nAfter that the program will continue."));
+      Serial.println(F("\nAfter 7 seconds the program will start."));
     #endif // DEBUG_INO
 
-    // Just a delay for 30 seconds
-     blinkLed(20, 500, 1); // times, duration (ms), seconds
+    // Just a delay for 7 seconds
+     blinkLed(14, 500, 1); // times, duration (ms), seconds
 
     // Join if we have efforts.
     #if LORAWAN_KEEP_SESSION == 1 && LORAWAN_OTAA_ENABLED == 1 // lora.GetHasJoined needs LORAWAN_KEEP_SESSION
@@ -85,13 +92,16 @@ void setup() {
         
         joinEfforts--;
         joinStart = micros();
+        
         #if PHONEY == 1
           Serial.print(F("\nPhoney trasmit."));
           delay(3000);
         #endif
+        
         #if PHONEY == 0
           lora.Join();
         #endif
+        
         joinEnd   = micros();
 
         // join effort is done. Close the lights.
@@ -108,7 +118,6 @@ void setup() {
           #if DEBUG_INO == 1
             Serial.print(F("\nJoinStart vs RXend micros (first number seconds): "));Serial.print(joinEnd - joinStart);
             Serial.println(F("\nRetry join in 6 minutes"));
-            printMAC_EEPROM();
             Serial.print("DR: ");Serial.println(SF7BW125);
             blinkLed(320, 10, 1); // approx 6 minutes times, duration (ms), every seconds
           #else
@@ -143,7 +152,7 @@ void loop() {
     if (!lora.HasJoined() && joinEfforts < 1) {
   #endif // LORAWAN_KEEP_SESSION
   blinkLed(220, 25, 9); // ~33 minutes: times, duration (ms), every seconds
-}
+  }
 
 // send uplink
 #if LORAWAN_KEEP_SESSION == 1 && LORAWAN_OTAA_ENABLED == 1
@@ -155,20 +164,55 @@ void loop() {
 
   #if DEBUG_INO == 1
     Serial.println(F("\nSending uplink."));
-    printMAC_EEPROM();
   #endif
     checkBatt();
 
     payload_length = sizeof(payload);
     lora.SendData(fport, payload, payload_length);
 
+    // if we received downlink on port 1 change the minutes interval.
+    if ( lora.downlinkSize > 0 ) {
+      if ( lora.downPort == 1 ) {
+
+        #if DEBUG_INO == 1
+        Serial.print(F("\nUsed data from Port\t: "));Serial.print(lora.downPort);
+        Serial.print(F("\ndownlinkSize\t: "));Serial.print(lora.downlinkSize);
+        #endif
+        
+        minutes = lora.downlinkData[0];
+        // in case payload of downlink is zero
+        if ( minutes < 1 ) {
+          minutes = 2;
+        } // minutes
+      
+      #if DEBUG_INO == 1
+      Serial.print(F("\nNew minutes\t: "));Serial.print(minutes);
+      #endif
+
+      } else {
+
+      #if DEBUG_INO == 1
+      Serial.print(F("\nUndefined Port\t: "));Serial.print(lora.downPort);
+      Serial.print(F("\ndownlinkSize\t: "));Serial.print(lora.downlinkSize);
+      #endif
+      
+      } // downPort
+    } else { 
+      
+      #if DEBUG_INO == 1
+      Serial.print(F("\nNo downlink data."));
+      #endif
+      
+      // downlinkSize
+    }
+
   #if DEBUG_INO == 1
     Serial.println(F("\nUplink done."));
-    printMAC_EEPROM();
+    Serial.print(F("\nSleeping for minutes: "));Serial.print(minutes);
   #endif
 
    // blink every 3 seconds for ~15 minutes. We joined.
-   blinkLed(300, 50, 3);
+   blinkLed(20 * minutes, 50, 3);
   
  } // (Get)HasJoined()
 } // loop()

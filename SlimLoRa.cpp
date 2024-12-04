@@ -1334,8 +1334,9 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				// Apply ChMask
 				// TODO US: Apply ChMask according to ChMaskCntl. p. 33 Regional parameters
 				if ( new_rx2_dr == 0 ) { 
-					// BUG? Always zero?
 					ChMask = (uint16_t) options[i + 2] | options[i + 3] << 8;
+
+					// Store to EEPROM
 					SetChMask();
 
 					#if DEBUG_SLIM == 1
@@ -1507,6 +1508,8 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				new_rx2_dr = (options[i + 1] & 0xF);
 				// zero value = 1
 				if ( new_rx2_dr == 0 ) { new_rx2_dr = 1; }
+
+				// Save to EEPROM
 				SetRx1Delay(new_rx2_dr);
 				rx1_delay_micros_ = GetRx1Delay() * MICROS_PER_SECOND;
 
@@ -1547,6 +1550,10 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
  * @return 0 if successful, else error code.
  */
 int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
+	// start fresh
+	downlinkSize = 0;
+	downPort = 0;
+
 	int8_t result;
 	uint8_t rx1_offset_dr;
 	uint8_t temp;
@@ -1663,18 +1670,6 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 	#endif
 
 	}
-	//
-	// This does not goes well with my procedure to read downlink application data.
-	// EEPROM corruption, hung and restart.
-       /*	else {
-	#if DEBUG_SLIM == 1
-		Serial.print(F("\nMAC else downPort: "));Serial.println(downPort);Serial.flush();
-	#endif
-		// Process MAC commands
-		f_options_length = packet[5] & 0xF;
-		ProcessFrameOptions(&packet[8], f_options_length);
-	}
-	*/
 
 	// application downlink
 	if ( downPort > 0 && downPort < 224 ) { // downPort 0 and 224 are special case
@@ -1697,7 +1692,6 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 		// stollen from MAC command
 		payload_length = packet_length - LORAWAN_MAC_AND_FRAME_HEADER - f_options_length - LORAWAN_MIC_SIZE;
-		//payload_length = packet_length - 8 - f_options_length - 4;
 		#if DEBUG_SLIM == 1
 			Serial.print(F("\nPacket RAW HEX"));printHex(packet, packet_length);
 			printDownlink();
@@ -1707,14 +1701,29 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 		EncryptPayload(&packet[LORAWAN_MAC_AND_FRAME_HEADER + f_options_length + LORAWAN_PORT_SIZE], payload_length, frame_counter, LORAWAN_DIRECTION_DOWN);
 
 		// Store downlink payload to downlinkData. Skip MAC header and Device Address.
-		// Data starts at 10th byte and ends 4 bytes - before MIC;
-		downlinkSize = 0;
-		for ( temp = LORAWAN_START_OF_FRM_PAYLOAD - 1; temp < packet_length - LORAWAN_MIC_SIZE; temp++) {
+		temp = LORAWAN_START_OF_FRM_PAYLOAD;				// Data starts at 10th byte and ends 4 bytes before MIC
+		for ( ; downlinkSize < payload_length - 1; downlinkSize++) {	// BUG? payload_length is always plus 1. WHY?
+			
+			if ( downlinkSize > DOWNLINK_PAYLOAD_SIZE ) {		// Protection for buffer overflow.
+										// If downlinkSize > DOWNLINK_PAYLOAD_SIZE invalidate and abort income data.
+
+				#if DEBUG_SLIM == 1
+				Serial.print(F("\ndownlinkSize is larger than DOWNLINK_PAYLOAD_SIZE: "));Serial.print(DOWNLINK_PAYLOAD_SIZE);
+				Serial.print(F("\ndownlinkSize: "));Serial.print(downlinkSize);
+				#endif
+
+				downlinkSize = 0;
+
+				break;
+			}
 			downlinkData[downlinkSize] = packet[temp];
-			downlinkSize++;
+			temp++;
 		}
+			
 		#if DEBUG_SLIM == 1
+		if ( downlinkSize > 0 ) {
 			Serial.print(F("\nDownlinkData"));printHex(downlinkData, downlinkSize);
+		}
 		#endif
 	}
 
@@ -2449,7 +2458,7 @@ uint16_t SlimLoRa::GetTxFrameCounter() {
 void SlimLoRa::SetTxFrameCounter(uint16_t count) {
 	eeprom_write_word(&eeprom_lw_tx_frame_counter, count);
 #if DEBUG_SLIM == 1
-	Serial.print(F("\nWRITE Tx#: "));Serial.print(count >> 8);Serial.print(count);
+	Serial.print(F("\nWRITE Tx#: "));Serial.print(count);
 #endif
 }
 
@@ -2491,20 +2500,10 @@ uint8_t SlimLoRa::GetRx2DataRate() {
 
 	if (value == 0xFF) {
 #if LORAWAN_OTAA_ENABLED
-		return SF12BW125;
-	#if NETWORK == 'NET_TTN' // TTN
+		// return SF12BW125;
 		return RX_SECOND_WINDOW;
-	#endif // TTN
-	#if NETWORK == 'NET_HELIUM' // Helium
-		return RX_SECOND_WINDOW;
-	#endif // HELIUM
 #else
-	#if NETWORK == 'NET_TTN' // TTN
 		return RX_SECOND_WINDOW;
-	#endif // TTN
-	#if NETWORK == 'NET_TTN' // TTN
-		return RX_SECOND_WINDOW;
-	#endif // Helium
 #endif // LORAWAN_OTAA_ENABLED
 	}
 	return value;
@@ -2580,7 +2579,7 @@ void SlimLoRa::SetTxFrameCounter(uint16_t count) {
 	//EEPROM.update(EEPROM_TX_COUNTER, count);
 	EEPROM.put(EEPROM_TX_COUNTER, count);
 #if DEBUG_SLIM == 1
-	Serial.print(F("\nWRITE Tx#: "));Serial.print(count >> 8);Serial.print(count);
+	Serial.print(F("\nWRITE Tx#: "));Serial.print(count);
 #endif
 }
 
