@@ -1288,7 +1288,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 	for (uint8_t i = 0; i < f_options_length; i++) {
 
 	#if DEBUG_SLIM == 1
-	Serial.print(F("\nProcessing MAC: "));Serial.println(options[i]);
+	Serial.print(F("\nProcessing MAC\t: "));Serial.println(options[i]);
 	#endif
 
 		switch (options[i]) {
@@ -1312,7 +1312,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				new_rx2_dr = ( options[i + 4] >> 4 ) & 0b111;
 
 				#if DEBUG_SLIM == 1
-				Serial.print(F("\nChMaskCntl\t:"));Serial.println(new_rx2_dr);
+				Serial.print(F("\nChMaskCntl\t:"));Serial.print(new_rx2_dr);
 				#endif
 
 				// enable all channels
@@ -1368,7 +1368,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 						data_rate_ = new_rx2_dr;
 				
 						#if DEBUG_SLIM == 1
-						Serial.print(F("\nReceived DR\t:"));Serial.println(data_rate_);
+						Serial.print(F("\n\nReceived DR\t:"));Serial.print(data_rate_);
 						#endif
 					}
 					if (tx_power != 0xF) {
@@ -1380,7 +1380,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 						#endif
 				
 						#if DEBUG_SLIM == 1
-						Serial.print(F("\nReceived Power\t:"));Serial.println(tx_power);
+						Serial.print(F("\nReceived Power\t:"));Serial.print(tx_power);
 						#endif
 					}
 				}
@@ -1389,7 +1389,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				pending_fopts_.fopts[pending_fopts_.length++] = status;
 
 				#if DEBUG_SLIM == 1
-				Serial.print(F("\nReceived NbTrans\t:"));Serial.println(NbTrans);
+				Serial.print(F("\nReceived NbTrans:"));Serial.println(NbTrans);
 				#endif
 
 				i += LORAWAN_FOPT_LINK_ADR_REQ_SIZE;
@@ -1649,6 +1649,9 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 	// Reset NbTrans, we received downlink
 	NbTrans_counter = NbTrans;
 
+	f_options_length = packet[5] & 0xF; // p. 17
+	
+	// unencrypted port
 	downPort = packet[LORAWAN_MAC_AND_FRAME_HEADER + f_options_length];
 
 	#if DEBUG_SLIM == 1
@@ -1657,11 +1660,14 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 	// Parse MAC commands from payload if packet on port 0
 	if (downPort == 0) {
+		#if DEBUG_SLIM == 1
+			Serial.print(F("\n\nMAC Options Mode"));
+		#endif
 		payload_length = packet_length - LORAWAN_MAC_AND_FRAME_HEADER - f_options_length - LORAWAN_MIC_SIZE;
 		EncryptPayload(&packet[LORAWAN_MAC_AND_FRAME_HEADER + f_options_length + LORAWAN_PORT_SIZE], payload_length, frame_counter, LORAWAN_DIRECTION_DOWN);
 
 	#if DEBUG_SLIM == 1
-		printDownlink();
+//		printDownlink();
 	#endif
 
 		ProcessFrameOptions(&packet[LORAWAN_MAC_AND_FRAME_HEADER + f_options_length + LORAWAN_PORT_SIZE], payload_length);
@@ -1672,14 +1678,13 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 	}
 
-	// application downlink
+	// application downlink and MAC commands
 	if ( downPort > 0 && downPort < 224 ) { // downPort 0 and 224 are special case
 		
 		// Process MAC commands
-		f_options_length = packet[5] & 0xF; // p. 17
 		if ( f_options_length > 0 ) {
 		#if DEBUG_SLIM == 1
-			Serial.print(F("\nFrame Options Mode"));
+			Serial.print(F("\n\nFrame Options Mode"));
 			Serial.print(F("\nPacket RAW HEX"));printHex(packet, packet_length);
 			printDownlink();
 		#endif
@@ -1702,7 +1707,8 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 		EncryptPayload(&packet[LORAWAN_MAC_AND_FRAME_HEADER + f_options_length + LORAWAN_PORT_SIZE], payload_length, frame_counter, LORAWAN_DIRECTION_DOWN);
 
 		// Store downlink payload to downlinkData. Skip MAC header and Device Address.
-		temp = LORAWAN_START_OF_FRM_PAYLOAD;				// Data starts at 10th byte and ends 4 bytes before MIC
+		temp = LORAWAN_START_OF_FRM_PAYLOAD + f_options_length;		// Data starts at 10th byte and ends 4 bytes before MIC.
+										// If we have frame options we have to read bytes after the frame options.
 		for ( ; downlinkSize < payload_length - 1; downlinkSize++) {	// BUG? payload_length is always plus 1. WHY?
 			
 			if ( downlinkSize > DOWNLINK_PAYLOAD_SIZE ) {		// Protection for buffer overflow.
@@ -1879,14 +1885,14 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	#endif
 
 	#if DEBUG_SLIM == 1
-	uint8_t countFailures;
+	uint8_t countEfforts;
 	#endif
 
 	while ( ( ( ChMask >> channel_ ) & 0x01 ) == 0 ) {
 
 		#if DEBUG_SLIM == 1
 		Serial.print(F("\nChannel disabled."));
-		countFailures++;
+		countEfforts++;
 		#endif
 		
 		// next channel
@@ -1911,7 +1917,7 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	}
 
 	#if DEBUG_SLIM == 1
-		Serial.print(F("\ncountFailures\t:"));Serial.print(countFailures);
+		Serial.print(F("\ncountEfforts\t:"));Serial.print(countEfforts);
 		Serial.print(F("\nchannel_\t:"));Serial.println(channel_);
 	#endif
 	
@@ -2704,7 +2710,7 @@ void SlimLoRa::GetChMask() {
 void SlimLoRa::SetChMask() {
 	EEPROM.update(EEPROM_CHMASK, ChMask);
 #if DEBUG_SLIM == 1
-	Serial.print(F("\nWRITE ChMask: "));Serial.print(ChMask);
+	Serial.print(F("\nWRITE ChMask\t: "));Serial.print(ChMask);
 #endif
 }
 
@@ -2766,14 +2772,14 @@ void SlimLoRa::SetHasJoined(bool value) {
 // DevAddr
 void SlimLoRa::GetDevAddr(uint8_t *dev_addr) {
 	eeprom_read_block(dev_addr, eeprom_lw_dev_addr, 4);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	Serial.print(F("\nDevAddr on GetDev: "));printHex(dev_addr, 4);
 #endif
 }
 
 void SlimLoRa::SetDevAddr(uint8_t *dev_addr) {
 	eeprom_write_block(dev_addr, eeprom_lw_dev_addr, 4);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	Serial.print(F("\nWRITE DevAddr: "));printHex(dev_addr, 4);
 #endif
 }
