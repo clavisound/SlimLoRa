@@ -35,7 +35,7 @@ The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks 
 - [x] Deep Sleep
 - [x] Restore session from EEPROM (arduino style)
 - [x] Downlink for application.
-- [x] Confirmed Downlink
+- [x] Sends ACK to confirmed Downlink.
 - [x] NbTrans - edit SlimLoRa.h to config.
 - [x] Most important MAC commands - more to follow
 - [x] Session saved to EEPROM. You only need to join once on the lifetime of the device.

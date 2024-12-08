@@ -2,7 +2,7 @@
  * This sketch joins and sends the battery level every 5 minutes.
  * It accepts downlinks to change this interval.
  * 
- * Send a downlink to port 1 with range of 0-255
+ * Send a downlink to port 1 with a value range of 0-255
  * 
  * You need 
  * To be in Europe! **Only EU868 region**. Sorry. Please feel free

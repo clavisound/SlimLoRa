@@ -711,8 +711,9 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 
 #if COUNT_TX_DURATION == 1
 	// EVAL: maybe this is breaking timing.
-	// Works with SF7 JOIN and TTN GW 	in same room 	and initial delay of 5s
-	// Works with SF8 JOIN and Helium GW	in outdoors 	and initial delay of 5s
+	// Works with SF7 JOIN 		TTN GW 		in same room 	delay of 5s
+	// Works with SF8 JOIN 		Helium GW	in outdoors 	delay of 5s
+	// Works with SF7 downlinks 	Helium GW	in same room 	delay 2s - RX2 window
 	slimEndTXtimestamp = millis();
 #endif
 
@@ -722,7 +723,7 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 	// Switch RFM to sleep
 	RfmWrite(RFM_REG_OP_MODE, 0x00);
 
-	// BUG: this is not needed when Join. But Join calls this RfmSendPacket
+	// BUG: this is not needed when Join. But Join calls this RfmSendPacket function
 	// NbTrans controls the fCnt
 	if ( NbTrans_counter > 0 ) {
 		NbTrans_counter--;
@@ -1263,7 +1264,8 @@ end:
 #if DEBUG_SLIM == 1
 	if ( result == 0 ) {
 	Serial.print(F("\nPacket Length: "));Serial.println(packet_length);
-	Serial.print(F("\nJoined on window: "));Serial.println(window);printMAC();
+	Serial.print(F("\nJoined on window: "));Serial.println(window);
+	printMAC();
 	}
 #endif
 
@@ -1282,13 +1284,6 @@ end:
  */
 void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 	uint8_t status, new_rx1_dr_offset, new_rx2_dr; // new_rx2_dr is also used as a temp value
-
-	// No I already made the check
-	/*
-	if (f_options_length == 0) {
-		return;
-	}
-	*/
 
 	for (uint8_t i = 0; i < f_options_length; i++) {
 
@@ -1551,8 +1546,9 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
  */
 int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 	// start fresh
-	downlinkSize = 0;
-	downPort = 0;
+	downlinkSize	= 0;
+	downPort	= 0;
+	ack_		= 0;
 
 	int8_t result;
 	uint8_t rx1_offset_dr;
@@ -1602,7 +1598,7 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 		goto end;
 	}
 
-	// We have to ACK that we received the downlink
+	// Mark ack_ as true so the next uplink we will have ACK enabled.
 	if (packet[0] == LORAWAN_MTYPE_CONFIRMED_DATA_DOWN) {
 		ack_ = true;	 
 	}
@@ -1728,6 +1724,7 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 		#if DEBUG_SLIM == 1
 		if ( downlinkSize > 0 ) {
 			Serial.print(F("\nDownlinkData"));printHex(downlinkData, downlinkSize);
+			//printMAC();
 		}
 		#endif
 	}
@@ -1760,6 +1757,7 @@ end:
 	} else {
 		Serial.print(F("Window 2, rx2_DR: "));Serial.println(rx2_data_rate_);
 	}
+	printMAC();
 	Serial.flush();
 	#if LORAWAN_OTAA_ENABLED
 	Serial.print(F("\nDevAddr after RX windows: "));printHex(dev_addr, 4);
@@ -1834,8 +1832,6 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	// if we received a confirmed downlink respond with ACK
 	if ( ack_ == true ) {
 		packet[packet_length] |= LORAWAN_FCTRL_ACK;
-		// reset so we will have to re-enable ACK if downlink wants it.
-		ack_ == false;
 	}
 
 	packet[packet_length++] |= pending_fopts_.length + sticky_fopts_.length;
@@ -2640,18 +2636,18 @@ uint8_t SlimLoRa::GetRx2DataRate() {
 	if (value == 0x0F) {	// probably erased EEPROM.
 #if LORAWAN_OTAA_ENABLED
 		return SF12BW125;	// default LORAWAN 1.0.3
-	#if NETWORK == 'NET_TTN'	// TTN
+	#if NETWORK == NET_TTN		// TTN
 		return SF9BW125;
 	#endif
-	#if NETWORK == 'NET_HLM'	// Helium
+	#if NETWORK == NET_HLM		// Helium
 		return SF12BW125;
 	#endif
 #else	// ABP settings
 		return SF12BW125;	// default LORAWAN 1.0.3
-	#if NETWORK == 'NET_TTN'	// TTN
+	#if NETWORK == NET_TTN		// TTN
 		return SF9BW125;
 	#endif
-	#if NETWORK == 'NET_HLM'	// Helium
+	#if NETWORK == NET_HLM		// Helium
 		return SF12BW125;
 	#endif
 #endif // LORAWAN_OTAA_ENABLED
@@ -2674,11 +2670,11 @@ uint8_t SlimLoRa::GetRx1Delay() {
 	uint8_t value;
        	value = EEPROM.read(EEPROM_RX_DELAY) >> 4;	// shared byte with EEPROM_RX2_DATARATE
 	if ( value == 0 || value >= 0xF ) {		// probably erased EEPROM
-		#if NETWORK == 'NET_TTN'
+		#if NETWORK == NET_TTN
 		value = NET_TTN_RX_DELAY;		// default for TTN
 		#endif
 
-		#if NETWORK == 'NET_HELIUM'
+		#if NETWORK == NET_HELIUM
 		value = NET_HELIUM_RX_DELAY;		// default for Helium
 		#endif
 	}

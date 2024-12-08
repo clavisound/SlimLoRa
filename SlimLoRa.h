@@ -294,7 +294,7 @@ class SlimLoRa {
     void SetPower(uint8_t power);
     bool GetHasJoined();
     void GetDevAddr(uint8_t *dev_addr);
-    bool adr_enabled_ = true;
+    bool adr_enabled_	= true;
     uint8_t data_rate_ = SF7BW125;
     uint16_t tx_frame_counter_ = 0;
     uint16_t rx_frame_counter_ = 0;
@@ -338,8 +338,8 @@ class SlimLoRa {
     uint8_t rx1_data_rate_offset_ = 0;
     uint8_t rx2_data_rate_ = RX_SECOND_WINDOW;
     uint32_t rx1_delay_micros_;
-    bool has_joined_ = false;
-    bool ack_ = false;
+    bool has_joined_	= false;
+    bool ack_		= false;
     fopts_t pending_fopts_ = {0};
     fopts_t sticky_fopts_ = {0};
     uint8_t rx_symbols_ = LORAWAN_RX_MIN_SYMBOLS;
