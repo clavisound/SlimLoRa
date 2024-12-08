@@ -61,6 +61,8 @@ uint8_t eeprom_lw_down_port;
 #ifdef EU863
 // Frequency band for europe
 // TODO remove PROGMEM code to enable CFlist and New Channel Req
+// First 3 channels are enabled by default
+// LoRaWAN spec. p. 24 of regional parameters 1.0.3
 const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
 	{ 0xD9, 0x06, 0x8B }, // Channel 0 868.100 MHz / 61.035 Hz = 14222987 = 0xD9068B
 	{ 0xD9, 0x13, 0x58 }, // Channel 1 868.300 MHz / 61.035 Hz = 14226264 = 0xD91358
@@ -72,9 +74,6 @@ const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
 	{ 0xD8, 0xF9, 0xBE }, // Channel 7 867.900 MHz / 61.035 Hz = 14219710 = 0xD8F9BE
 	{ 0xD9, 0x61, 0xBE }  // Downlink  869.525 MHz / 61.035 Hz = 14246334 = 0xD961BE
 };
-
-// First 3 channels are enabled by default
-// LoRaWAN spec. p. 24 of regional parameters 1.0.3
 #endif
 
 #ifdef AU915 // According to Regional Parameters of LoRaWAN 1.0.3 spec page: 37 line 850 there is 64 channels starting from 915.200 MHz to 927.800 MHz with 200MHz steps.
@@ -119,7 +118,7 @@ const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
     {0xE6, 0xA6, 0x8D}, // Channel 4 867.300 MHz / 61.035 Hz = 15115917 = 0xE6A68D
     {0xE6, 0xB3, 0x5A}, // Channel 5 867.500 MHz / 61.035 Hz = 15119194 = 0xE6B35A
     {0xE6, 0xC0, 0x27}, // Channel 6 867.700 MHz / 61.035 Hz = 15122471 = 0xE6C027
-    {0xE6, 0x80, 0x27},  // Channel 7 867.900 MHz / 61.035 Hz = 15106087 = 0xE68027
+    {0xE6, 0x80, 0x27}, // Channel 7 867.900 MHz / 61.035 Hz = 15106087 = 0xE68027
     {0xE5, 0x8C, 0xF3}  // Downlink ??? MHz / 61.035 Hz = 15043827 = 0xE58CF3 // TODO
 };
 #endif
@@ -311,6 +310,7 @@ void SlimLoRa::printMAC(){
 #endif // LORAWAN_OTAA_ENABLED
 	Serial.print(F("\nTx#\t: "));Serial.print(GetTxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(tx_frame_counter_);
 	Serial.print(F("Rx#\t: "));Serial.print(GetRxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(rx_frame_counter_);
+	Serial.print(F("Asked ack_\t: "));Serial.print(ack_);
 	Serial.print(F("\nNbTrans_counter\t: "));Serial.print(NbTrans_counter);
 	Serial.print(F("\nNbTrans\t: "));Serial.print(NbTrans);
 	Serial.print(F("\nChMask\t: "));Serial.print(ChMask);
@@ -1602,6 +1602,11 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 		goto end;
 	}
 
+	// We have to ACK that we received the downlink
+	if (packet[0] == LORAWAN_MTYPE_CONFIRMED_DATA_DOWN) {
+		ack_ = true;	 
+	}
+
 	frame_counter = packet[7] << 8 | packet[6];
 	if (frame_counter < rx_frame_counter_) {
 		result = LORAWAN_ERROR_INVALID_FRAME_COUNTER;
@@ -1790,8 +1795,8 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 		if ( data_rate_ > SF12BW125 ) {
 			data_rate_++;
 		}
-		// EVAL: I think the order is important for the HOPE
-		SetPower(16);
+	// EVAL: I think the order is important for the HOPE
+	SetPower(16);
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nADR backoff, DR: "));Serial.print(data_rate_);
 #endif
@@ -1825,6 +1830,14 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 			packet[packet_length] |= LORAWAN_FCTRL_ADR_ACK_REQ;
 		}
 	}
+
+	// if we received a confirmed downlink respond with ACK
+	if ( ack_ == true ) {
+		packet[packet_length] |= LORAWAN_FCTRL_ACK;
+		// reset so we will have to re-enable ACK if downlink wants it.
+		ack_ == false;
+	}
+
 	packet[packet_length++] |= pending_fopts_.length + sticky_fopts_.length;
 
 	// Uplink frame counter

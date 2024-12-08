@@ -31,6 +31,7 @@
 // program behaviour
 #define DEBUG_INO   1     // DEBUG via Serial.print
 #define PHONEY      0     // don't transmit. for DEBUGing
+#define POWER       8     // Transmittion power
 
 // pin to measure battery voltage - works with Feather32u4
 #define VBATPIN   A9
@@ -38,7 +39,7 @@
 uint8_t joinEfforts = 5; // how many times we will try to join.
 
 uint32_t joinStart, joinEnd, RXend, vbat, newfCnt;
-uint8_t dataRate, txPower = 8, payload[1], payload_length, vbatC;
+uint8_t dataRate, txPower = POWER, payload[1], payload_length, vbatC;
 uint8_t fport = 1;
 uint8_t minutes = 5;
 

@@ -13,11 +13,15 @@
 
 // NbTrans (re-transmissions). Normally 1 max is 15
 // Olivier Seller for static devices proposes 4.
-// See TTN conference Amsterdam 24 at 7 minute presentation.
+// See TTN conference Amsterdam 2024 at 7 minute presentation.
 #define NBTRANS	1
 
-// TTN or Helium
-#define NETWORK 'NET_TTN'	// Two options: NET_HLM = helium, NET_TTN = TheThingsNetwork
+// TTN or Helium. Don't change those values
+#define NET_TTN		1
+#define NET_HELIUM	2
+
+// change this according to your network
+#define NETWORK NET_TTN	// Two options: NET_HLM = helium, NET_TTN = TheThingsNetwork
 				// NET_TTN: RX2 SF9
 				// NET_HLM: RX2 SF12
 
@@ -209,14 +213,16 @@
 #define LORAWAN_JOIN_REQUEST_SIZE           18
 #define LORAWAN_JOIN_ACCEPT_MAX_SIZE        28
 
+
 // LoRaWAN delays in seconds
-#if NETWORK == 'NET_TTN'
+#define RX_SECOND_WINDOW SF12BW125
+#if NETWORK == NET_TTN
 	#define RX_SECOND_WINDOW SF9BW125
 	#define LORAWAN_JOIN_ACCEPT_DELAY1_MICROS   NET_TTN_RX_DELAY       * MICROS_PER_SECOND
 	#define LORAWAN_JOIN_ACCEPT_DELAY2_MICROS   (NET_TTN_RX_DELAY + 1) * MICROS_PER_SECOND
 #endif
 
-#if NETWORK == 'NET_HELIUM'
+#if NETWORK == NET_HELIUM
 	#define RX_SECOND_WINDOW SF12BW125
 	#define LORAWAN_JOIN_ACCEPT_DELAY1_MICROS   NET_HELIUM_RX_DELAY       * MICROS_PER_SECOND
 	#define LORAWAN_JOIN_ACCEPT_DELAY2_MICROS   (NET_HELIUM_RX_DELAY + 1) * MICROS_PER_SECOND
@@ -333,6 +339,7 @@ class SlimLoRa {
     uint8_t rx2_data_rate_ = RX_SECOND_WINDOW;
     uint32_t rx1_delay_micros_;
     bool has_joined_ = false;
+    bool ack_ = false;
     fopts_t pending_fopts_ = {0};
     fopts_t sticky_fopts_ = {0};
     uint8_t rx_symbols_ = LORAWAN_RX_MIN_SYMBOLS;
