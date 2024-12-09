@@ -302,7 +302,8 @@ class SlimLoRa {
     uint8_t pseudo_byte_;
     uint8_t tx_power;
     uint16_t GetTxFrameCounter();
-    void SetTxFrameCounter(uint16_t count);
+    void SetTxFrameCounter();
+    void SetRxFrameCounter();
 
     uint8_t margin, GwCnt; // For LinkCheckAns
 #if COUNT_TX_DURATION == 1

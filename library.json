@@ -1,0 +1,36 @@
+{
+  "name": "SlimLoRa,
+  "version": "0.6.3",
+  "description": "LoRaWAN library with OTAA join, ADR support and most important MAC commands for EU868 suitable for AVR's with 32Kbytes. It uses 14kBytes of program flash instead of 52kBytes of RadioLib or 32kBytes of LMIC. Tested avr32u4 / ATmega32u4 and HopeRF 95w (SX1276) on Adafruit Feather. ABP untested. Session is stored to EEPROM. Testers wanted and PR's for other regions. It supports downlinks.",
+  "keywords": "LoRaWAN, rfm95w, hoperf, SX1276, radio, communication",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/clavisound/SlimLoRa.git"
+  },
+  "authors":
+  [
+    {
+      "name": "Michales Michaloudes",
+      "email": "korgie@gmail.com",
+      "url": "https://krg.etraq.eu"
+      "maintainer": true
+    },
+    {
+      "name": "Hendrik Hagendorn",
+      "url": "https://github.com/novag/SlimLoRa",
+      "maintainer": false
+    },
+    {
+      "name": "Ideentron B.V",
+      "email": "info@ideetron.nl",
+      "url": "http://www.ideetron.nl/LoRa"
+    }
+  ],
+  "license": "LGPL-3.0",
+  "homepage": "https://github.com/clavisound/SlimLoRa",
+  "dependencies": {
+  },
+  "frameworks": "*",
+  "platforms": "*"
+}

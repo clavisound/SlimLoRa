@@ -59,9 +59,9 @@ void setup() {
     lora.SetPower(txPower);
     lora.SetAdrEnabled(1); // 0 to disable. Network can still send ADR command to device. This is preference, not an order.
 
-    // increase fCnt after reset
-    newfCnt = lora.GetTxFrameCounter() + EEPROM_WRITE_TX_COUNT;
-    lora.SetTxFrameCounter(newfCnt);
+    // increase frame counter after reset
+    lora.tx_frame_counter_ += EEPROM_WRITE_TX_COUNT;
+    lora.SetTxFrameCounter();
 
     // for DEBUG only, don't use this.
     //lora.ForceTxFrameCounter(3);

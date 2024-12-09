@@ -741,7 +741,7 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 #if LORAWAN_KEEP_SESSION
 	// Saves memory cycles. We jump at worst case scenario EEPROM_WRITE_TX_COUNT fCnt.
 	if (tx_frame_counter_ % EEPROM_WRITE_TX_COUNT == 0) {
-		SetTxFrameCounter(tx_frame_counter_);
+		SetTxFrameCounter();
 #endif
 	}
 	adr_ack_counter_++;
@@ -1245,10 +1245,10 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
 
 	// reset counters
 	tx_frame_counter_ = 1;
-	SetTxFrameCounter(1);
+	SetTxFrameCounter();
 
 	rx_frame_counter_ = 0;
-	SetRxFrameCounter(0);
+	SetRxFrameCounter();
 
 	adr_ack_counter_ = 0;
 	NbTrans_counter = NbTrans;
@@ -1312,7 +1312,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				new_rx2_dr = ( options[i + 4] >> 4 ) & 0b111;
 
 				#if DEBUG_SLIM == 1
-				Serial.print(F("\nChMaskCntl\t:"));Serial.print(new_rx2_dr);
+				Serial.print(F("\nChMaskCntl\t: "));Serial.print(new_rx2_dr);
 				#endif
 
 				// enable all channels
@@ -1335,7 +1335,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 					SetChMask();
 
 					#if DEBUG_SLIM == 1
-					Serial.print(F("\nChMask BIN\t:"));Serial.println(ChMask, BIN);
+					Serial.print(F("\nChMask BIN\t: "));Serial.println(ChMask, BIN);
 					#endif
 
 					status = 0x1; // enable ChMask ACK
@@ -1470,6 +1470,10 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 
 				last_packet_snr_ = (int8_t) RfmRead(RFM_REG_PKT_SNR_VALUE);
 
+				#if DEBUG_SLIM == 1
+				Serial.print(F("\nlast_packet_snr_ 8bit: "));Serial.print(last_packet_snr_);
+				#endif
+
 				// convert to 6 bit. Code from RadioLib
 				if ( last_packet_snr_ < 128 ) {
 					last_packet_snr_ /= 4;
@@ -1478,7 +1482,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				}
 
 				#if DEBUG_SLIM == 1
-				Serial.print(F("\nSTATUS TODO: vbat / SNR shifts: "));Serial.print(vbat);Serial.print(F("/"));Serial.println((last_packet_snr_ & 0x80) >> 2 | last_packet_snr_ & 0x3F, BIN);
+				Serial.print(F("\nSTATUS TODO: vbat / SNR shifts: "));Serial.print(vbat);Serial.print(F("/"));Serial.print((last_packet_snr_ & 0x80) >> 2 | last_packet_snr_ & 0x3F, BIN);
 				Serial.print(F("\nSNR / 4: "));Serial.println(last_packet_snr_);
 				#endif
 
@@ -1598,11 +1602,7 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 		goto end;
 	}
 
-	// Mark ack_ as true so the next uplink we will have ACK enabled.
-	if (packet[0] == LORAWAN_MTYPE_CONFIRMED_DATA_DOWN) {
-		ack_ = true;	 
-	}
-
+	// EVAL for overflow
 	frame_counter = packet[7] << 8 | packet[6];
 	if (frame_counter < rx_frame_counter_) {
 		result = LORAWAN_ERROR_INVALID_FRAME_COUNTER;
@@ -1637,21 +1637,43 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 	memset(sticky_fopts_.fopts, 0, sticky_fopts_.length);
 	sticky_fopts_.length = 0;
 
-	// Saves memory cycles, we could loose more than EEPROM_WRITE_RX_COUNT packets if we don't receive a packet at all
+	// Saves memory cycles
 	rx_frame_counter_++; 
 	if (rx_frame_counter_ % EEPROM_WRITE_RX_COUNT == 0) {
-		SetRxFrameCounter(rx_frame_counter_);
+		SetRxFrameCounter();
 	}
 
+	// Mark ack_ as true so the next uplink we will have ACK enabled.
+	if (packet[0] == LORAWAN_MTYPE_CONFIRMED_DATA_DOWN) {
+		ack_ = true;	 
+	}
+
+	// We received downlink. Reset some values.
 	// Reset ADR acknowledge counter
 	adr_ack_counter_ = 0; 
-
-	// Reset NbTrans, we received downlink
+	// Reset NbTrans
 	NbTrans_counter = NbTrans;
 
+	// Grab frame options size in bytes.
 	f_options_length = packet[5] & 0xF; // p. 17
 	
-	// unencrypted port
+	// If we don't have payload port must be null. In that case maybe we have MAC commands, ACK - not implemented -, or nothing.
+	if ( packet_length == LORAWAN_MAC_AND_FRAME_HEADER + f_options_length + LORAWAN_MIC_SIZE ) {
+
+		#if DEBUG_SLIM == 1
+		Serial.print(F("\n\nNull downPort"));
+		#endif
+	
+		// If we have frame options check them.
+		// This is pedantic, but maybe the LNS have send empty packet.
+		if ( f_options_length > 0 ) {
+			ProcessFrameOptions(&packet[LORAWAN_MAC_AND_FRAME_HEADER], f_options_length);
+		}
+		
+		// null port. We don't have application data. We finished.
+		goto end;
+	}
+
 	downPort = packet[LORAWAN_MAC_AND_FRAME_HEADER + f_options_length];
 
 	#if DEBUG_SLIM == 1
@@ -1678,7 +1700,7 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 	}
 
-	// application downlink and MAC commands
+	// application downlink and possibly MAC commands
 	if ( downPort > 0 && downPort < 224 ) { // downPort 0 and 224 are special case
 		
 		// Process MAC commands
@@ -2470,10 +2492,10 @@ uint16_t SlimLoRa::GetTxFrameCounter() {
 	return value;
 }
 
-void SlimLoRa::SetTxFrameCounter(uint16_t count) {
-	eeprom_write_word(&eeprom_lw_tx_frame_counter, count);
+void SlimLoRa::SetTxFrameCounter() {
+	eeprom_write_word(&eeprom_lw_tx_frame_counter, tx_frame_counter_);
 #if DEBUG_SLIM == 1
-	Serial.print(F("\nWRITE Tx#: "));Serial.print(count);
+	Serial.print(F("\nWRITE Tx#: "));Serial.print(tx_frame_counter_);
 #endif
 }
 
@@ -2484,10 +2506,10 @@ uint16_t SlimLoRa::GetRxFrameCounter() {
 	return value;
 }
 
-void SlimLoRa::SetRxFrameCounter(uint16_t count) {
-	eeprom_write_word(&eeprom_lw_rx_frame_counter, count);
+void SlimLoRa::SetRxFrameCounter() {
+	eeprom_write_word(&eeprom_lw_rx_frame_counter, rx_frame_counter_);
 #if DEBUG_SLIM == 1
-	Serial.print(F("\nWRITE Rx#: "));Serial.print(count >> 8);Serial.print(count);
+	Serial.print(F("\nWRITE Rx#: "));Serial.print(rx_frame_counter_);
 #endif
 }
 
@@ -2589,12 +2611,12 @@ uint16_t SlimLoRa::GetTxFrameCounter() {
 	return value;
 }
 
-void SlimLoRa::SetTxFrameCounter(uint16_t count) {
+void SlimLoRa::SetTxFrameCounter() {
 	// BUG: Why it does not work?
-	//EEPROM.update(EEPROM_TX_COUNTER, count);
-	EEPROM.put(EEPROM_TX_COUNTER, count);
+	//EEPROM.update(EEPROM_TX_COUNTER, tx_frame_counter_);
+	EEPROM.put(EEPROM_TX_COUNTER, tx_frame_counter_);
 #if DEBUG_SLIM == 1
-	Serial.print(F("\nWRITE Tx#: "));Serial.print(count);
+	Serial.print(F("\nWRITE Tx#: "));Serial.print(tx_frame_counter_);
 #endif
 }
 
@@ -2606,11 +2628,10 @@ uint16_t SlimLoRa::GetRxFrameCounter() {
 	return value;
 }
 
-void SlimLoRa::SetRxFrameCounter(uint16_t count) {
-	EEPROM.put(EEPROM_RX_COUNTER, count);
+void SlimLoRa::SetRxFrameCounter() {
+	EEPROM.put(EEPROM_RX_COUNTER, rx_frame_counter_);
 #if DEBUG_SLIM == 1
-	Serial.print(F("\nWRITE Rx#: "));Serial.print(count >> 8);Serial.print(count);
-	Serial.print(F("\nWRITE Rx#2: "));Serial.print(rx_frame_counter_ >> 8);Serial.print(rx_frame_counter_);
+	Serial.print(F("\nWRITE Rx#: "));Serial.print(rx_frame_counter_);
 #endif
 }
 
@@ -2708,7 +2729,7 @@ void SlimLoRa::GetChMask() {
 }
 
 void SlimLoRa::SetChMask() {
-	EEPROM.update(EEPROM_CHMASK, ChMask);
+	EEPROM.put(EEPROM_CHMASK, ChMask); // BUG: EEPROM.update does not work?
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nWRITE ChMask\t: "));Serial.print(ChMask);
 #endif
@@ -2731,9 +2752,9 @@ void SlimLoRa::SetNbTrans() {
 	temp_none = EEPROM.read(EEPROM_NBTRANS) & 0xF0;		// Get the MSB bits
 	EEPROM.update(EEPROM_NBTRANS, ( temp_none << 4 ) | NbTrans );
 #if DEBUG_SLIM == 1
-	Serial.print(F("\nWRITE temp_none: "));Serial.print(temp_none >> 4);
-	Serial.print(F("\nWRITE NbTrans: "));Serial.print(NbTrans);
-	Serial.print(F("\nWRITE RAW: "));Serial.print( ( temp_none << 4 ) | NbTrans );
+	Serial.print(F("\nWRITE temp_none\t: "));Serial.print(temp_none >> 4);
+	Serial.print(F("\nWRITE NbTrans\t: "));Serial.print(NbTrans);
+	Serial.print(F("\nWRITE RAW\t: "));Serial.print( ( temp_none << 4 ) | NbTrans );
 #endif
 }
 #endif // ARDUINO_EEPROM == 1
