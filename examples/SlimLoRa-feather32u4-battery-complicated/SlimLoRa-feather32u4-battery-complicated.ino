@@ -31,7 +31,7 @@
 // program behaviour
 #define DEBUG_INO   1     // DEBUG via Serial.print
 #define PHONEY      0     // don't transmit. for DEBUGing
-#define POWER       8     // Transmittion power
+#define POWER	14     // Transmittion power
 
 // pin to measure battery voltage - works with Feather32u4
 #define VBATPIN   A9
@@ -41,7 +41,7 @@ uint8_t joinEfforts = 5; // how many times we will try to join.
 uint32_t joinStart, joinEnd, RXend, vbat, newfCnt;
 uint8_t dataRate, txPower = POWER, payload[1], payload_length, vbatC;
 uint8_t fport = 1;
-uint8_t minutes = 5;
+uint8_t minutes = 15;
 
 SlimLoRa lora = SlimLoRa(8);    // OK for feather 32u4 (CS featherpin. Aka: nss_pin for SlimLoRa). TODO: support other pin configurations.
 
@@ -63,7 +63,7 @@ void setup() {
     lora.tx_frame_counter_ += EEPROM_WRITE_TX_COUNT;
     lora.SetTxFrameCounter();
 
-    // for DEBUG only, don't use this.
+    // for DEBUG only, don't use those.
     //lora.ForceTxFrameCounter(3);
     //lora.SetDevNonce(1812);
     //lora.SetJoinNonce(1812);
@@ -177,7 +177,7 @@ void loop() {
 
         #if DEBUG_INO == 1
         Serial.print(F("\nUsed data from Port\t: "));Serial.print(lora.downPort);
-        Serial.print(F("\ndownlinkSize\t: "));Serial.print(lora.downlinkSize);
+        Serial.print(F("\ndownlinkSize\t\t: "));Serial.print(lora.downlinkSize);
         #endif
         
         minutes = lora.downlinkData[0];
@@ -187,7 +187,7 @@ void loop() {
         } // minutes
       
       #if DEBUG_INO == 1
-      Serial.print(F("\nNew minutes\t: "));Serial.print(minutes);
+      Serial.print(F("\nNew minutes\t\t: "));Serial.print(minutes);
       #endif
 
       } else {

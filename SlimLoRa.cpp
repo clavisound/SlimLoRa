@@ -211,10 +211,12 @@ void printHex(uint8_t *value, uint8_t len){
 }
 
 void SlimLoRa::printDownlink(){
-	Serial.print(F("\nPort Down\t: "));Serial.print(downPort);
-	Serial.print(F("\nfopts.length\t: "));Serial.print(f_options_length);
-	Serial.print(F("\nPacket Length\t: "));Serial.print(packet_length);
+	Serial.print(F("\nPort Down\t: "));	Serial.print(downPort);
+	Serial.print(F("\nfopts.length\t: "));	Serial.print(f_options_length);
+	Serial.print(F("\nPacket Length\t: "));	Serial.print(packet_length);
 	Serial.print(F("\nPayload Length\t: "));Serial.print(payload_length);
+	Serial.print(F("\nSNR 8bit\t: "));	Serial.print(last_packet_snrB);
+	Serial.print(F("\nSNR 8bit / 4\t: "));	Serial.print(last_packet_snr_);
 	Serial.flush();
 }
 
@@ -255,16 +257,16 @@ void printNOWEB(){
 void SlimLoRa::setArrayEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t size) {
    for ( uint8_t i = 0; i < size; i++ ) {
     EEPROM.update(eepromAddr + i, arrayData[i]);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
     if ( i == 0 ) {
-   Serial.print(F("\nWRITE EEPROM Address: 0x"));Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
+   Serial.print(F("WRITE EEPROM Address: 0x"));Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
     } else {
    Serial.print(F(", "));Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
     }
 #endif
    }
-#if DEBUG_SLIM == 1
-   Serial.print(F("\nWRITE: "));printHex(arrayData, size);
+#if DEBUG_SLIM > 1
+   Serial.print(F("WRITE: "));printHex(arrayData, size);
 #endif
 }
 
@@ -279,7 +281,7 @@ void SlimLoRa::setArrayEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t s
 void SlimLoRa::getArrayEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t size) {
    for ( uint8_t i = 0; i < size; i++ ) {
     arrayData[i] = EEPROM.read(eepromAddr + i);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
     if ( i == 0 ) {
    Serial.print(F("\nREAD EEPROM Address->Value: 0x"));Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
     } else {
@@ -287,7 +289,7 @@ void SlimLoRa::getArrayEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t s
     }
 #endif
    }
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
    Serial.print(F("\nread: "));printHex(arrayData, size);
 #endif
 }
@@ -612,7 +614,13 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 	}
 
 	// SNR
+#if DEBUG_SLIM == 1 // temp DEBUG to check RadioLib vs novag method
+	last_packet_snr_ = (int8_t) RfmRead(RFM_REG_PKT_SNR_VALUE);
+	last_packet_snrB = last_packet_snr_;
+	last_packet_snr_ /= 4;
+#else
 	last_packet_snr_ = (int8_t) RfmRead(RFM_REG_PKT_SNR_VALUE) / 4;
+#endif
 
 	// Clear interrupts
 	RfmWrite(RFM_REG_IRQ_FLAGS, 0xFF);
@@ -742,8 +750,8 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 	// Saves memory cycles. We jump at worst case scenario EEPROM_WRITE_TX_COUNT fCnt.
 	if (tx_frame_counter_ % EEPROM_WRITE_TX_COUNT == 0) {
 		SetTxFrameCounter();
-#endif
 	}
+#endif
 	adr_ack_counter_++;
 }
 
@@ -932,7 +940,9 @@ int8_t SlimLoRa::Join() {
 	channel_ = pseudo_byte_ & 0b11; 		// Mask with first 4 channels [0-3].
 	if ( channel_ == 0b11 ) { channel_ = 0b10; }	// But we can join only on 3 channels: 868.100 868.300 and 868.500
 	*/
+	
 	defaultChannel();
+
 #if DEBUG_SLIM == 1
 	Serial.print(F("\nMAC before join: "));printMAC();
 #endif
@@ -1467,25 +1477,21 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 					pending_fopts_.fopts[pending_fopts_.length++] = 0xFF; // Unable to measure the battery level.
 				#endif //ARDUINO_AVR_FEATHER32U4
 				
-
-				last_packet_snr_ = (int8_t) RfmRead(RFM_REG_PKT_SNR_VALUE);
-
 				#if DEBUG_SLIM == 1
-				Serial.print(F("\nlast_packet_snr_ 8bit: "));Serial.print(last_packet_snr_);
-				#endif
+				Serial.print(F("\nlast_packet_snr_ 8bit / 4: "));Serial.print(last_packet_snr_);
+				Serial.print(F("\nSTATUS ANS -- vbat, SNR shifts: "));Serial.print(vbat);Serial.print(F(", "));Serial.print((last_packet_snr_ & 0x80) >> 2 | last_packet_snr_ & 0x3F, BIN);
 
 				// convert to 6 bit. Code from RadioLib
-				if ( last_packet_snr_ < 128 ) {
-					last_packet_snr_ /= 4;
+				if ( last_packet_snrB < 128 ) {
+					last_packet_snrB /= 4;
 				} else {
-					last_packet_snr_ = (last_packet_snr_ - 256 ) / 4;
+					last_packet_snrB = (last_packet_snrB - 256 ) / 4;
 				}
 
-				#if DEBUG_SLIM == 1
-				Serial.print(F("\nSTATUS TODO: vbat / SNR shifts: "));Serial.print(vbat);Serial.print(F("/"));Serial.print((last_packet_snr_ & 0x80) >> 2 | last_packet_snr_ & 0x3F, BIN);
-				Serial.print(F("\nSNR / 4: "));Serial.println(last_packet_snr_);
+				Serial.print(F("\nSNR radiolib: "));Serial.println(last_packet_snrB);
 				#endif
-
+				
+				// convert 8bit signed to 6bit signed -32 to 31
 				pending_fopts_.fopts[pending_fopts_.length++] = (last_packet_snr_ & 0x80) >> 2 | last_packet_snr_ & 0x3F;
 
 				i += LORAWAN_FOPT_DEV_STATUS_REQ_SIZE;
@@ -2783,7 +2789,7 @@ bool SlimLoRa::GetHasJoined() {
 
 void SlimLoRa::SetHasJoined(bool value) {
 	eeprom_write_byte(&eeprom_lw_has_joined, value);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	Serial.print(F("\nWRITE EEPROM: joined"));
 	uint16_t temp = &eeprom_lw_has_joined;
 #endif
@@ -2855,7 +2861,7 @@ void SlimLoRa::GetAppSKey(uint8_t *key) {
 
 void SlimLoRa::SetAppSKey(uint8_t *key) {
 	eeprom_write_block(key, eeprom_lw_app_s_key, 16);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	printNOWEB();Serial.print(F("WRITE app_skey: "));printHex(key, 16);
 #endif
 }
@@ -2863,14 +2869,14 @@ void SlimLoRa::SetAppSKey(uint8_t *key) {
 // FNwkSIntKey
 void SlimLoRa::GetFNwkSIntKey(uint8_t *key) {
 	eeprom_read_block(key, eeprom_lw_f_nwk_s_int_key, 16);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	printNOWEB();Serial.print(F("FNwkSInt: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetFNwkSIntKey(uint8_t *key) {
 	eeprom_write_block(key, eeprom_lw_f_nwk_s_int_key, 16);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	printNOWEB();Serial.print(F("WRITE FNwkSInt: "));printHex(key, 16);
 #endif
 }
@@ -2878,7 +2884,7 @@ void SlimLoRa::SetFNwkSIntKey(uint8_t *key) {
 // SNwkSIntKey
 void SlimLoRa::GetSNwkSIntKey(uint8_t *key) {
 	eeprom_read_block(key, eeprom_lw_s_nwk_s_int_key, 16);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	printNOWEB();Serial.print(F("SNwkSInt: "));printHex(key, 16);
 #endif
 }
@@ -2893,14 +2899,14 @@ void SlimLoRa::SetSNwkSIntKey(uint8_t *key) {
 // NwkSEncKey
 void SlimLoRa::GetNwkSEncKey(uint8_t *key) {
 	eeprom_read_block(key, eeprom_lw_nwk_s_enc_key, 16);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	printNOWEB();Serial.print(F("NwkSEncKey: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetNwkSEncKey(uint8_t *key) {
 	eeprom_write_block(key, eeprom_lw_nwk_s_enc_key, 16);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	printNOWEB();Serial.print(F("WRITE NwkSEnc: "));printHex(key, 16);
 #endif
 }
@@ -3017,14 +3023,14 @@ void SlimLoRa::SetJoinNonce(uint32_t join_nonce) {
 // AppSKey
 void SlimLoRa::GetAppSKey(uint8_t *key) {
 	getArrayEEPROM(EEPROM_APPSKEY, key, 16);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	printNOWEB();Serial.print(F("Read appSkey: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetAppSKey(uint8_t *key) {
 	setArrayEEPROM(EEPROM_APPSKEY, key, 16);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	printNOWEB();Serial.print(F("WRITE appSkey: "));printHex(key, 16);
 #endif
 }
@@ -3032,14 +3038,14 @@ void SlimLoRa::SetAppSKey(uint8_t *key) {
 // FNwkSIntKey
 void SlimLoRa::GetFNwkSIntKey(uint8_t *key) {
 	getArrayEEPROM(EEPROM_FNWKSIKEY, key, 16);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	printNOWEB();Serial.print(F("FNwkSInt: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetFNwkSIntKey(uint8_t *key) {
 	setArrayEEPROM(EEPROM_FNWKSIKEY, key, 16);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	printNOWEB();Serial.print(F("WRITE FNwkSInt: "));printHex(key, 16);
 #endif
 }
@@ -3047,14 +3053,14 @@ void SlimLoRa::SetFNwkSIntKey(uint8_t *key) {
 // SNwkSIntKey
 void SlimLoRa::GetSNwkSIntKey(uint8_t *key) {
 	getArrayEEPROM(EEPROM_SNWKSIKEY, key, 16);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	printNOWEB();Serial.print(F("SNwkSInt: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetSNwkSIntKey(uint8_t *key) {
 	setArrayEEPROM(EEPROM_SNWKSIKEY, key, 16);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	printNOWEB();Serial.print(F("WRITE SNwkSInt: "));printHex(key, 16);
 #endif
 }
@@ -3062,14 +3068,14 @@ void SlimLoRa::SetSNwkSIntKey(uint8_t *key) {
 // NwkSEncKey
 void SlimLoRa::GetNwkSEncKey(uint8_t *key) {
 	getArrayEEPROM(EEPROM_NW_ENC_KEY, key, 16);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	printNOWEB();Serial.print(F("NwkSEncKey: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetNwkSEncKey(uint8_t *key) {
 	setArrayEEPROM(EEPROM_NW_ENC_KEY, key, 16);
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM > 1
 	printNOWEB();Serial.print(F("WRITE NwkSEnc: "));printHex(key, 16);
 #endif
 }

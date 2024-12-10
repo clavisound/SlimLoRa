@@ -346,6 +346,10 @@ class SlimLoRa {
     uint8_t rx_symbols_ = LORAWAN_RX_MIN_SYMBOLS;
     unsigned long tx_done_micros_;
     int8_t last_packet_snr_;
+
+#if DEBUG_SLIM == 1
+    int8_t last_packet_snrB;
+#endif
     
     uint16_t ChMask;
     uint8_t NbTrans = NBTRANS;
