@@ -661,9 +661,21 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 	RfmWrite(RFM_REG_INVERT_IQ_2, 0x1D);
 
 	// Channel
+	#if defined(EU_DR6)
+	// SF7BW250 is only for channel 868.3 - second channel.
+	if ( dri == SF7BW250 ) {
+		RfmWrite(RFM_REG_FR_MSB, pgm_read_byte(&(kFrequencyTable[1][0]))); // 1 is second channel
+		RfmWrite(RFM_REG_FR_MID, pgm_read_byte(&(kFrequencyTable[1][1])));
+		RfmWrite(RFM_REG_FR_LSB, pgm_read_byte(&(kFrequencyTable[1][2])));
+		
+	} else {
+	#endif
 	RfmWrite(RFM_REG_FR_MSB, pgm_read_byte(&(kFrequencyTable[channel][0])));
 	RfmWrite(RFM_REG_FR_MID, pgm_read_byte(&(kFrequencyTable[channel][1])));
 	RfmWrite(RFM_REG_FR_LSB, pgm_read_byte(&(kFrequencyTable[channel][2])));
+	#if defined(EU_DR6)
+	}
+	#endif
 
 	// Bandwidth / Coding Rate / Implicit Header Mode
 	RfmWrite(RFM_REG_MODEM_CONFIG_1, pgm_read_byte(&(kDataRateTable[dri][0])));
@@ -894,9 +906,8 @@ int8_t SlimLoRa::Join() {
 	uint16_t dev_nonce;
 	uint8_t mic[4];
 
-	// Reset RX2 DR to network default
-	// You need this if you can't control the EEPROM.
-	// rx2_data_rate_	  = RX_SECOND_WINDOW;
+	// Set RX2 DR default
+	rx2_data_rate_	  = SF12BW125;
 
 	packet[0] = LORAWAN_MTYPE_JOIN_REQUEST;
 
@@ -1987,6 +1998,11 @@ void SlimLoRa::SendData(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 #if DEBUG_SLIM == 1
 	Serial.println(F("\n*SendData"));printMAC();
 #endif
+
+	// TODO: protect buffer overflow.
+	// EU: RP p. 28. DR0-2 (SF12-SF10), 51 bytes, DR3 (SF9): 115 bytes, DR4-5 (SF8, SF7): 222 bytes
+	// We have to also subtract frame options
+
 	Transmit(fport, payload, payload_length);
 
 	if (ProcessDownlink(1)) {

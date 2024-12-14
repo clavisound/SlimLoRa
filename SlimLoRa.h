@@ -64,6 +64,9 @@
 // if you you want to save 6 bytes of RAM and you don't need to provision the Duty Cycle
 // because you transmitting only on high Data Rates (DR). You save 76 byte of flash memory if you comment this. RAM is the same.
 #define COUNT_TX_DURATION	1
+
+// uncomment to save some byte if you don't use SF7BW250. You gain 32 bytes if you comment this
+#define EU_DR6 // applicable for EU RU AS CN
 // END OF USER DEFINED OPTIONS
 
 // Drift adjustment. Default:	5 works with feather-32u4 TTN and helium at 5 seconds RX delay. Tested with TTN and SF7, SF8, SF9. Tested with Helium at SF10.
@@ -216,6 +219,8 @@
 
 // LoRaWAN delays in seconds
 #define RX_SECOND_WINDOW SF12BW125
+
+// Usefull for ABP devices only. OTAA devices grab RX2 window DR in after join.
 #if NETWORK == NET_TTN
 	#define RX_SECOND_WINDOW SF9BW125
 	#define LORAWAN_JOIN_ACCEPT_DELAY1_MICROS   NET_TTN_RX_DELAY       * MICROS_PER_SECOND
@@ -261,8 +266,8 @@
 // LoRaWAN spreading factors
 // TODO for other regions. Example: DR0 for US902 is SF10BW125 and DR8 is SF12BW500
 // check https://www.thethingsnetwork.org/docs/lorawan/regional-parameters/
-#define FSK	    7 // TODO
-#define SF7BW250    6
+#define FSK	    7 // TODO only 868.8 Mhz
+#define SF7BW250    6 // only 868.3 Mhz
 #define SF7BW125    5
 #define SF8BW125    4
 #define SF9BW125    3
@@ -299,6 +304,8 @@ class SlimLoRa {
     uint16_t tx_frame_counter_ = 0;
     uint16_t rx_frame_counter_ = 0;
     uint8_t adr_ack_counter_ = 0;
+    uint8_t NbTrans = NBTRANS;	// changed by the LNS or by DEFINE
+    uint8_t NbTrans_counter;	// if NbTrans_counter is the same with NbTrans, send new message
     uint8_t pseudo_byte_;
     uint8_t tx_power;
     uint16_t GetTxFrameCounter();
@@ -352,8 +359,6 @@ class SlimLoRa {
 #endif
     
     uint16_t ChMask;
-    uint8_t NbTrans = NBTRANS;
-    uint8_t NbTrans_counter;
 
     static const uint8_t kFrequencyTable[9][3];
     static const uint8_t kDataRateTable[7][3];

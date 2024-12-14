@@ -1,17 +1,14 @@
-
----
-
 ![CI](https://github.com/clavisound/SlimLoRa/actions/workflows/main.yml/badge.svg)
 
 # SlimLoRa - Propably the easiest and smallest footprint LoRaWAN library for Arduino library and EU868.
 
-This library is probably the most easy to use LoRaWAN library. The target is LoRaWAN-1.0.3 specification. It supports OTAA / Join, most important MAC commands - like DR, power, NBtrans, downlinks for user application and session is stored to EEPROM. Applications downlinks are limited to maximum of 16 bytes. I think it's more than enough. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs around 52kBytes of program flash), or LMIC (around 36kBytes of program flash).
+This library is probably the most easy to use LoRaWAN library. The target is LoRaWAN-1.0.3 specification. It supports OTAA / Join, most important MAC commands - like DR, power, NBtrans, downlinks for user application and session is stored to EEPROM. Applications downlinks are static selectable via `#define` in `SlimLoRa.h`. Default is 11 bytes. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs around 52kBytes of program flash), or LMIC (around 36kBytes of program flash).
 
 SlimLoRa needs around 12558 Bytes (13kBytes) but it's getting bigger with the support of MAC commands and more LoRaWAN specification to be added. SlimLoRa gives LoRaWAN life to old μCU's like ATmega 328 with 32kBytes of flash.
 
 [SlimLoRa MAC response in MAC command via Helium original console.](https://krg.etraq.eu/minisites/lora/mac-command-response_crop.png)
 
-The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks to both of them.
+The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks to both of them. I ported the library to Arduino, I expanded the most important MAC commands and enabled downlinks and ACK for confirmed downlinks.
 
 # Working
 
@@ -31,7 +28,7 @@ The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks 
       - [x] Join SF8 on Helium chripstack outdors. Success on 1st window in second or third attempt.
       - [x] Join SF7 on Helium and power 0dBm in different room. Success on 1st window.
 - [x] Downlinks
-  - [x] Helium on 2nd window (SF12) always works.
+  - [x] Helium on 2nd window (SF12) always works on Chiprstack.
 - [x] SetPower
 - [x] Deep Sleep
 - [x] Restore session from EEPROM (arduino style)
@@ -74,8 +71,8 @@ Solutions with avr style.
 # TODO's (PR's welcome) - In order of importance.
 
 - [ ] Join back-off
-- [ ] Confirmed Uplink
 - [ ] Extern variable for Duty Cycle if the application can provide time.
+- [ ] Confirmed Uplink
 - [ ] Make DevNonce random.
 - [ ] More regions. Currently only EU868 is working.
 - [ ] Add pin mappings infrastucture for other boards.

@@ -56,6 +56,7 @@ void setup() {
 
     lora.Begin();
     lora.SetDataRate(SF7BW125);
+    //lora.SetDataRate(SF7BW250); // Testing, ignore this.
     lora.SetPower(txPower);
     lora.SetAdrEnabled(1); // 0 to disable. Network can still send ADR command to device. This is preference, not an order.
 
