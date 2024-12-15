@@ -1,5 +1,8 @@
 /*  
- * This sketch tests eeprom of SlimLoRA. I use it to debug the arduino style eeprom store.
+ * This sketch ERASES eeprom of SlimLoRA. I use it to debug the arduino style eeprom store.
+ * change the EEPROM_OFFSET in SlimLoRa.h to erase the session.
+ * 
+ * Yes, you can use multiple sessions / networks with some hacking with SlimLoRa.
  */
 
 #include <stdint.h>
@@ -23,9 +26,11 @@ void setup() {
 // TEST EEPROM data of SlimLoRa
 lora.SetHasJoined(0);
 Serial.print("HasJoined: ");Serial.println(lora.GetHasJoined());
-lora.SetTxFrameCounter(0);
+lora.tx_frame_counter_ = 0;
+lora.SetTxFrameCounter();
 Serial.print("TxFrameCounter: ");Serial.println(lora.GetTxFrameCounter());
-lora.SetRxFrameCounter(0);
+lora.rx_frame_counter_ = 0;
+lora.SetRxFrameCounter();
 Serial.print("RxFrameCounter: ");Serial.println(lora.GetRxFrameCounter());
 lora.SetRx1DataRateOffset(0);
 Serial.print("Rx1DataRateOffset: ");Serial.println(lora.GetRx1DataRateOffset());
