@@ -41,7 +41,6 @@ The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks 
 # MAC commands supported.
 
 - [x] ADR for Data Rate and TxPower. After join with SF9 in different room from gateway (RSSI -85), TTN sends SF7 (or SF8) ADR command and SlimLoRa conforms.
-- [x] ADR_ACK_LIMIT
 - [x] NbTrans
 - [x] Channel Mask
 - [x] RxTimingSetup
@@ -68,6 +67,7 @@ Solutions with avr style.
 
 # Semi-Working
 
+- [x] ADR_ACK_LIMIT, must follow directive on p. 17 based pn ADR_ACK_DELAY
 - [x] Duty Cycle. Added GetTXms function to return the TOTAL duration of ALL transmissions. At SF7 1byte reports 45-48ms vs 46ms [theoretical](https://avbentem.github.io/airtime-calculator/ttn/eu868/1) at SF8 reports 84ms vs 82ms (theoretical). SF7 5 bytes reports 52ms vs 51.5ms (theoretical). Application HAVE to read the value of GetTXms() after every transmission to check if the the Duty Cycle is respected. I decided to not respect Duty Cycle on SlimLoRa, since if the device is going to Deep Sleep and wakes up via a accelerometer on AVR MCU's freezes the timer0. I think the solution is the RTC or to read a time from GPS.
 - [x] Power to the people. Several values made public. Take care to not write them or you may loose access to the network. Instead of using getters I selected to make public some variables.
 - [x] MAC Commands. 

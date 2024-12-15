@@ -758,6 +758,7 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 	// semi TODO fCnt don't increase if we havee UNCONFIRMED_DATA_UP and NbTrans to do.
 	if ( NbTrans_counter == 0 ) {
 		tx_frame_counter_++;
+		adr_ack_counter_++;
 		NbTrans_counter = NbTrans;
 	}
 
@@ -767,7 +768,6 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 		SetTxFrameCounter();
 	}
 #endif
-	adr_ack_counter_++;
 }
 
 /**
@@ -1870,9 +1870,9 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	if (adr_enabled_) {
 		packet[packet_length] |= LORAWAN_FCTRL_ADR;
 	
-		// Request ACK if data_rate is higher than 0 and adr_ack_counter_ is over the limit
+		// Request ADR if adr_ack_counter_ is over the limit of LORAWAN_ADR_ACK_LIMIT
 		// p. 17
-		if (adr_ack_counter_ >= LORAWAN_ADR_ACK_LIMIT && data_rate_ > 0 ) {
+		if (adr_ack_counter_ >= LORAWAN_ADR_ACK_LIMIT ) {
 			packet[packet_length] |= LORAWAN_FCTRL_ADR_ACK_REQ;
 		}
 	}
