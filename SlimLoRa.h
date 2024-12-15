@@ -65,7 +65,7 @@
 // because you transmitting only on high Data Rates (DR). You save 76 byte of flash memory if you comment this. RAM is the same.
 #define COUNT_TX_DURATION	1
 
-// uncomment to save some byte if you don't use SF7BW250. You gain 32 bytes if you comment this
+// uncomment to save some byte if you don't use SF7BW250. You gain 12 bytes of program flash if you comment this
 #define EU_DR6 // applicable for EU RU AS CN
 // END OF USER DEFINED OPTIONS
 

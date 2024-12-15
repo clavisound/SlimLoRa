@@ -8,7 +8,7 @@ SlimLoRa needs around 12558 Bytes (13kBytes) but it's getting bigger with the su
 
 [SlimLoRa MAC response in MAC command via Helium original console.](https://krg.etraq.eu/minisites/lora/mac-command-response_crop.png)
 
-The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks to both of them. I ported the library to Arduino, I expanded the most important MAC commands and enabled downlinks and ACK for confirmed downlinks.
+The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks to both of them. I ported the library to Arduino, I expanded the most important MAC commands, enabled application downlinks, ACK for confirmed downlinks and corrected the channel for SF7BW250.
 
 # Working
 
@@ -46,6 +46,10 @@ The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks 
 - [x] Channel Mask
 - [x] RxTimingSetup
 - [x] DevStatusAns. Battery status is working, I think margin is fine.
+
+# BUGS
+
+- [ ] SF7BW250 is working with TTN but SlimLoRa does not receives the downlink. This DR6 is currently not supported by Helium [chirpstack-4.7].
 
 # Untested
 

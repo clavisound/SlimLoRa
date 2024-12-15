@@ -310,15 +310,16 @@ void SlimLoRa::printMAC(){
 #else
 	Serial.print(F("\nABP DevAddr: "));printDevAddr();
 #endif // LORAWAN_OTAA_ENABLED
-	Serial.print(F("\nTx#\t: "));Serial.print(GetTxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(tx_frame_counter_);
-	Serial.print(F("Rx#\t: "));Serial.print(GetRxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(rx_frame_counter_);
+	Serial.print(F("\nTx#\t\t: "));Serial.print(GetTxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(tx_frame_counter_);
+	Serial.print(F("Rx#\t\t: "));Serial.print(GetRxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(rx_frame_counter_);
 	Serial.print(F("Asked ack_\t: "));Serial.print(ack_);
 	Serial.print(F("\nNbTrans_counter\t: "));Serial.print(NbTrans_counter);
-	Serial.print(F("\nNbTrans\t: "));Serial.print(NbTrans);
-	Serial.print(F("\nChMask\t: "));Serial.print(ChMask);
+	Serial.print(F("\nNbTrans\t\t: "));Serial.print(NbTrans);
+	Serial.print(F("\nChMask\t\t: "));Serial.println(ChMask);
 	Serial.print(F("\nRX1 delay\t: "));Serial.print(GetRx1Delay());Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print(F("s, RX2: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY2_MICROS / 1000000);Serial.println("s, ");
        	//Serial.print(F("\nCalculated delay: "));Serial.print(CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS));
-	Serial.print(F("\nRx1 DR offset\t: "));Serial.println(GetRx1DataRateOffset());
+	Serial.print(F("Rx1 DR\t\t: "));Serial.println(data_rate_);
+	Serial.print(F("Rx1 DR offset\t: "));Serial.println(GetRx1DataRateOffset());
 	Serial.print(F("Rx2 DR RAM\t: "));Serial.println(rx2_data_rate_);
 	Serial.print(F("Rx2 DR EEPROM\t: "));Serial.println(GetRx2DataRate());
 	Serial.print(F("ADR_ACK_cnt\t: "));Serial.println(adr_ack_counter_);
@@ -664,10 +665,12 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 	#if defined(EU_DR6)
 	// SF7BW250 is only for channel 868.3 - second channel.
 	if ( dri == SF7BW250 ) {
-		RfmWrite(RFM_REG_FR_MSB, pgm_read_byte(&(kFrequencyTable[1][0]))); // 1 is second channel
+		channel_ = 1; // this is needed for downlink channel.
+		
+		// Only with that works. Compiler BUG?
+		RfmWrite(RFM_REG_FR_MSB, pgm_read_byte(&(kFrequencyTable[1][0])));
 		RfmWrite(RFM_REG_FR_MID, pgm_read_byte(&(kFrequencyTable[1][1])));
 		RfmWrite(RFM_REG_FR_LSB, pgm_read_byte(&(kFrequencyTable[1][2])));
-		
 	} else {
 	#endif
 	RfmWrite(RFM_REG_FR_MSB, pgm_read_byte(&(kFrequencyTable[channel][0])));
@@ -1594,8 +1597,8 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 	if (window == 1) {
 		rx1_offset_dr = data_rate_ + rx1_data_rate_offset_; // Reversed table index
-		if (rx1_offset_dr > SF7BW125) {
-			rx1_offset_dr = SF7BW125;
+		if (rx1_offset_dr > SF7BW250) {
+			rx1_offset_dr = SF7BW250;
 		}
 		rx_delay = CalculateRxDelay(rx1_offset_dr, rx1_delay_micros_);
 		packet_length = RfmReceivePacket(packet, sizeof(packet), channel_, rx1_offset_dr, tx_done_micros_ + rx_delay);
