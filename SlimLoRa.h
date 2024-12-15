@@ -330,7 +330,7 @@ class SlimLoRa {
 	uint8_t downlinkSize;
 	uint8_t downPort;
 			
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM >= 1
 	void printMAC(void);
 	void printDownlink(void);
 	uint8_t packet[64];
@@ -354,7 +354,7 @@ class SlimLoRa {
     unsigned long tx_done_micros_;
     int8_t last_packet_snr_;
 
-#if DEBUG_SLIM == 1
+#if DEBUG_SLIM >= 1
     int8_t last_packet_snrB;
 #endif
     
