@@ -266,7 +266,7 @@
 // LoRaWAN spreading factors
 // TODO for other regions. Example: DR0 for US902 is SF10BW125 and DR8 is SF12BW500
 // check https://www.thethingsnetwork.org/docs/lorawan/regional-parameters/
-#define FSK	    7 // TODO only 868.8 Mhz
+//#define FSK	    7 // TODO only 868.8 Mhz
 #define SF7BW250    6 // only 868.3 Mhz
 #define SF7BW125    5
 #define SF8BW125    4
@@ -299,11 +299,15 @@ class SlimLoRa {
     void SetPower(uint8_t power);
     bool GetHasJoined();
     void GetDevAddr(uint8_t *dev_addr);
-    bool adr_enabled_	= true;
-    uint8_t data_rate_ = SF7BW125;
-    uint16_t tx_frame_counter_ = 0;
-    uint16_t rx_frame_counter_ = 0;
-    uint8_t adr_ack_counter_ = 0;
+
+    // ADR variables
+    bool 	adr_enabled_;
+    uint8_t	adr_ack_limit_counter_;
+    uint8_t	adr_ack_delay_counter_;
+
+    uint8_t data_rate_;
+    uint16_t tx_frame_counter_;
+    uint16_t rx_frame_counter_;
     uint8_t NbTrans = NBTRANS;	// changed by the LNS or by DEFINE
     uint8_t NbTrans_counter;	// if NbTrans_counter is the same with NbTrans, send new message
     uint8_t pseudo_byte_;
@@ -342,8 +346,8 @@ class SlimLoRa {
   private:
 #endif
     uint8_t pin_nss_;	// TODO TinyLoRa irg_, rst_ bat_; bat=battery level pin
-    uint8_t channel_ = 0;
-    uint8_t rx1_data_rate_offset_ = 0;
+    uint8_t channel_;
+    uint8_t rx1_data_rate_offset_;
     uint8_t rx2_data_rate_ = RX_SECOND_WINDOW;
     uint32_t rx1_delay_micros_;
     bool has_joined_	= false;

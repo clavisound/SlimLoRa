@@ -322,7 +322,7 @@ void SlimLoRa::printMAC(){
 	Serial.print(F("Rx1 DR offset\t: "));Serial.println(GetRx1DataRateOffset());
 	Serial.print(F("Rx2 DR RAM\t: "));Serial.println(rx2_data_rate_);
 	Serial.print(F("Rx2 DR EEPROM\t: "));Serial.println(GetRx2DataRate());
-	Serial.print(F("ADR_ACK_cnt\t: "));Serial.println(adr_ack_counter_);
+	Serial.print(F("ADR_ACK_cnt\t: "));Serial.println(adr_ack_limit_counter_);
 }
 #endif // DEBUG_SLIM
 
@@ -758,7 +758,10 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 	// semi TODO fCnt don't increase if we havee UNCONFIRMED_DATA_UP and NbTrans to do.
 	if ( NbTrans_counter == 0 ) {
 		tx_frame_counter_++;
-		adr_ack_counter_++;
+		adr_ack_limit_counter_++;
+		if ( adr_ack_limit_counter_ >= LORAWAN_ADR_ACK_LIMIT ) {
+			adr_ack_delay_counter_++;
+		}
 		NbTrans_counter = NbTrans;
 	}
 
@@ -1274,7 +1277,9 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
 	rx_frame_counter_ = 0;
 	SetRxFrameCounter();
 
-	adr_ack_counter_ = 0;
+	// reset counters. EVAL: I use this twice. Maybe better a function?
+	adr_ack_limit_counter_ = 0;
+	adr_ack_delay_counter_ = 0;
 	NbTrans_counter = NbTrans;
 
 	has_joined_ = true;
@@ -1379,7 +1384,11 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				new_rx2_dr = options[i + 1] >> 4; 
 				tx_power   = options[i + 1] & 0xF;
 
+				#if defined(EU_DR6)
 				if (new_rx2_dr == 0xF || (new_rx2_dr >= SF12BW125 && new_rx2_dr <= SF7BW250)) { // Reversed table index
+				#else
+				if (new_rx2_dr == 0xF || (new_rx2_dr >= SF12BW125 && new_rx2_dr <= SF7BW125)) { // Reversed table index
+				#endif
 					status |= 0x2;	// DR ACK
 				}
 				// tx_power = 15 or less than 7
@@ -1433,7 +1442,11 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				if (new_rx1_dr_offset <= LORAWAN_EU868_RX1_DR_OFFSET_MAX) {
 					status |= 0x4;
 				}
+				#if defined(EU_DR6)
 				if (new_rx2_dr >= SF12BW125 && new_rx2_dr <= SF7BW250) { // Reversed table index
+				#else
+				if (new_rx2_dr >= SF12BW125 && new_rx2_dr <= SF7BW125) { // Reversed table index
+				#endif
 					status |= 0x2;
 				}
 
@@ -1597,8 +1610,13 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 	if (window == 1) {
 		rx1_offset_dr = data_rate_ + rx1_data_rate_offset_; // Reversed table index
+		#if defined(EU_DR6)
 		if (rx1_offset_dr > SF7BW250) {
 			rx1_offset_dr = SF7BW250;
+		#else
+		if (rx1_offset_dr > SF7BW125) {
+			rx1_offset_dr = SF7BW125;
+		#endif
 		}
 		rx_delay = CalculateRxDelay(rx1_offset_dr, rx1_delay_micros_);
 		packet_length = RfmReceivePacket(packet, sizeof(packet), channel_, rx1_offset_dr, tx_done_micros_ + rx_delay);
@@ -1670,7 +1688,8 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 	// We received downlink. Reset some values.
 	// Reset ADR acknowledge counter
-	adr_ack_counter_ = 0; 
+	adr_ack_limit_counter_ = 0; 
+	adr_ack_delay_counter_ = 0; 
 	// Reset NbTrans
 	NbTrans_counter = NbTrans;
 
@@ -1837,14 +1856,29 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	EncryptPayload(payload, payload_length, tx_frame_counter_, LORAWAN_DIRECTION_UP);
 
 	// ADR back-off
-	if (adr_enabled_ && adr_ack_counter_ >= LORAWAN_ADR_ACK_LIMIT + LORAWAN_ADR_ACK_DELAY) {
+	// TODO p. 17, after first increase if DR, increase every LORAWAN_ADR_ACK_DELAY overflow
+	if (adr_enabled_ && adr_ack_limit_counter_ >= LORAWAN_ADR_ACK_LIMIT && adr_ack_delay_counter_ == 0 ) {
+		adr_ack_delay_counter_++; // this way, this if statement will be executed only once
 		if ( data_rate_ > SF12BW125 ) {
-			data_rate_++;
+			data_rate_--;
 		}
 	// EVAL: I think the order is important for the HOPE
 	SetPower(16);
 #if DEBUG_SLIM >= 1
-	Serial.print(F("\nADR backoff, DR: "));Serial.print(data_rate_);
+	Serial.print(F("\nADR backoff 1st stage, DR: "));Serial.print(data_rate_);
+#endif
+	}
+
+	// Increase DR every overflow of LORAWAN_ADR_ACK_DELAY
+	if (adr_enabled_ && adr_ack_delay_counter_ >= LORAWAN_ADR_ACK_DELAY ) {
+		adr_ack_delay_counter_ = 0; // reset overflow
+		if ( data_rate_ > SF12BW125 ) {
+			data_rate_--;
+		}
+	// EVAL: I think the order is important for the HOPE
+	SetPower(16);
+#if DEBUG_SLIM >= 1
+	Serial.print(F("\nADR backoff 2nd stage, DR: "));Serial.print(data_rate_);
 #endif
 	}
 
@@ -1870,9 +1904,9 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	if (adr_enabled_) {
 		packet[packet_length] |= LORAWAN_FCTRL_ADR;
 	
-		// Request ADR if adr_ack_counter_ is over the limit of LORAWAN_ADR_ACK_LIMIT
+		// Request ADR if adr_ack_limit_counter_ is over the limit of LORAWAN_ADR_ACK_LIMIT
 		// p. 17
-		if (adr_ack_counter_ >= LORAWAN_ADR_ACK_LIMIT ) {
+		if (adr_ack_limit_counter_ >= LORAWAN_ADR_ACK_LIMIT ) {
 			packet[packet_length] |= LORAWAN_FCTRL_ADR_ACK_REQ;
 		}
 	}
