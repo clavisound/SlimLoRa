@@ -21,7 +21,7 @@
 #define NET_HELIUM	2
 
 // change this according to your network
-#define NETWORK NET_TTN	// Two options: NET_HLM = helium, NET_TTN = TheThingsNetwork
+#define NETWORK NET_TTN		// Two options: NET_HLM = helium, NET_TTN = TheThingsNetwork
 				// NET_TTN: RX2 SF9
 				// NET_HLM: RX2 SF12
 
@@ -36,7 +36,7 @@
 #define NET_TTN_RX_DELAY	5
 
 // By Default HELIUM uses 1 sec of delay, but join is always at 5 seconds
-#define NET_HELIUM_RX_DELAY	5
+#define NET_HELIUM_RX_DELAY	1
 
 // Select Arduino style EEPROM handling.
 #define ARDUINO_EEPROM	1	// Uses static storage, but it helps debugging.
@@ -50,8 +50,8 @@
 #define LORAWAN_KEEP_SESSION    1
 
 // Store counters every X times to protect EEPROM from constant writings
-#define EEPROM_WRITE_TX_COUNT	200	// SlimLoRa default: 10
-#define EEPROM_WRITE_RX_COUNT	10	// SlimLoRa default: 3
+#define EEPROM_WRITE_TX_COUNT	200	// SlimLoRa default: 10 	clv: 200
+#define EEPROM_WRITE_RX_COUNT	10	// SlimLoRa default: 3		clv: 10
 
 // downlink size payload. You can gain some flash / RAM memory here
 #define DOWNLINK_PAYLOAD_SIZE	12	// more than 51 bytes is impossible in SF12
@@ -62,10 +62,11 @@
 #define LORAWAN_ADR_ACK_DELAY   32	// Wait XX times to consider connection lost.				Minimum sane value: 32
 
 // if you you want to save 6 bytes of RAM and you don't need to provision the Duty Cycle
-// because you transmitting only on high Data Rates (DR). You save 76 byte of flash memory if you comment this. RAM is the same.
+// because you transmitting only on high Data Rates (DR). You save 76 byte of flash memory if you comment this.
 #define COUNT_TX_DURATION	1
 
-// uncomment to save some byte if you don't use SF7BW250. You gain 12 bytes of program flash if you comment this
+// You gain 12 bytes of program flash if you comment this. Use it only WITHOUT ADR.
+// TTN does not want this. Helium is not supported.
 #define EU_DR6 // applicable for EU RU AS CN
 // END OF USER DEFINED OPTIONS
 
@@ -253,7 +254,6 @@
 #define LORAWAN_US902_TX_POWER_MAX          14
 //#define LORAWAN_US902_RX1_DR_OFFSET_MAX     5
 
-
 // LoRaWAN Error
 #define LORAWAN_ERROR_NO_PACKET_RECEIVED    -1
 #define LORAWAN_ERROR_SIZE_EXCEEDED         -2
@@ -328,6 +328,7 @@ class SlimLoRa {
 #if ARDUINO_EEPROM == 1
     void getArrayEEPROM(uint16_t eepromAdr, uint8_t *arrayData, uint8_t size);
     void setArrayEEPROM(uint16_t eepromAdr, uint8_t *arrayData, uint8_t size);
+    void printHex(uint8_t *value, uint8_t len);
 #endif
 
 	uint8_t downlinkData[DOWNLINK_PAYLOAD_SIZE];

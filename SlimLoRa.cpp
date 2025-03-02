@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Michales Michaloudes
+ * Copyright (c) 2021-2025 Michales Michaloudes
  * Copyright (c) 2018-2021 Hendrik Hagendorn
  * Copyright (c) 2015-2016 Ideetron B.V. - AES routines
  *
@@ -67,7 +67,7 @@ const uint8_t PROGMEM SlimLoRa::kFrequencyTable[9][3] = {
 	{ 0xD9, 0x06, 0x8B }, // Channel 0 868.100 MHz / 61.035 Hz = 14222987 = 0xD9068B
 	{ 0xD9, 0x13, 0x58 }, // Channel 1 868.300 MHz / 61.035 Hz = 14226264 = 0xD91358
 	{ 0xD9, 0x20, 0x24 }, // Channel 2 868.500 MHz / 61.035 Hz = 14229540 = 0xD92024
-	{ 0xD8, 0xC6, 0x8B }, // Channel 3 867.100 MHz / 61.035 Hz = 14206603 = 0xD8C68B // TODO: CFlist start p. 27
+	{ 0xD8, 0xC6, 0x8B }, // Channel 3 867.100 MHz / 61.035 Hz = 14206603 = 0xD8C68B
 	{ 0xD8, 0xD3, 0x58 }, // Channel 4 867.300 MHz / 61.035 Hz = 14209880 = 0xD8D358
 	{ 0xD8, 0xE0, 0x24 }, // Channel 5 867.500 MHz / 61.035 Hz = 14213156 = 0xD8E024
 	{ 0xD8, 0xEC, 0xF1 }, // Channel 6 867.700 MHz / 61.035 Hz = 14216433 = 0xD8ECF1
@@ -193,8 +193,7 @@ void SlimLoRa::ZeroTXms(){
 }
 #endif // COUNT_TX_DURATION == 1
 
-#if DEBUG_SLIM >= 1
-void printHex(uint8_t *value, uint8_t len){ 
+void SlimLoRa::printHex(uint8_t *value, uint8_t len){ 
   	Serial.print(F("MSB: 0x"));
 	for (int8_t i = 0; i < len; i++ ) {
 		if (value[i] == 0x0 ) { Serial.print(F("00")); continue; }
@@ -207,9 +206,9 @@ void printHex(uint8_t *value, uint8_t len){
 		if (value[i] <= 0xF ) { Serial.print(F("0")); Serial.print(value[i], HEX); continue; }
   		Serial.print(value[i], HEX);
 		}
-//  	Serial.println();
 }
 
+#if DEBUG_SLIM >= 1
 void SlimLoRa::printDownlink(){
 	Serial.print(F("\nPort Down\t: "));	Serial.print(downPort);
 	Serial.print(F("\nfopts.length\t: "));	Serial.print(f_options_length);
@@ -317,7 +316,11 @@ void SlimLoRa::printMAC(){
 	Serial.print(F("\nNbTrans\t\t: "));Serial.print(NbTrans);
 	Serial.print(F("\nChMask\t\t: "));Serial.println(ChMask);
 	Serial.print(F("\nRX1 delay\t: "));Serial.print(GetRx1Delay());Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print(F("s, RX2: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY2_MICROS / 1000000);Serial.println("s, ");
-       	//Serial.print(F("\nCalculated delay: "));Serial.print(CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS));
+	#if defined(EU_DR6)
+       	Serial.print(F("\nCalculated delay: "));Serial.print(CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS));
+       	Serial.print(F("\nrx_symbols_\t: "));Serial.print(rx_symbols_);
+       	Serial.print(F("\nrx_symbols_ MSB\t: "));Serial.println(RfmRead(RFM_REG_MODEM_CONFIG_2) & 0b11);
+	#endif
 	Serial.print(F("Rx1 DR\t\t: "));Serial.println(data_rate_);
 	Serial.print(F("Rx1 DR offset\t: "));Serial.println(GetRx1DataRateOffset());
 	Serial.print(F("Rx2 DR RAM\t: "));Serial.println(rx2_data_rate_);
@@ -386,7 +389,7 @@ void SlimLoRa::Begin() {
 }
 
 // This function is only usefull to gain some mA during setup on application.
-// It offers a useless jump in library. It's better not to use it.
+// It offers a useless jump in library. Don't used if you need some bytes of flash memory
 void SlimLoRa::sleep() {
 	RfmWrite(RFM_REG_OP_MODE, 0x00);
 }
@@ -576,7 +579,16 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 	RfmWrite(RFM_REG_MODEM_CONFIG_1, pgm_read_byte(&(kDataRateTable[dri][0])));
 
 	// Spreading Factor / Tx Continuous Mode / Crc
-	RfmWrite(RFM_REG_MODEM_CONFIG_2, pgm_read_byte(&(kDataRateTable[dri][1])));
+	// EVAL for DR6 downlinks: Two MSB bits in RFM_REG_MODEM_CONFIG_2 [0-1]
+	#if defined(EU_DR6)
+	if ( rx_symbols_ == 255 ) {
+		RfmWrite(RFM_REG_MODEM_CONFIG_2, pgm_read_byte(&(kDataRateTable[dri][1])) | 3);
+	} else {
+	#endif
+		RfmWrite(RFM_REG_MODEM_CONFIG_2, pgm_read_byte(&(kDataRateTable[dri][1])));
+	#if defined(EU_DR6)
+	}
+	#endif
 
 	// Automatic Gain Control / Low Data Rate Optimize
 	modem_config_3 = pgm_read_byte(&(kDataRateTable[dri][2]));
@@ -598,6 +610,7 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 	RfmWrite(RFM_REG_OP_MODE, 0x86);
 
 	// Wait for RxDone or RxTimeout
+	// TODO: switch to IRQ code to save some MCU cycles
 	do {
 		irq_flags = RfmRead(RFM_REG_IRQ_FLAGS);
 	} while (!(irq_flags & 0xC0));
@@ -829,7 +842,12 @@ uint8_t SlimLoRa::RfmRead(uint8_t address) {
  */
 uint32_t SlimLoRa::CalculateDriftAdjustment(uint32_t delay, uint16_t micros_per_half_symbol) {
 	// Clock drift
+	#if defined(EU_DR6)
+	// TODO EVAL EXPERIMENT
+	uint32_t drift = delay * SLIMLORA_DRIFT * 4 / 100;
+	#else
 	uint32_t drift = delay * SLIMLORA_DRIFT / 100;
+	#endif
 	delay -= drift;
 
 	if ((255 - rx_symbols_) * micros_per_half_symbol < drift) {
@@ -905,6 +923,7 @@ bool SlimLoRa::HasJoined() {
 // TODO: back-off according to 1.0.3:
 // a. 36 secs for 1st hour, 36 secs for next 11 hours, 8.7 secs after that.
 // b. random delay between re-tries.
+// I think it's to aggressive, probably I will implement if for every minutes.
 int8_t SlimLoRa::Join() {
 	uint8_t packet[1 + LORAWAN_JOIN_REQUEST_SIZE + 4];
 	uint8_t packet_length;
@@ -1503,10 +1522,13 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				#else
 					pending_fopts_.fopts[pending_fopts_.length++] = 0xFF; // Unable to measure the battery level.
 				#endif //ARDUINO_AVR_FEATHER32U4
-				
+			
+				// This is for debugging to understand the values, will be removed.	
 				#if DEBUG_SLIM >= 1
 				Serial.print(F("\nlast_packet_snr_ 8bit / 4: "));Serial.print(last_packet_snr_);
+				#if defined(ARDUINO_AVR_FEATHER32U4)
 				Serial.print(F("\nSTATUS ANS -- vbat, SNR shifts: "));Serial.print(vbat);Serial.print(F(", "));Serial.print((last_packet_snr_ & 0x80) >> 2 | last_packet_snr_ & 0x3F, BIN);
+				#endif
 
 				// convert to 6 bit. Code from RadioLib
 				if ( last_packet_snrB < 128 ) {
@@ -1817,13 +1839,13 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 end:
 #if DEBUG_SLIM >= 1
-	Serial.print(F("\n\nMAC status\t: "));Serial.println(result);
-	Serial.print(F("Rx counter\t: "));Serial.println(GetRxFrameCounter());
+	Serial.print(F("\n\nMAC status\t: "));Serial.print(result);
 	if (window == 1) {
-		Serial.print(F("Window 1, rx1_DR: "));Serial.println(rx1_offset_dr);
+		Serial.print(F("\trx1_DR: "));Serial.println(rx1_offset_dr);
 	} else {
-		Serial.print(F("Window 2, rx2_DR: "));Serial.println(rx2_data_rate_);
+		Serial.print(F("\trx2_DR: "));Serial.println(rx2_data_rate_);
 	}
+	Serial.print(F("\tRx counter: "));Serial.println(GetRxFrameCounter());
 	printMAC();
 	Serial.flush();
 	#if LORAWAN_OTAA_ENABLED

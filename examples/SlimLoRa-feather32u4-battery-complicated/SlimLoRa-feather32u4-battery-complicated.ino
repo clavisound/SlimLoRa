@@ -41,7 +41,7 @@ uint8_t joinEfforts = 5; // how many times we will try to join.
 uint32_t joinStart, joinEnd, RXend, vbat, newfCnt;
 uint8_t dataRate, txPower = POWER, payload[1], payload_length, vbatC;
 uint8_t fport = 1;
-uint8_t minutes = 15;
+uint8_t minutes = 5;
 
 SlimLoRa lora = SlimLoRa(8);    // OK for feather 32u4 (CS featherpin. Aka: nss_pin for SlimLoRa). TODO: support other pin configurations.
 
@@ -171,6 +171,7 @@ void loop() {
 
     payload_length = sizeof(payload);
     lora.SendData(fport, payload, payload_length);
+    switchDR(); //NOWEB Testing, ignore this.
 
     // if we received downlink on port 1 change the minutes interval.
     if ( lora.downlinkSize > 0 ) {
@@ -218,3 +219,11 @@ void loop() {
   
  } // (Get)HasJoined()
 } // loop()
+
+void switchDR(){
+  if (lora.data_rate_ == 6 ) {
+  lora.SetDataRate(SF7BW125);
+  } else {
+  lora.SetDataRate(SF7BW250);
+  }
+}

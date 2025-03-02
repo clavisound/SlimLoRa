@@ -4,7 +4,9 @@
 
 This library is probably the most easy to use LoRaWAN library. The target is LoRaWAN-1.0.3 specification. It supports OTAA / Join, most important MAC commands - like DR, power, NBtrans, downlinks for user application and session is stored to EEPROM. Applications downlinks are static selectable via `#define` in `SlimLoRa.h`. Default is 11 bytes. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs around 52kBytes of program flash), or LMIC (around 36kBytes of program flash).
 
-SlimLoRa needs around 12558 Bytes (13kBytes) but it's getting bigger with the support of MAC commands and more LoRaWAN specification to be added. SlimLoRa gives LoRaWAN life to old μCU's like ATmega 328 with 32kBytes of flash.
+SlimLoRa needs around 12558 Bytes* (13kBytes). SlimLoRa gives LoRaWAN life to old μCU's like ATmega 328 with 32kBytes of flash.
+
+* in fact, I think the overhead is around 9kBytes.
 
 [SlimLoRa MAC response in MAC command via Helium original console.](https://krg.etraq.eu/minisites/lora/mac-command-response_crop.png)
 
@@ -105,6 +107,10 @@ SlimLoRa changes the data of payload. Don't use payload data for program logic.
 You can monitor the duty cycle with the function `GetTXms()` after every transmission. SlimLoRa will return the duration in ms of the LAST transmission. You have to add this to a variable to your program to keep track the Duty Cycle every day. If you access SlimLoRa via `lora` object example `SlimLoRa lora = SlimLoRa(8);` you can also read (please don't write) the values `lora.slimTotalTXms` and `lora.slimLastTXms`. After one day remember to erase the slimTotalTXms with function `lora.ZeroTXms()` or `lora.slimTotalTXms = 0;`. I think I will remove the functions.
 
 I have also made some values public. Because the application can do something cool stuff like: if you are close to a GW you can check with frame counter if you transmit verbose data. So every 20 - 30 uplinks you can send more data.
+
+# Tips for your project
+
+If you need to handle array data with EEPROM some helper function `getArrayEEPROM`, `setArrayEEPROM` and `printHe` are public to use them in your programm.
 
 ---
 
