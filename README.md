@@ -25,10 +25,14 @@ The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks 
   - [x] Heliun Joins
     - [x] old console
       - [x] Join SF10 with Helium. Success everytime on 1st window but not in first attempt.
-    - [x] chripstack Console
+    - [x] chirpstack Console
       - [x] Join SF9 on Helium chripstack outdors. Success on 1st window.
       - [x] Join SF8 on Helium chripstack outdors. Success on 1st window in second or third attempt.
       - [x] Join SF7 on Helium and power 0dBm in different room. Success on 1st window.
+        - [x] Megabrick joins
+          - [ ] FAIL with SF7 and GW power 13dBm in same room and an antenna.
+          - [ ] FAIL with SF7 and GW power 16dBm in different room and an antenna.
+          - [x] Join with SF8 and GW power 16dBm in different room and an antenna.
 - [x] Downlinks
   - [x] Helium on 2nd window (SF12) always works on Chiprstack.
 - [x] SetPower
@@ -87,6 +91,10 @@ Solutions with avr style.
 - [ ] Duty Cycle per channel.
 - [ ] Respect Dwell MAC command (only for US902?)
 - [ ] CFlist only for US and AS?
+
+# Clock Divider support
+
+If you downclock your AVR MCU with `clock_prescale_set(clock_div_4)` SlimLoRa can adapt the RX timing window to receive the downlinks. Tested only with RX2 windows on 2seconds. Uncomment the `#define CATCH_DIVIDER` to enable this function.
 
 # Undoable on AVR and Deep Sleep
 

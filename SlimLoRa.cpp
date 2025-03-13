@@ -40,6 +40,10 @@ extern const uint8_t AppSKey[16];
 extern const uint8_t DevAddr[4];
 #endif // LORAWAN_OTAA_ENABLED
 
+#ifdef CATCH_DIVIDER
+uint8_t clockDiv_;
+#endif
+
 static SPISettings RFM_spisettings = SPISettings(4000000, MSBFIRST, SPI_MODE0);
 
 #if ARDUINO_EEPROM == 0
@@ -316,16 +320,16 @@ void SlimLoRa::printMAC(){
 	Serial.print(F("\nNbTrans\t\t: "));Serial.print(NbTrans);
 	Serial.print(F("\nChMask\t\t: "));Serial.println(ChMask);
 	Serial.print(F("\nRX1 delay\t: "));Serial.print(GetRx1Delay());Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print(F("s, RX2: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY2_MICROS / 1000000);Serial.println("s, ");
-	#if defined(EU_DR6)
-       	Serial.print(F("\nCalculated delay: "));Serial.print(CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS));
-       	Serial.print(F("\nrx_symbols_\t: "));Serial.print(rx_symbols_);
-       	Serial.print(F("\nrx_symbols_ MSB\t: "));Serial.println(RfmRead(RFM_REG_MODEM_CONFIG_2) & 0b11);
-	#endif
 	Serial.print(F("Rx1 DR\t\t: "));Serial.println(data_rate_);
 	Serial.print(F("Rx1 DR offset\t: "));Serial.println(GetRx1DataRateOffset());
 	Serial.print(F("Rx2 DR RAM\t: "));Serial.println(rx2_data_rate_);
 	Serial.print(F("Rx2 DR EEPROM\t: "));Serial.println(GetRx2DataRate());
-	Serial.print(F("ADR_ACK_cnt\t: "));Serial.println(adr_ack_limit_counter_);
+	Serial.print(F("ADR_ACK_cnt\t: "));Serial.print(adr_ack_limit_counter_);
+       	Serial.print(F("\nCalculated delay: "));Serial.println(CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS));
+	#if defined(EU_DR6)
+       	Serial.print(F("\nrx_symbols_\t: "));Serial.print(rx_symbols_);
+       	Serial.print(F("\nrx_symbols_ MSB\t: "));Serial.println(RfmRead(RFM_REG_MODEM_CONFIG_2) & 0b11);
+	#endif
 }
 #endif // DEBUG_SLIM
 
@@ -437,7 +441,11 @@ void wait_until(unsigned long microsstamp) {
 	while (1) {
 		// overflow fail safe logic used. Described here: https://arduino.stackexchange.com/a/12588/59046
 		ATOMIC_BLOCK(ATOMIC_FORCEON) {
+		#ifdef CATCH_DIVIDER
+			delta = ( microsstamp / clockDiv_ ) - (micros() / clockDiv_);
+		#else
 			delta = microsstamp - micros();
+		#endif
 		}
 		if (delta <= 0) {
 			break;
@@ -742,7 +750,11 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 	// https://arduino.stackexchange.com/questions/77494/which-arduinos-support-atomic-block
 	// disable interrupts.
 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
+	#ifdef CATCH_DIVIDER
+		tx_done_micros_ = micros() / clockDiv_;
+	#else
 		tx_done_micros_ = micros();
+	#endif
 	}
 
 #if COUNT_TX_DURATION == 1
@@ -844,7 +856,8 @@ uint32_t SlimLoRa::CalculateDriftAdjustment(uint32_t delay, uint16_t micros_per_
 	// Clock drift
 	#if defined(EU_DR6)
 	// TODO EVAL EXPERIMENT
-	uint32_t drift = delay * SLIMLORA_DRIFT * 4 / 100;
+	//uint32_t drift = delay * SLIMLORA_DRIFT * 4 / 100;
+	uint32_t drift = delay * SLIMLORA_DRIFT / 100;
 	#else
 	uint32_t drift = delay * SLIMLORA_DRIFT / 100;
 	#endif
@@ -886,7 +899,11 @@ uint32_t SlimLoRa::CalculateRxDelay(uint8_t data_rate, uint32_t delay) {
 	micros_per_half_symbol = pgm_read_word(&(kDRMicrosPerHalfSymbol[data_rate]));
 	offset = CalculateRxWindowOffset(micros_per_half_symbol);
 
+#ifdef CATCH_DIVIDER
+	return (CalculateDriftAdjustment(delay + offset, micros_per_half_symbol)) / clockDiv_;
+#else
 	return CalculateDriftAdjustment(delay + offset, micros_per_half_symbol);
+#endif
 }
 
 /**
@@ -1332,6 +1349,10 @@ end:
  */
 void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 	uint8_t status, new_rx1_dr_offset, new_rx2_dr; // new_rx2_dr is also used as a temp value
+
+#ifdef DEBUG_LED
+	MACreceived = 1;
+#endif
 
 	for (uint8_t i = 0; i < f_options_length; i++) {
 
@@ -1869,6 +1890,14 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 
 	uint8_t mic[4];
 
+#ifdef CATCH_DIVIDER
+	clockDiv_ = 1 << clock_prescale_get();
+#endif
+
+#ifdef DEBUG_LED
+	MACreceived = 0;
+#endif
+	
 #if LORAWAN_OTAA_ENABLED
 	uint8_t dev_addr[4];
 	GetDevAddr(dev_addr);
