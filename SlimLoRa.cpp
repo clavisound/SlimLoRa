@@ -324,12 +324,11 @@ void SlimLoRa::printMAC(){
 	Serial.print(F("Rx1 DR offset\t: "));Serial.println(GetRx1DataRateOffset());
 	Serial.print(F("Rx2 DR RAM\t: "));Serial.println(rx2_data_rate_);
 	Serial.print(F("Rx2 DR EEPROM\t: "));Serial.println(GetRx2DataRate());
-	Serial.print(F("ADR_ACK_cnt\t: "));Serial.print(adr_ack_limit_counter_);
-       	Serial.print(F("\nCalculated delay: "));Serial.println(CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS));
-	#if defined(EU_DR6)
+	Serial.print(F("ADR_ACK_cnt\t: "));Serial.println(adr_ack_limit_counter_);
        	Serial.print(F("\nrx_symbols_\t: "));Serial.print(rx_symbols_);
        	Serial.print(F("\nrx_symbols_ MSB\t: "));Serial.println(RfmRead(RFM_REG_MODEM_CONFIG_2) & 0b11);
-	#endif
+      	Serial.print(F("\nCalculated delay RX1: "));Serial.print(CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS));
+      	Serial.print(F("\nCalculated delay RX2: "));Serial.print(CalculateRxDelay(rx2_data_rate_, LORAWAN_JOIN_ACCEPT_DELAY2_MICROS));
 }
 #endif // DEBUG_SLIM
 
@@ -337,6 +336,11 @@ void SlimLoRa::Begin() {
 	uint8_t detect_optimize;
 
 	SPI.begin();
+
+#ifdef CATCH_DIVIDER
+	// for printMAC correct values.
+	clockDiv_ = clock_prescale_get();
+#endif
 
 	pinMode(pin_nss_, OUTPUT);
 
@@ -441,11 +445,7 @@ void wait_until(unsigned long microsstamp) {
 	while (1) {
 		// overflow fail safe logic used. Described here: https://arduino.stackexchange.com/a/12588/59046
 		ATOMIC_BLOCK(ATOMIC_FORCEON) {
-		#ifdef CATCH_DIVIDER
-			delta = ( microsstamp / clockDiv_ ) - (micros() / clockDiv_);
-		#else
 			delta = microsstamp - micros();
-		#endif
 		}
 		if (delta <= 0) {
 			break;
@@ -672,7 +672,14 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
  */
 void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t channel, uint8_t dri) {
 	// TODO if dri is FSK re-init modem.
-	
+
+#ifdef CATCH_DIVIDER
+	clockDiv_ = clock_prescale_get();
+	#if DEBUG_SLIM == 1
+	Serial.print(F("\nclockDiv_: "));Serial.println(clockDiv_);
+	#endif
+#endif
+
 	uint8_t modem_config_3;
 
 	// Switch RFM to standby
@@ -750,11 +757,7 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 	// https://arduino.stackexchange.com/questions/77494/which-arduinos-support-atomic-block
 	// disable interrupts.
 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
-	#ifdef CATCH_DIVIDER
-		tx_done_micros_ = micros() / clockDiv_;
-	#else
 		tx_done_micros_ = micros();
-	#endif
 	}
 
 #if COUNT_TX_DURATION == 1
@@ -900,7 +903,7 @@ uint32_t SlimLoRa::CalculateRxDelay(uint8_t data_rate, uint32_t delay) {
 	offset = CalculateRxWindowOffset(micros_per_half_symbol);
 
 #ifdef CATCH_DIVIDER
-	return (CalculateDriftAdjustment(delay + offset, micros_per_half_symbol)) / clockDiv_;
+	return (CalculateDriftAdjustment(delay + offset, micros_per_half_symbol)) >> clockDiv_;
 #else
 	return CalculateDriftAdjustment(delay + offset, micros_per_half_symbol);
 #endif
@@ -949,7 +952,7 @@ int8_t SlimLoRa::Join() {
 	uint8_t mic[4];
 
 	// Set RX2 DR default
-	rx2_data_rate_	  = SF12BW125;
+	rx2_data_rate_	  = RX_SECOND_WINDOW;
 
 	packet[0] = LORAWAN_MTYPE_JOIN_REQUEST;
 
@@ -1219,9 +1222,15 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
 	uint32_t join_nonce;
 
 	if (window == 1) {
+		#ifdef DEBUG_LED
+		LoRaWANreceived |= 0x01; // Join Accept Window 1
+		#endif
 		rx_delay = CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS);
 		packet_length = RfmReceivePacket(packet, sizeof(packet), channel_, data_rate_, tx_done_micros_ + rx_delay);
 	} else {
+		#ifdef DEBUG_LED
+		LoRaWANreceived |= 0x02; // Join Accept Window 2
+		#endif
 		rx_delay = CalculateRxDelay(rx2_data_rate_, LORAWAN_JOIN_ACCEPT_DELAY2_MICROS);
 		#ifdef US920 // TODO DR8 = SF12BW500
 		packet_length = RfmReceivePacket(packet, sizeof(packet), 8, rx2_data_rate_, tx_done_micros_ + rx_delay);
@@ -1351,7 +1360,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 	uint8_t status, new_rx1_dr_offset, new_rx2_dr; // new_rx2_dr is also used as a temp value
 
 #ifdef DEBUG_LED
-	MACreceived = 1;
+	LoRaWANreceived |= 0x04; // MAC command
 #endif
 
 	for (uint8_t i = 0; i < f_options_length; i++) {
@@ -1784,7 +1793,7 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 	// application downlink and possibly MAC commands
 	if ( downPort > 0 && downPort < 224 ) { // downPort 0 and 224 are special case
-		
+
 		// Process MAC commands
 		if ( f_options_length > 0 ) {
 		#if DEBUG_SLIM >= 1
@@ -1890,12 +1899,8 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 
 	uint8_t mic[4];
 
-#ifdef CATCH_DIVIDER
-	clockDiv_ = 1 << clock_prescale_get();
-#endif
-
 #ifdef DEBUG_LED
-	MACreceived = 0;
+	LoRaWANreceived = 0;
 #endif
 	
 #if LORAWAN_OTAA_ENABLED

@@ -12,12 +12,6 @@
 // https://github.com/TheThingsNetwork/lorawan-frequency-plans/
 #define EU863
 
-// Enable this only if you have changed the clock of your AVR MCU.
-//#define CATCH_DIVIDER
-#if defined CATCH_DIVIDER && !defined (__AVR__) 
-#error You defined CATCH_DIVIDER but this is supported only for AVR / ATmega MCU's. Uncomment CATCH_DIVIDER
-#endif
-
 // NbTrans (re-transmissions). Normally 1 max is 15
 // Olivier Seller for static devices proposes 4.
 // See TTN conference Amsterdam 2024 at 7 minute presentation.
@@ -28,7 +22,7 @@
 #define NET_HELIUM	2
 
 // change this according to your network
-#define NETWORK NET_TTN	// Two options: NET_HLM = helium, NET_TTN = TheThingsNetwork
+#define NETWORK NET_TTN	// Two options: NET_HELIUM = helium, NET_TTN = TheThingsNetwork
 				// NET_TTN: RX2 SF9
 				// NET_HLM: RX2 SF12
 
@@ -53,7 +47,7 @@
 #define DEBUG_SLIM   	0  // Enabled this only to check values / registers.
 
 // Some extra variables to debug via LED
-#define DEBUG_LED
+//#define DEBUG_LED
 
 // Enable LoRaWAN Over-The-Air Activation
 #define LORAWAN_OTAA_ENABLED    1
@@ -73,12 +67,19 @@
 #define LORAWAN_ADR_ACK_DELAY   32	// Wait XX times to consider connection lost.				Minimum sane value: 32
 
 // if you you want to save 6 bytes of RAM and you don't need to provision the Duty Cycle
-// because you transmitting only on high Data Rates (DR). You save 76 byte of flash memory if you comment this. RAM is the same.
+// because you transmitting only on high Data Rates (DR). You save 76 byte of flash memory if you comment this.
 #define COUNT_TX_DURATION	1
 
 // You gain 12 bytes of program flash if you comment this. Use it only WITHOUT ADR.
 // TTN does not want this. Helium is not supported.
 #define EU_DR6 // applicable for EU RU AS CN
+
+// Enable this only if you have changed the clock of your AVR MCU.
+#define CATCH_DIVIDER
+#if defined CATCH_DIVIDER && !defined (__AVR__) 
+#error You defined CATCH_DIVIDER but this is supported only for AVR / ATmega MCU's. Uncomment CATCH_DIVIDER
+#endif
+
 // END OF USER DEFINED OPTIONS
 
 // Drift adjustment. Default:	5 works with feather-32u4 TTN and helium at 5 seconds RX delay. Tested with TTN and SF7, SF8, SF9. Tested with Helium at SF10.
@@ -355,7 +356,7 @@ class SlimLoRa {
 #endif
 
 #ifdef DEBUG_LED
-	uint8_t MACreceived;
+	uint8_t LoRaWANreceived;
 #endif
 
 #if DEBUG_SLIM == 0 // if not debuging, those are private. If debugging everything is public
