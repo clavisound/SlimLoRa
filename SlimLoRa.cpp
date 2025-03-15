@@ -41,7 +41,7 @@ extern const uint8_t DevAddr[4];
 #endif // LORAWAN_OTAA_ENABLED
 
 #ifdef CATCH_DIVIDER
-uint8_t clockDiv_;
+uint8_t clockShift;
 #endif
 
 static SPISettings RFM_spisettings = SPISettings(4000000, MSBFIRST, SPI_MODE0);
@@ -306,7 +306,7 @@ void SlimLoRa::printMAC(){
 	Serial.print(F("\nMAC Join: "));Serial.print(GetHasJoined());
 	Serial.print(F("\ndevNonce DEC\t\t: "));;Serial.print(GetDevNonce() >> 8);Serial.print(GetDevNonce());
 	Serial.print(F("\njoinDevNonce DEC\t: "));Serial.print(GetJoinNonce() >> 24);Serial.print(GetJoinNonce() >> 16);Serial.print(GetJoinNonce() >> 8);Serial.println(GetJoinNonce());
-	GetDevAddr(dev_addr);
+	GetDevAddr(dev_addr);Serial.print(F("\nDevAddr\t: "));printHex(dev_addr, 4);
 	GetNwkSEncKey(nwk_s_key);
 	//GetFNwkSIntKey(); // not used
 	GetAppSKey(app_s_key);
@@ -324,12 +324,13 @@ void SlimLoRa::printMAC(){
 	Serial.print(F("Rx1 DR offset\t: "));Serial.println(GetRx1DataRateOffset());
 	Serial.print(F("Rx2 DR RAM\t: "));Serial.println(rx2_data_rate_);
 	Serial.print(F("Rx2 DR EEPROM\t: "));Serial.println(GetRx2DataRate());
-	Serial.print(F("ADR_ACK_cnt\t: "));Serial.print(adr_ack_limit_counter_);
-       	Serial.print(F("\nCalculated delay: "));Serial.println(CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS));
-	#if defined(EU_DR6)
+	Serial.print(F("ADR_ACK_cnt\t: "));Serial.println(adr_ack_limit_counter_);
        	Serial.print(F("\nrx_symbols_\t: "));Serial.print(rx_symbols_);
        	Serial.print(F("\nrx_symbols_ MSB\t: "));Serial.println(RfmRead(RFM_REG_MODEM_CONFIG_2) & 0b11);
-	#endif
+      	Serial.print(F("Calculated delay RX1: "));Serial.print(CalculateRxDelay(data_rate_, GetRx1Delay() * MICROS_PER_SECOND));
+      	Serial.print(F("\nCalculated delay RX2: "));Serial.print(CalculateRxDelay(rx2_data_rate_, GetRx1Delay() * MICROS_PER_SECOND + MICROS_PER_SECOND));
+      	Serial.print(F("\nCalculated delay Join RX1: "));Serial.print(CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS));
+      	Serial.print(F("\nCalculated delay Join RX2: "));Serial.println(CalculateRxDelay(rx2_data_rate_, LORAWAN_JOIN_ACCEPT_DELAY2_MICROS));
 }
 #endif // DEBUG_SLIM
 
@@ -337,6 +338,11 @@ void SlimLoRa::Begin() {
 	uint8_t detect_optimize;
 
 	SPI.begin();
+
+#ifdef CATCH_DIVIDER
+	// for printMAC correct values.
+	clockShift = clock_prescale_get();
+#endif
 
 	pinMode(pin_nss_, OUTPUT);
 
@@ -441,11 +447,7 @@ void wait_until(unsigned long microsstamp) {
 	while (1) {
 		// overflow fail safe logic used. Described here: https://arduino.stackexchange.com/a/12588/59046
 		ATOMIC_BLOCK(ATOMIC_FORCEON) {
-		#ifdef CATCH_DIVIDER
-			delta = ( microsstamp / clockDiv_ ) - (micros() / clockDiv_);
-		#else
-			delta = microsstamp - micros();
-		#endif
+			delta = microsstamp - micros(); // overflow after 70 minutes
 		}
 		if (delta <= 0) {
 			break;
@@ -565,6 +567,12 @@ void SlimLoRa::SetPower(uint8_t power) {
 int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, uint8_t channel, uint8_t dri, uint32_t rx_microsstamp) {
 	uint8_t modem_config_3, irq_flags, packet_length, read_length;
 
+	// this probably breaks timing for RX2 window
+#if DEBUG_SLIM == 1
+	Serial.print(F("\nwait_until: "));Serial.println(rx_microsstamp - LORAWAN_RX_SETUP_MICROS);
+	Serial.print(F("micros now: "));Serial.println(micros());
+#endif
+
 	// Wait for start time
 	wait_until(rx_microsstamp - LORAWAN_RX_SETUP_MICROS);
 
@@ -612,7 +620,12 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 	RfmWrite(RFM_REG_IRQ_FLAGS, 0xFF);
 
 	// Wait for rx time
+	#ifdef CATCH_DIVIDER
+	//wait_until(rx_microsstamp >> clockShift);
 	wait_until(rx_microsstamp);
+	#else
+	wait_until(rx_microsstamp);
+	#endif
 
 	// Switch RFM to Rx
 	RfmWrite(RFM_REG_OP_MODE, 0x86);
@@ -643,6 +656,11 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 #else
 	last_packet_snr_ = (int8_t) RfmRead(RFM_REG_PKT_SNR_VALUE) / 4;
 #endif
+#if DEBUG_SLIM == 1
+	Serial.print(F("\nwait_until RX2: "));Serial.println(rx_microsstamp);
+	Serial.print(F("micros now RX2: "));Serial.println(micros());
+#endif
+
 
 	// Clear interrupts
 	RfmWrite(RFM_REG_IRQ_FLAGS, 0xFF);
@@ -672,7 +690,14 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
  */
 void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t channel, uint8_t dri) {
 	// TODO if dri is FSK re-init modem.
-	
+
+#ifdef CATCH_DIVIDER
+	clockShift = clock_prescale_get();
+	#if DEBUG_SLIM == 1
+	Serial.print(F("\nclockShift: "));Serial.println(clockShift);
+	#endif
+#endif
+
 	uint8_t modem_config_3;
 
 	// Switch RFM to standby
@@ -750,11 +775,7 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 	// https://arduino.stackexchange.com/questions/77494/which-arduinos-support-atomic-block
 	// disable interrupts.
 	ATOMIC_BLOCK(ATOMIC_FORCEON) {
-	#ifdef CATCH_DIVIDER
-		tx_done_micros_ = micros() / clockDiv_;
-	#else
 		tx_done_micros_ = micros();
-	#endif
 	}
 
 #if COUNT_TX_DURATION == 1
@@ -888,7 +909,7 @@ int32_t SlimLoRa::CalculateRxWindowOffset(int16_t micros_per_half_symbol) {
 }
 
 /**
- * Calculates the RX delay for a given data rate.
+ * Calculates the RX delay for a given data rate. delay = seconds in μS
  *
  * @return The RX delay in micros.
  */
@@ -896,11 +917,17 @@ uint32_t SlimLoRa::CalculateRxDelay(uint8_t data_rate, uint32_t delay) {
 	uint32_t micros_per_half_symbol;
 	int32_t offset;
 
+#ifdef CATCH_DIVIDER
+	//micros_per_half_symbol = pgm_read_word(&(kDRMicrosPerHalfSymbol[data_rate])) >> clockShift;
 	micros_per_half_symbol = pgm_read_word(&(kDRMicrosPerHalfSymbol[data_rate]));
+#else
+	micros_per_half_symbol = pgm_read_word(&(kDRMicrosPerHalfSymbol[data_rate]));
+#endif
 	offset = CalculateRxWindowOffset(micros_per_half_symbol);
 
 #ifdef CATCH_DIVIDER
-	return (CalculateDriftAdjustment(delay + offset, micros_per_half_symbol)) / clockDiv_;
+	return (CalculateDriftAdjustment(delay + offset, micros_per_half_symbol)) >> clockShift;
+//	return CalculateDriftAdjustment(delay + offset, micros_per_half_symbol);
 #else
 	return CalculateDriftAdjustment(delay + offset, micros_per_half_symbol);
 #endif
@@ -949,7 +976,7 @@ int8_t SlimLoRa::Join() {
 	uint8_t mic[4];
 
 	// Set RX2 DR default
-	rx2_data_rate_	  = SF12BW125;
+	rx2_data_rate_	  = RX_SECOND_WINDOW;
 
 	packet[0] = LORAWAN_MTYPE_JOIN_REQUEST;
 
@@ -1326,6 +1353,15 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
 	result = 0;
 
 end:
+	#ifdef DEBUG_LED
+	if ( result == 0 ) {
+		if ( window == 1 ) {
+		LoRaWANreceived |= 0x01; // Join Accept Window 1
+		} else  {
+		LoRaWANreceived |= 0x02; // Join Accept Window 2
+		}
+	}
+	#endif
 #if DEBUG_SLIM >= 1
 	if ( result == 0 ) {
 	Serial.print(F("\nPacket Length: "));Serial.println(packet_length);
@@ -1351,7 +1387,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 	uint8_t status, new_rx1_dr_offset, new_rx2_dr; // new_rx2_dr is also used as a temp value
 
 #ifdef DEBUG_LED
-	MACreceived = 1;
+	LoRaWANreceived |= 0x04; // MAC command
 #endif
 
 	for (uint8_t i = 0; i < f_options_length; i++) {
@@ -1625,11 +1661,6 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
  * @return 0 if successful, else error code.
  */
 int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
-	// start fresh
-	downlinkSize	= 0;
-	downPort	= 0;
-	ack_		= 0;
-
 	int8_t result;
 	uint8_t rx1_offset_dr;
 	uint8_t temp;
@@ -1784,26 +1815,26 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 	// application downlink and possibly MAC commands
 	if ( downPort > 0 && downPort < 224 ) { // downPort 0 and 224 are special case
-		
+
 		// Process MAC commands
 		if ( f_options_length > 0 ) {
 		#if DEBUG_SLIM >= 1
 			Serial.print(F("\n\nFrame Options Mode"));
-			Serial.print(F("\nPacket RAW HEX"));printHex(packet, packet_length);
+			Serial.print(F("\nPacket RAW HEX\t: "));printHex(packet, packet_length);
 			printDownlink();
 		#endif
 			ProcessFrameOptions(&packet[LORAWAN_MAC_AND_FRAME_HEADER], f_options_length);
 		}
 
 		#if DEBUG_SLIM >= 1
-			Serial.print(F("\nPacket RAW HEX"));printHex(packet, packet_length);
+			Serial.print(F("\nPacket RAW HEX\t: "));printHex(packet, packet_length);
 			printDownlink();
 		#endif
 
 		// stollen from MAC command
 		payload_length = packet_length - LORAWAN_MAC_AND_FRAME_HEADER - f_options_length - LORAWAN_MIC_SIZE;
 		#if DEBUG_SLIM >= 1
-			Serial.print(F("\nPacket RAW HEX"));printHex(packet, packet_length);
+			Serial.print(F("\nPacket RAW HEX\t: "));printHex(packet, packet_length);
 			printDownlink();
 		#endif
 
@@ -1833,14 +1864,14 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 			
 		#if DEBUG_SLIM >= 1
 		if ( downlinkSize > 0 ) {
-			Serial.print(F("\nDownlinkData"));printHex(downlinkData, downlinkSize);
+			Serial.print(F("\nDownlinkData\t: "));printHex(downlinkData, downlinkSize);
 			//printMAC();
 		}
 		#endif
 	}
 
 #if DEBUG_SLIM >= 1
-	Serial.print(F("\nPacket decrypted HEX"));printHex(packet, packet_length);
+	Serial.print(F("\nPacket decrypted HEX: "));printHex(packet, packet_length);
 	printDownlink();
 #endif
 	// TEMPORARY
@@ -1859,20 +1890,26 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 	result = 0;
 
 end:
-#if DEBUG_SLIM >= 1
-	Serial.print(F("\n\nMAC status\t: "));Serial.print(result);
+#ifdef DEBUG_LED
 	if (window == 1) {
-		Serial.print(F("\trx1_DR: "));Serial.println(rx1_offset_dr);
+		LoRaWANreceived |= 0x08; // RX1 received data
 	} else {
-		Serial.print(F("\trx2_DR: "));Serial.println(rx2_data_rate_);
+		LoRaWANreceived |= 0x10; // RX2 received data
 	}
-	Serial.print(F("\tRx counter: "));Serial.println(GetRxFrameCounter());
-	printMAC();
-	Serial.flush();
-	#if LORAWAN_OTAA_ENABLED
-	Serial.print(F("\nDevAddr after RX windows: "));printHex(dev_addr, 4);
-	Serial.flush();
-	#endif // LORAWAN_OTAA_ENABLED
+#endif
+
+#if DEBUG_SLIM >= 1
+		Serial.print(F("\n\nMAC status\t: "));Serial.print(result);
+		Serial.print(F("\tRx counter: "));Serial.println(GetRxFrameCounter());
+		Serial.print(F("\ntx_done_micros: "));Serial.print(tx_done_micros_);
+		Serial.print(F("\trx_delay: "));Serial.print(rx_delay);
+		Serial.print(F("\tADDed: "));Serial.println(tx_done_micros_ + rx_delay);
+		printMAC();
+		Serial.flush();
+#if LORAWAN_OTAA_ENABLED
+		Serial.print(F("\nDevAddr after RX windows: "));printHex(dev_addr, 4);
+		Serial.flush();
+#endif // LORAWAN_OTAA_ENABLED
 #endif
 	return result;
 }
@@ -1890,12 +1927,13 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 
 	uint8_t mic[4];
 
-#ifdef CATCH_DIVIDER
-	clockDiv_ = 1 << clock_prescale_get();
-#endif
+	// start fresh
+	downlinkSize	= 0;
+	downPort	= 0;
+	ack_		= 0;
 
 #ifdef DEBUG_LED
-	MACreceived = 0;
+	LoRaWANreceived = 0;
 #endif
 	
 #if LORAWAN_OTAA_ENABLED
@@ -2015,6 +2053,7 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	uint8_t countEfforts;
 	#endif
 
+	// check if channel_ allowed with ChMask
 	while ( ( ( ChMask >> channel_ ) & 0x01 ) == 0 ) {
 
 		#if DEBUG_SLIM >= 1
@@ -2035,7 +2074,7 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 			// TODO for 16 channels
 			channel_ = micros() >> 8 & ( LORAWAN_UPLINK_CHANNEL_COUNT - 1 ) ; // [7] for 8 channels [15] for 16 channels;
 
-			// We found enabled {channel
+			// We found enabled channel
 			if ( ( ( ChMask >> channel_ ) & 0x01 ) == 1 ) {
 				break;
 			}
@@ -2084,7 +2123,7 @@ void SlimLoRa::SendData(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	#endif // US902
 
 #if DEBUG_SLIM >= 1
-	Serial.println(F("\n*SendData"));printMAC();
+	Serial.println(F("\nSlimLoRa SendData"));printMAC();
 #endif
 
 	// TODO: protect buffer overflow.
@@ -2903,9 +2942,6 @@ void SlimLoRa::SetHasJoined(bool value) {
 // DevAddr
 void SlimLoRa::GetDevAddr(uint8_t *dev_addr) {
 	eeprom_read_block(dev_addr, eeprom_lw_dev_addr, 4);
-#if DEBUG_SLIM > 1
-	Serial.print(F("\nDevAddr on GetDev: "));printHex(dev_addr, 4);
-#endif
 }
 
 void SlimLoRa::SetDevAddr(uint8_t *dev_addr) {
@@ -3069,9 +3105,6 @@ void SlimLoRa::SetHasJoined(bool value) {
 // DevAddr
 void SlimLoRa::GetDevAddr(uint8_t *dev_addr) {
 	getArrayEEPROM(EEPROM_DEVADDR, dev_addr, 4);
-#if DEBUG_SLIM >= 1
-	Serial.print(F("\nDevAddr on GetDev: "));printHex(dev_addr, 4);
-#endif
 }
 
 void SlimLoRa::SetDevAddr(uint8_t *dev_addr) {
