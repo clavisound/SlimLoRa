@@ -15,14 +15,14 @@ The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks 
 # Working
 
 - [x] OTAA join with Feather 32u4 EU868 region. Europe only.
-  - [x] TTN joins
+  - [x] TTN joins - Feather32u4
     - [x] Join SF9 on TTN and power 0dBm in different room. Success on 1st window.
     - [x] Join SF8 on TTN and power 0dBm in same room. Success on 1st window.
     - [x] Join SF7 on TTN and power 0dBm in different room. Success on 1st window.
       - [x] Megabrick joins
         - [ ] FAIL with SF7 and power 13dBm in different room and an antenna.
         - [x] Join with SF9 and power 13dBm in different room and an antenna.
-  - [x] Heliun Joins
+  - [x] Heliun Joins - Feather32u4
     - [x] old console
       - [x] Join SF10 with Helium. Success everytime on 1st window but not in first attempt.
     - [x] chirpstack Console
@@ -30,11 +30,10 @@ The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks 
       - [x] Join SF8 on Helium chripstack outdors. Success on 1st window in second or third attempt.
       - [x] Join SF7 on Helium and power 0dBm in different room. Success on 1st window.
         - [x] Megabrick joins
-          - [ ] FAIL with SF7 and GW power 13dBm in same room and an antenna.
-          - [ ] FAIL with SF7 and GW power 16dBm in different room and an antenna.
+          - [x] Join with SF7 and GW power 16dBm in different room and an antenna.
           - [x] Join with SF8 and GW power 16dBm in different room and an antenna.
 - [x] Downlinks
-  - [x] Helium on 2nd window (SF12) always works on Chiprstack.
+  - [x] Helium on 2nd window (SF12) always works on Chirpstack.
 - [x] SetPower
 - [x] Deep Sleep
 - [x] Restore session from EEPROM (arduino style)
@@ -73,7 +72,7 @@ Solutions with avr style.
 
 # Semi-Working
 
-- [x] ADR_ACK_LIMIT, must follow directive on p. 17 based pn ADR_ACK_DELAY
+- [x] `ADR_ACK_LIMIT`, must follow directive on p. 17 based on `ADR_ACK_DELAY`
 - [x] Duty Cycle. Added GetTXms function to return the TOTAL duration of ALL transmissions. At SF7 1byte reports 45-48ms vs 46ms [theoretical](https://avbentem.github.io/airtime-calculator/ttn/eu868/1) at SF8 reports 84ms vs 82ms (theoretical). SF7 5 bytes reports 52ms vs 51.5ms (theoretical). Application HAVE to read the value of GetTXms() after every transmission to check if the the Duty Cycle is respected. I decided to not respect Duty Cycle on SlimLoRa, since if the device is going to Deep Sleep and wakes up via a accelerometer on AVR MCU's freezes the timer0. I think the solution is the RTC or to read a time from GPS.
 - [x] Power to the people. Several values made public. Take care to not write them or you may loose access to the network. Instead of using getters I selected to make public some variables.
 - [x] MAC Commands. 
@@ -94,7 +93,7 @@ Solutions with avr style.
 
 # Clock Divider support
 
-If you downclock your AVR MCU with `clock_prescale_set(clock_div_4)` SlimLoRa can adapt the RX timing window to receive the downlinks. Tested only with RX2 windows on 2seconds. Uncomment the `#define CATCH_DIVIDER` to enable this function.
+If you downclock your AVR MCU with `clock_prescale_set(clock_div_4)` SlimLoRa can adapt the RX timing window to receive the downlinks. Even with `clock_prescale_set(clock_div_32)` at 500Khz a MegaBrick joins at SF7. Uncomment the `#define CATCH_DIVIDER` to enable this function.
 
 # Undoable on AVR and Deep Sleep
 
@@ -118,7 +117,7 @@ I have also made some values public. Because the application can do something co
 
 # Tips for your project
 
-If you need to handle array data with EEPROM some helper function `getArrayEEPROM`, `setArrayEEPROM` and `printHe` are public to use them in your programm.
+If you need to handle array data with EEPROM some helper function `getArrayEEPROM`, `setArrayEEPROM` and `printHex` are public to use them in your programm.
 
 ---
 

@@ -85,7 +85,7 @@ void printMAC_EEPROM(){
                                           Serial.print(F("Tx_#       : "));Serial.println(lora.GetTxFrameCounter()); // Serial.print(F("\tRAM: "));Serial.println(tx_frame_counter_);
                                           Serial.print(F("Rx_#       : "));Serial.println(lora.GetRxFrameCounter()); // Serial.print(F("\tRAM: "));Serial.println(rx_frame_counter_);
                                           #ifdef COUNT_TX_DURATION
-                                          Serial.print(F("TXms       : "));Serial.println(lora.GetTXms());
+                                          Serial.print(F("Total TX ms: "));Serial.println(lora.GetTXms());
                                           #endif
                                           Serial.print(F("Rx1 delay  : "));Serial.print(lora.GetRx1Delay());Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print("s, RX2: ");Serial.print(LORAWAN_JOIN_ACCEPT_DELAY2_MICROS / 1000000);Serial.println("s, ");
                                           Serial.print(F("Rx1 DR Offset: "));Serial.println(lora.GetRx1DataRateOffset());

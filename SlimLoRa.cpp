@@ -44,6 +44,10 @@ extern const uint8_t DevAddr[4];
 uint8_t clockShift;
 #endif
 
+#if DEBUG_RXSYMBOLS >= 1
+	int32_t microsStart;
+#endif
+
 static SPISettings RFM_spisettings = SPISettings(4000000, MSBFIRST, SPI_MODE0);
 
 #if ARDUINO_EEPROM == 0
@@ -143,9 +147,9 @@ const uint8_t PROGMEM SlimLoRa::kDataRateTable[7][3] = {
 // Half symbol times
 // TODO for other regions
 const uint32_t PROGMEM SlimLoRa::kDRMicrosPerHalfSymbol[7] = {
-	((128 << 7) * MICROS_PER_SECOND + 500000) / 1000000, // SF12BW125
-	((128 << 6) * MICROS_PER_SECOND + 500000) / 1000000, // SF11BW125
-	((128 << 5) * MICROS_PER_SECOND + 500000) / 1000000, // SF10BW125
+	(((uint32_t)128 << 7) * MICROS_PER_SECOND + 500000) / 1000000, // SF12BW125 (uint32_t) to protect from buffer overflow
+	(((uint32_t)128 << 6) * MICROS_PER_SECOND + 500000) / 1000000, // SF11BW125
+	(((uint32_t)128 << 5) * MICROS_PER_SECOND + 500000) / 1000000, // SF10BW125
 	((128 << 4) * MICROS_PER_SECOND + 500000) / 1000000, // SF9BW125
 	((128 << 3) * MICROS_PER_SECOND + 500000) / 1000000, // SF8BW125
 	((128 << 2) * MICROS_PER_SECOND + 500000) / 1000000, // SF7BW125
@@ -260,7 +264,7 @@ void printNOWEB(){
 void SlimLoRa::setArrayEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t size) {
    for ( uint8_t i = 0; i < size; i++ ) {
     EEPROM.update(eepromAddr + i, arrayData[i]);
-#if DEBUG_SLIM > 1
+#if (DEBUG_SLIM & 0x08) == 0x08
     if ( i == 0 ) {
    Serial.print(F("WRITE EEPROM Address: 0x"));Serial.print(eepromAddr + i, HEX);Serial.print(F("->0x"));Serial.print(arrayData[i], HEX);
     } else {
@@ -268,7 +272,7 @@ void SlimLoRa::setArrayEEPROM(uint16_t eepromAddr, uint8_t *arrayData, uint8_t s
     }
 #endif
    }
-#if DEBUG_SLIM > 1
+#if (DEBUG_SLIM & 0x08) == 0x08
    Serial.print(F("WRITE: "));printHex(arrayData, size);
 #endif
 }
@@ -330,7 +334,9 @@ void SlimLoRa::printMAC(){
       	Serial.print(F("Calculated delay RX1: "));Serial.print(CalculateRxDelay(data_rate_, GetRx1Delay() * MICROS_PER_SECOND));
       	Serial.print(F("\nCalculated delay RX2: "));Serial.print(CalculateRxDelay(rx2_data_rate_, GetRx1Delay() * MICROS_PER_SECOND + MICROS_PER_SECOND));
       	Serial.print(F("\nCalculated delay Join RX1: "));Serial.print(CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS));
-      	Serial.print(F("\nCalculated delay Join RX2: "));Serial.println(CalculateRxDelay(rx2_data_rate_, LORAWAN_JOIN_ACCEPT_DELAY2_MICROS));
+      	Serial.print(F("\nCalculated delay Join RX2: "));Serial.print(CalculateRxDelay(rx2_data_rate_, LORAWAN_JOIN_ACCEPT_DELAY2_MICROS));
+      	//Serial.print(F("\nLNA REG : "));Serial.println(RfmRead(RFM_REG_LNA));
+      	//Serial.print(F("\nCONFIG_3: "));Serial.println(RfmRead(RFM_REG_MODEM_CONFIG_3));
 }
 #endif // DEBUG_SLIM
 
@@ -432,18 +438,21 @@ void SlimLoRa::setCurrentLimit(uint8_t currentLimit) {
   }
 }
 
-// EVAL for accuracy (FAIL: does not compile)
-//void wait_until(unsigned long microsstamp) __attribute__((optimize("-Ofast")));
-void wait_until(unsigned long microsstamp) {
+void SlimLoRa::wait_until(unsigned long microsstamp) {
 	long delta;
-
-	// optimization fast can help here?
-	// #pragma GCC optimize ("-Ofast")
-	// #pragma GCC push_options
-	// void function_to_optimize() {
-	// }
-	// #pragma GCC pop_options
 	
+	// this probably breaks timing for RX2 window
+#if DEBUG_SLIM >= 2
+	Serial.print(F("\nwait_until: "));Serial.print(microsstamp);
+	Serial.print(F("\nmicros now: "));Serial.println(micros());
+       	Serial.print(F("\nrx_symbols_\t: "));Serial.print(rx_symbols_);
+       	Serial.print(F("\n... MSB\t\t: "));Serial.println(RfmRead(RFM_REG_MODEM_CONFIG_2) & 0b11);
+#endif
+
+#if DEBUG_RXSYMBOLS >= 1
+	microsStart = micros();
+#endif
+
 	while (1) {
 		// overflow fail safe logic used. Described here: https://arduino.stackexchange.com/a/12588/59046
 		ATOMIC_BLOCK(ATOMIC_FORCEON) {
@@ -550,7 +559,7 @@ void SlimLoRa::SetPower(uint8_t power) {
   RfmWrite(RFM_REG_PA_CONFIG,DataPower);
 
 #if DEBUG_SLIM >= 1
-  Serial.print(F("Power (dBm): "));Serial.println(power);
+  Serial.print(F("\nPower (dBm): "));Serial.println(power);
 #endif // DEBUG_SLIM
 }
 
@@ -567,10 +576,8 @@ void SlimLoRa::SetPower(uint8_t power) {
 int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, uint8_t channel, uint8_t dri, uint32_t rx_microsstamp) {
 	uint8_t modem_config_3, irq_flags, packet_length, read_length;
 
-	// this probably breaks timing for RX2 window
-#if DEBUG_SLIM == 1
-	Serial.print(F("\nwait_until: "));Serial.println(rx_microsstamp - LORAWAN_RX_SETUP_MICROS);
-	Serial.print(F("micros now: "));Serial.println(micros());
+#if DEBUG_SLIM >= 2
+	if ( channel == 8 ) Serial.println(F("\n\nRX2\n"));
 #endif
 
 	// Wait for start time
@@ -595,46 +602,59 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 	RfmWrite(RFM_REG_MODEM_CONFIG_1, pgm_read_byte(&(kDataRateTable[dri][0])));
 
 	// Spreading Factor / Tx Continuous Mode / Crc
-	// EVAL for DR6 downlinks: Two MSB bits in RFM_REG_MODEM_CONFIG_2 [0-1]
-	#if defined(EU_DR6)
-	if ( rx_symbols_ == 255 ) {
-		RfmWrite(RFM_REG_MODEM_CONFIG_2, pgm_read_byte(&(kDataRateTable[dri][1])) | 3);
-	} else {
-	#endif
-		RfmWrite(RFM_REG_MODEM_CONFIG_2, pgm_read_byte(&(kDataRateTable[dri][1])));
-	#if defined(EU_DR6)
-	}
-	#endif
+	RfmWrite(RFM_REG_MODEM_CONFIG_2, pgm_read_byte(&(kDataRateTable[dri][1])));
 
 	// Automatic Gain Control / Low Data Rate Optimize
 	modem_config_3 = pgm_read_byte(&(kDataRateTable[dri][2]));
 	if (dri == SF12BW125 || dri == SF11BW125) {
 		modem_config_3 |= 0x08;
 	}
+
+#ifdef REDUCE_LNA
+	// disable AgcAutoOn
+	modem_config_3 &= 0b11111011; // clear [2] bit to disable AgcAutoOn p. 109
+	RfmWrite(RFM_REG_MODEM_CONFIG_3, modem_config_3);
+
+	// 0b1 is maximum, b110 (6) is minimum. So 6 = SF7, 5 = SF8, 4 = SF9, 3 = SF10, 2 = SF11, 1 = SF12
+	modem_config_3 = data_rate_ + 1;
+	if ( modem_config_3 > 6 ) modem_config_3 = 6; // handle overflow
+	modem_config_3 <<= 5;		// Shift to 7-5 bits
+	RfmWrite(RFM_REG_LNA, modem_config_3);
+#endif
+
+	// [DISABLED by CLV] Automatic Gain Control / Low Data Rate Optimize
 	RfmWrite(RFM_REG_MODEM_CONFIG_3, modem_config_3);
 
 	// Rx timeout
-	RfmWrite(RFM_REG_SYMB_TIMEOUT_LSB, rx_symbols_);
+	modem_config_3 = RfmRead(RFM_REG_MODEM_CONFIG_2) & 0b11111100; // EVAL: added 10+ instructions (delay)
+	RfmWrite(RFM_REG_MODEM_CONFIG_2, modem_config_3 | rx_symbols_ >> 8); // MSB [0-1]
+	RfmWrite(RFM_REG_SYMB_TIMEOUT_LSB, rx_symbols_); // LSB 8-bits
 
 	// Clear interrupts
 	RfmWrite(RFM_REG_IRQ_FLAGS, 0xFF);
 
 	// Wait for rx time
-	#ifdef CATCH_DIVIDER
-	//wait_until(rx_microsstamp >> clockShift);
 	wait_until(rx_microsstamp);
-	#else
-	wait_until(rx_microsstamp);
-	#endif
 
 	// Switch RFM to Rx
 	RfmWrite(RFM_REG_OP_MODE, 0x86);
 
 	// Wait for RxDone or RxTimeout
 	// TODO: switch to IRQ code to save some MCU cycles
+	
+	// Probably it breaks timing.
+	#if DEBUG_SLIM >= 2
+	Serial.print(F("\npre IRQ\t\t: "));Serial.print(micros());
+	#endif
+
 	do {
 		irq_flags = RfmRead(RFM_REG_IRQ_FLAGS);
 	} while (!(irq_flags & 0xC0));
+
+	// Probably it breaks timing.
+	#if DEBUG_SLIM >= 2
+	Serial.print(F("\nafter timeout\t: "));Serial.println(micros());
+	#endif
 
 	packet_length = RfmRead(RFM_REG_RX_NB_BYTES);
 	RfmWrite(RFM_REG_FIFO_ADDR_PTR, RfmRead(RFM_REG_FIFO_RX_CURRENT_ADDR));
@@ -656,11 +676,10 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 #else
 	last_packet_snr_ = (int8_t) RfmRead(RFM_REG_PKT_SNR_VALUE) / 4;
 #endif
-#if DEBUG_SLIM == 1
-	Serial.print(F("\nwait_until RX2: "));Serial.println(rx_microsstamp);
-	Serial.print(F("micros now RX2: "));Serial.println(micros());
-#endif
 
+#if DEBUG_RXSYMBOLS >= 1 && DEBUG_SLIM > 0
+	Serial.print(F("\nRX duration (ms): "));Serial.println( (micros() - microsStart) / 1000 );
+#endif
 
 	// Clear interrupts
 	RfmWrite(RFM_REG_IRQ_FLAGS, 0xFF);
@@ -875,20 +894,33 @@ uint8_t SlimLoRa::RfmRead(uint8_t address) {
  */
 uint32_t SlimLoRa::CalculateDriftAdjustment(uint32_t delay, uint16_t micros_per_half_symbol) {
 	// Clock drift
-	#if defined(EU_DR6)
-	// TODO EVAL EXPERIMENT
-	//uint32_t drift = delay * SLIMLORA_DRIFT * 4 / 100;
 	uint32_t drift = delay * SLIMLORA_DRIFT / 100;
-	#else
-	uint32_t drift = delay * SLIMLORA_DRIFT / 100;
-	#endif
 	delay -= drift;
 
-	if ((255 - rx_symbols_) * micros_per_half_symbol < drift) {
-		rx_symbols_ = 255;
+	// 8bits symbols are overflowing with value of 493, DRIFT 5 at 5 seconds RX12 SF12
+#if DEBUG_RXSYMBOLS >= 2
+	rx_symbols_ = LORAWAN_RX_MIN_SYMBOLS + drift / micros_per_half_symbol;
+	rx_symbolsB = LORAWAN_RX_MIN_SYMBOLS + drift / micros_per_half_symbol;
+#else
+	/* old novag code it creates excessive timeouts (8 seconds in SF12, 1 second in SF7)
+	if ((uint32_t)(LORAWAN_RX_MAX_SYMBOLS - rx_symbols_) * micros_per_half_symbol < drift) {
+		rx_symbols_ = LORAWAN_RX_MAX_SYMBOLS;
 	} else {
-		rx_symbols_ = 6 + drift / micros_per_half_symbol;
+		rx_symbols_ = LORAWAN_RX_MIN_SYMBOLS + drift / micros_per_half_symbol;
 	}
+	*/
+	rx_symbols_ = LORAWAN_RX_MIN_SYMBOLS + drift / micros_per_half_symbol;
+#endif
+
+#if DEBUG_SLIM >= 2
+	Serial.print(F("\ndelay / drift / micros_per_half_symbol:\t"));Serial.print(delay);Serial.print("\t");Serial.print(drift);Serial.print("\t");Serial.print(micros_per_half_symbol);
+	Serial.print(F("\n\(LORAWAN_RX_MAX_SYMBOLS - rx_symbols_) * micros_per_half_symbol: "));Serial.print((uint32_t)(LORAWAN_RX_MAX_SYMBOLS - rx_symbols_) * (uint32_t)micros_per_half_symbol);
+	Serial.print(F("\nrx_symbols_: "));Serial.println(rx_symbols_);
+#if DEBUG_RXSYMBOLS > 1
+	Serial.print(F("\n\(LORAWAN_RX_MAX_SYMBOLS - rx_symbolsB) * micros_per_half_symbol: "));Serial.print((uint32_t)(LORAWAN_RX_MAX_SYMBOLS - rx_symbolsB) * micros_per_half_symbol);
+	Serial.print(F("\nrx_symbolsB: "));Serial.println(rx_symbolsB);
+#endif
+#endif
 
 	return delay;
 }
@@ -899,6 +931,7 @@ uint32_t SlimLoRa::CalculateDriftAdjustment(uint32_t delay, uint16_t micros_per_
 int32_t SlimLoRa::CalculateRxWindowOffset(int16_t micros_per_half_symbol) {
 	const uint16_t micros_per_symbol = 2 * micros_per_half_symbol;
 
+	// EVAL uint16_t
 	uint8_t rx_symbols = ((2 * LORAWAN_RX_MIN_SYMBOLS - 8) * micros_per_symbol + 2 * LORAWAN_RX_ERROR_MICROS + micros_per_symbol - 1) / micros_per_symbol;
 	if (rx_symbols < LORAWAN_RX_MIN_SYMBOLS) {
 		rx_symbols = LORAWAN_RX_MIN_SYMBOLS;
@@ -917,12 +950,7 @@ uint32_t SlimLoRa::CalculateRxDelay(uint8_t data_rate, uint32_t delay) {
 	uint32_t micros_per_half_symbol;
 	int32_t offset;
 
-#ifdef CATCH_DIVIDER
-	//micros_per_half_symbol = pgm_read_word(&(kDRMicrosPerHalfSymbol[data_rate])) >> clockShift;
 	micros_per_half_symbol = pgm_read_word(&(kDRMicrosPerHalfSymbol[data_rate]));
-#else
-	micros_per_half_symbol = pgm_read_word(&(kDRMicrosPerHalfSymbol[data_rate]));
-#endif
 	offset = CalculateRxWindowOffset(micros_per_half_symbol);
 
 #ifdef CATCH_DIVIDER
@@ -1353,7 +1381,7 @@ int8_t SlimLoRa::ProcessJoinAccept(uint8_t window) {
 	result = 0;
 
 end:
-	#ifdef DEBUG_LED
+	#ifdef SLIM_DEBUG_VARS
 	if ( result == 0 ) {
 		if ( window == 1 ) {
 		LoRaWANreceived |= 0x01; // Join Accept Window 1
@@ -1386,7 +1414,7 @@ end:
 void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 	uint8_t status, new_rx1_dr_offset, new_rx2_dr; // new_rx2_dr is also used as a temp value
 
-#ifdef DEBUG_LED
+#ifdef SLIM_DEBUG_VARS
 	LoRaWANreceived |= 0x04; // MAC command
 #endif
 
@@ -1890,7 +1918,7 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 	result = 0;
 
 end:
-#ifdef DEBUG_LED
+#ifdef SLIM_DEBUG_VARS
 	if (window == 1) {
 		LoRaWANreceived |= 0x08; // RX1 received data
 	} else {
@@ -1932,7 +1960,7 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	downPort	= 0;
 	ack_		= 0;
 
-#ifdef DEBUG_LED
+#ifdef SLIM_DEBUG_VARS
 	LoRaWANreceived = 0;
 #endif
 	
@@ -2932,7 +2960,7 @@ bool SlimLoRa::GetHasJoined() {
 
 void SlimLoRa::SetHasJoined(bool value) {
 	eeprom_write_byte(&eeprom_lw_has_joined, value);
-#if DEBUG_SLIM > 1
+#if (DEBUG_SLIM & 0x08) == 0x08
 	Serial.print(F("\nWRITE EEPROM: joined"));
 	uint16_t temp = &eeprom_lw_has_joined;
 #endif
@@ -2946,7 +2974,7 @@ void SlimLoRa::GetDevAddr(uint8_t *dev_addr) {
 
 void SlimLoRa::SetDevAddr(uint8_t *dev_addr) {
 	eeprom_write_block(dev_addr, eeprom_lw_dev_addr, 4);
-#if DEBUG_SLIM > 1
+#if (DEBUG_SLIM & 0x08) == 0x08
 	Serial.print(F("\nWRITE DevAddr: "));printHex(dev_addr, 4);
 #endif
 }
@@ -3001,52 +3029,52 @@ void SlimLoRa::GetAppSKey(uint8_t *key) {
 
 void SlimLoRa::SetAppSKey(uint8_t *key) {
 	eeprom_write_block(key, eeprom_lw_app_s_key, 16);
-#if DEBUG_SLIM > 1
-	printNOWEB();Serial.print(F("WRITE app_skey: "));printHex(key, 16);
+#if (DEBUG_SLIM & 0x08) == 0x08
+	printNOWEB();Serial.print(F("WRITE app_skey\t: "));printHex(key, 16);
 #endif
 }
 
 // FNwkSIntKey
 void SlimLoRa::GetFNwkSIntKey(uint8_t *key) {
 	eeprom_read_block(key, eeprom_lw_f_nwk_s_int_key, 16);
-#if DEBUG_SLIM > 1
-	printNOWEB();Serial.print(F("FNwkSInt: "));printHex(key, 16);
+#if (DEBUG_SLIM & 0x08) == 0x08
+	printNOWEB();Serial.print(F("FNwkSInt\t: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetFNwkSIntKey(uint8_t *key) {
 	eeprom_write_block(key, eeprom_lw_f_nwk_s_int_key, 16);
-#if DEBUG_SLIM > 1
-	printNOWEB();Serial.print(F("WRITE FNwkSInt: "));printHex(key, 16);
+#if (DEBUG_SLIM & 0x08) == 0x08
+	printNOWEB();Serial.print(F("WRITE FNwkSInt\t: "));printHex(key, 16);
 #endif
 }
 
 // SNwkSIntKey
 void SlimLoRa::GetSNwkSIntKey(uint8_t *key) {
 	eeprom_read_block(key, eeprom_lw_s_nwk_s_int_key, 16);
-#if DEBUG_SLIM > 1
-	printNOWEB();Serial.print(F("SNwkSInt: "));printHex(key, 16);
+#if (DEBUG_SLIM & 0x08) == 0x08
+	printNOWEB();Serial.print(F("SNwkSInt\t: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetSNwkSIntKey(uint8_t *key) {
 	eeprom_write_block(key, eeprom_lw_s_nwk_s_int_key, 16);
 #if DEBUG_SLIM >= 1
-	printNOWEB();Serial.print(F("WRITE SNwkSInt: "));printHex(key, 16);
+	printNOWEB();Serial.print(F("WRITE SNwkSInt\t: "));printHex(key, 16);
 #endif
 }
 
 // NwkSEncKey
 void SlimLoRa::GetNwkSEncKey(uint8_t *key) {
 	eeprom_read_block(key, eeprom_lw_nwk_s_enc_key, 16);
-#if DEBUG_SLIM > 1
-	printNOWEB();Serial.print(F("NwkSEncKey: "));printHex(key, 16);
+#if (DEBUG_SLIM & 0x08) == 0x08
+	printNOWEB();Serial.print(F("NwkSEncKey\t: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetNwkSEncKey(uint8_t *key) {
 	eeprom_write_block(key, eeprom_lw_nwk_s_enc_key, 16);
-#if DEBUG_SLIM > 1
+#if (DEBUG_SLIM & 0x08) == 0x08
 	printNOWEB();Serial.print(F("WRITE NwkSEnc: "));printHex(key, 16);
 #endif
 }
@@ -3160,60 +3188,60 @@ void SlimLoRa::SetJoinNonce(uint32_t join_nonce) {
 // AppSKey
 void SlimLoRa::GetAppSKey(uint8_t *key) {
 	getArrayEEPROM(EEPROM_APPSKEY, key, 16);
-#if DEBUG_SLIM > 1
-	printNOWEB();Serial.print(F("Read appSkey: "));printHex(key, 16);
+#if (DEBUG_SLIM & 0x08) == 0x08
+	printNOWEB();Serial.print(F("Read appSkey\t: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetAppSKey(uint8_t *key) {
 	setArrayEEPROM(EEPROM_APPSKEY, key, 16);
-#if DEBUG_SLIM > 1
-	printNOWEB();Serial.print(F("WRITE appSkey: "));printHex(key, 16);
+#if (DEBUG_SLIM & 0x08) == 0x08
+	printNOWEB();Serial.print(F("WRITE appSkey\t: "));printHex(key, 16);
 #endif
 }
 
 // FNwkSIntKey
 void SlimLoRa::GetFNwkSIntKey(uint8_t *key) {
 	getArrayEEPROM(EEPROM_FNWKSIKEY, key, 16);
-#if DEBUG_SLIM > 1
-	printNOWEB();Serial.print(F("FNwkSInt: "));printHex(key, 16);
+#if (DEBUG_SLIM & 0x08) == 0x08
+	printNOWEB();Serial.print(F("FNwkSInt\t: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetFNwkSIntKey(uint8_t *key) {
 	setArrayEEPROM(EEPROM_FNWKSIKEY, key, 16);
-#if DEBUG_SLIM > 1
-	printNOWEB();Serial.print(F("WRITE FNwkSInt: "));printHex(key, 16);
+#if (DEBUG_SLIM & 0x08) == 0x08
+	printNOWEB();Serial.print(F("WRITE FNwkSInt\t: "));printHex(key, 16);
 #endif
 }
 
 // SNwkSIntKey
 void SlimLoRa::GetSNwkSIntKey(uint8_t *key) {
 	getArrayEEPROM(EEPROM_SNWKSIKEY, key, 16);
-#if DEBUG_SLIM > 1
-	printNOWEB();Serial.print(F("SNwkSInt: "));printHex(key, 16);
+#if (DEBUG_SLIM & 0x08) == 0x08
+	printNOWEB();Serial.print(F("SNwkSInt\t: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetSNwkSIntKey(uint8_t *key) {
 	setArrayEEPROM(EEPROM_SNWKSIKEY, key, 16);
-#if DEBUG_SLIM > 1
-	printNOWEB();Serial.print(F("WRITE SNwkSInt: "));printHex(key, 16);
+#if (DEBUG_SLIM & 0x08) == 0x08
+	printNOWEB();Serial.print(F("WRITE SNwkSInt\t: "));printHex(key, 16);
 #endif
 }
 
 // NwkSEncKey
 void SlimLoRa::GetNwkSEncKey(uint8_t *key) {
 	getArrayEEPROM(EEPROM_NW_ENC_KEY, key, 16);
-#if DEBUG_SLIM > 1
-	printNOWEB();Serial.print(F("NwkSEncKey: "));printHex(key, 16);
+#if (DEBUG_SLIM & 0x08) == 0x08
+	printNOWEB();Serial.print(F("NwkSEncKey\t: "));printHex(key, 16);
 #endif
 }
 
 void SlimLoRa::SetNwkSEncKey(uint8_t *key) {
 	setArrayEEPROM(EEPROM_NW_ENC_KEY, key, 16);
-#if DEBUG_SLIM > 1
-	printNOWEB();Serial.print(F("WRITE NwkSEnc: "));printHex(key, 16);
+#if (DEBUG_SLIM & 0x08) == 0x08
+	printNOWEB();Serial.print(F("WRITE NwkSEnc\t: "));printHex(key, 16);
 #endif
 }
 #endif // LORAWAN_OTAA_ENABLED && ARDUINO_EEPROM == 1

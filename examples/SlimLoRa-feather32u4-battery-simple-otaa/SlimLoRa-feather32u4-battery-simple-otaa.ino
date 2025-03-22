@@ -25,6 +25,8 @@
  * #define LORAWAN_OTAA_ENABLED
  * #define LORAWAN_KEEP_SESSION
  * #define ARDUINO_EEPROM 1
+ * for debuging you need
+ * #define DEBUG_SLIM 1
  * 
  */
 
@@ -33,7 +35,9 @@
 #include "SlimLoRa.h"
 #include <Adafruit_SleepyDog.h>
   
-#define DEBUG_INO 0       // DEBUG via Serial.print. If you enable this, it's a battery killer. Disable DEBUG_INO and you will have deep sleep.
+#define DEBUG_INO 0       // DEBUG via Serial.print. If you enable this, it's a battery killer.
+                          // Disable DEBUG_INO and you will have deep sleep.
+                          // You also need DEBUG_SLIM 1 in SlimLoRa.h
 #define PHONEY    0       // don't transmit. for DEBUGing
 
 #define VBATPIN   A9
@@ -65,7 +69,20 @@ void setup() {
     lora.Begin();
     lora.SetDataRate(SF7BW125); // choose the Data Rate. SF11 and SF12 are not welcome.
     lora.SetPower(txPower);
-    lora.SetAdrEnabled(1);      // 0 to disable. Network can still send ADR command to device. This is preference, not an order.
+    lora.SetAdrEnabled(1);      // 0 to disable. Network can still send ADR command to device.
+                                // This is preference, not an order although I never witnessed
+                                // an ADR command with ADR disabled.
+
+    // SlimLoRa does not write to EEPROM every uplink. In case of restart
+    // the network will discard some message as duplicates.
+    // This confuses LNS's - it's normal - and orders
+    // NBtrans 3 or 2. After a while it sends NBtrans 1
+    // You can disable frame counter check in your LNS
+    // and comment those lines.
+
+    // increase f_cnt in case of power loss or in restart.
+    lora.tx_frame_counter_ += EEPROM_WRITE_TX_COUNT;
+    lora.SetTxFrameCounter();
 
     // Show data stored in EEPROM
     #if DEBUG_INO == 1

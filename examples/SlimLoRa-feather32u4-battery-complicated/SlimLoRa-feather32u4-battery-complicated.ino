@@ -30,6 +30,7 @@
 
 // program behaviour
 #define DEBUG_INO   1     // DEBUG via Serial.print
+                          // You also need DEBUG_SLIM 1 in SlimLoRa.h
 #define PHONEY      0     // don't transmit. for DEBUGing
 #define POWER	14     // Transmittion power
 
@@ -181,8 +182,10 @@ void loop() {
         Serial.print(F("\nUsed data from Port\t: "));Serial.print(lora.downPort);
         Serial.print(F("\ndownlinkSize\t\t: "));Serial.print(lora.downlinkSize);
         #endif
-        
+
+        // update the interval of reporting
         minutes = lora.downlinkData[0];
+        
         // in case payload of downlink is zero
         if ( minutes < 1 ) {
           minutes = 2;

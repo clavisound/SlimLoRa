@@ -6,17 +6,13 @@
 #include <util/atomic.h>
 #include <avr/power.h>
 
+//#define DEBUG_RXSYMBOLS 1 // Masked 1 = duration, 2 breaks timing with debug prints
+
 // START OF USER DEFINED OPTIONS
 
 // Region. Valid Value: EU863. NOT USED needs further work: US902, AS920, AU915
 // https://github.com/TheThingsNetwork/lorawan-frequency-plans/
 #define EU863
-
-// Enable this only if you have changed the clock of your AVR MCU.
-//#define CATCH_DIVIDER
-#if defined CATCH_DIVIDER && !defined (__AVR__) 
-#error You defined CATCH_DIVIDER but this is supported only for AVR / ATmega MCU's. Uncomment CATCH_DIVIDER
-#endif
 
 // NbTrans (re-transmissions). Normally 1 max is 15
 // Olivier Seller for static devices proposes 4.
@@ -28,7 +24,7 @@
 #define NET_HELIUM	2
 
 // change this according to your network
-#define NETWORK NET_TTN	// Two options: NET_HLM = helium, NET_TTN = TheThingsNetwork
+#define NETWORK NET_TTN	// Two options: NET_HELIUM = helium, NET_TTN = TheThingsNetwork
 				// NET_TTN: RX2 SF9
 				// NET_HLM: RX2 SF12
 
@@ -50,10 +46,10 @@
 
 // Debug SlimLoRa library via Serial.print() 
 // 0 to disable
-#define DEBUG_SLIM   	0  // Enabled this only to check values / registers.
+#define DEBUG_SLIM   	0  // 1 is basic debugging, 2 more debugging. Enable this only to check values / registers.
 
-// Some extra variables to debug via LED
-#define DEBUG_LED
+// Some extra variables to debug via LED or with with payload data
+//#define SLIM_DEBUG_VARS
 
 // Enable LoRaWAN Over-The-Air Activation
 #define LORAWAN_OTAA_ENABLED    1
@@ -73,15 +69,27 @@
 #define LORAWAN_ADR_ACK_DELAY   32	// Wait XX times to consider connection lost.				Minimum sane value: 32
 
 // if you you want to save 6 bytes of RAM and you don't need to provision the Duty Cycle
-// because you transmitting only on high Data Rates (DR). You save 76 byte of flash memory if you comment this. RAM is the same.
+// because you transmitting only on high Data Rates (DR). You save 76 byte of flash memory if you comment this.
 #define COUNT_TX_DURATION	1
 
 // You gain 12 bytes of program flash if you comment this. Use it only WITHOUT ADR.
 // TTN does not want this. Helium is not supported.
 #define EU_DR6 // applicable for EU RU AS CN
+
+// Enable this only if you have changed the clock of your AVR MCU.
+#define CATCH_DIVIDER
+#if defined CATCH_DIVIDER && !defined (__AVR__) 
+#error You defined CATCH_DIVIDER but this is supported only for AVR / ATmega MCUs. Uncomment CATCH_DIVIDER
+#endif
+
+// Reduce LNA gain if DR is fast. Probably we are close to a gateway.
+// I have seen minimal benefit, or it's bad implemented by the code.
+//#define REDUCE_LNA
+
 // END OF USER DEFINED OPTIONS
 
-// Drift adjustment. Default:	5 works with feather-32u4 TTN and helium at 5 seconds RX delay. Tested with TTN and SF7, SF8, SF9. Tested with Helium at SF10.
+// Drift adjustment. Default:	5 works with feather-32u4 TTN and helium at 5 seconds RX delay.
+// Tested with TTN and SF7, SF8, SF9. Tested with Helium at SF10 to SF7.
 #define SLIMLORA_DRIFT		5
 
 #if ARDUINO_EEPROM == 1
@@ -128,6 +136,7 @@
 #define RFM_REG_PA_CONFIG               0x09 
 #define RFM_REG_PA_DAC                  0x4D ///<PA Higher Power Settings
 #define RFM_REG_OCP_TRIM		0x0B
+#define RFM_REG_LNA			0x0C
 #define RFM_REG_FIFO_ADDR_PTR           0x0D
 #define RFM_REG_FIFO_TX_BASE_ADDR       0x0E
 #define RFM_REG_FIFO_RX_BASE_ADDR       0x0F
@@ -249,6 +258,8 @@
 #define LORAWAN_RX_MARGIN_MICROS            2000    // 2000 us
 #define LORAWAN_RX_SETUP_MICROS             2000    // 2000 us
 #define LORAWAN_RX_MIN_SYMBOLS              6
+#define LORAWAN_RX_MAX_SYMBOLS              1023    // MSB are located in register MODEM_CONFI_2 [0-1]
+						    // original was 255
 
 #define LORAWAN_FOPTS_MAX_SIZE              10
 #define LORAWAN_STICKY_FOPTS_MAX_SIZE       6
@@ -354,8 +365,12 @@ class SlimLoRa {
 	uint8_t f_options_length, payload_length;
 #endif
 
-#ifdef DEBUG_LED
-	uint8_t MACreceived;
+#ifdef SLIM_DEBUG_VARS
+	uint8_t LoRaWANreceived;
+#endif
+
+#if DEBUG_RXSYMBOLS >= 2
+	uint16_t rx_symbolsB;
 #endif
 
 #if DEBUG_SLIM == 0 // if not debuging, those are private. If debugging everything is public
@@ -370,7 +385,7 @@ class SlimLoRa {
     bool ack_		= false;
     fopts_t pending_fopts_ = {0};
     fopts_t sticky_fopts_ = {0};
-    uint8_t rx_symbols_ = LORAWAN_RX_MIN_SYMBOLS;
+    uint16_t rx_symbols_ = LORAWAN_RX_MIN_SYMBOLS;
     unsigned long tx_done_micros_;
     int8_t last_packet_snr_;
 
@@ -399,6 +414,7 @@ class SlimLoRa {
     int8_t ProcessDownlink(uint8_t window);
     void Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length);
     void defaultChannel();
+    void wait_until(unsigned long microsstamp);
 #if COUNT_TX_DURATION == 1
     // Variables to calculate TX time in ms
     uint32_t slimStartTXtimestamp, slimEndTXtimestamp;
