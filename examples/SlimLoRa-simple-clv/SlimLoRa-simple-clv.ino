@@ -6,6 +6,8 @@
 #include "SlimLoRa.h"
 #include <Adafruit_SleepyDog.h>
 
+// 1 to DEBUG via serial, 0 to disable DEBUG.
+// You can alse enable DEBUG_SLIM 1 in SlimLoRa.h
 #define DEBUGINO   1
 
 uint8_t  payload[1], payload_length;
@@ -16,9 +18,10 @@ uint32_t uptime;     // ms
 uint32_t wtimes;
 
 // DEBUG
-uint32_t joinTime, RX2End,temp;
+uint32_t joinTime, RX2End, temp;
 
-uint8_t battery = 2;
+// fake battery measurement
+uint8_t battery = 0;
 
 SlimLoRa lora = SlimLoRa(8);           // NSS (CS) pin. ok with Feather 32u4 LoRa.
 
@@ -33,14 +36,15 @@ void setup() {
     delay(1000);
     lora.Begin();
     lora.SetDataRate(SF7BW125);
-    lora.SetPower(-80);          // at -80 it has range of some centimeters from the gateway. Useful to test without interrupting the GW or the TTN
-    lora.ForceTxFrameCounter(0); // useful only for ABP testing.
+    //lora.SetPower(80);          // 80 is -80dBm. It has range of some centimeters from the gateway.
+                                  // Useful to test without interrupting the GW or the TTN
+    //lora.ForceTxFrameCounter(0);// useful only for testing.
 
 #if LORAWAN_OTAA_ENABLED
   #if LORAWAN_KEEP_SESSION
     while (!lora.GetHasJoined()) {
   #else
-    while (!lora.HasJoined()) {      // original SlimLoRa
+    while (!lora.HasJoined()) {
   #endif // LORAWAN_KEEPSESSION
     #if DEBUGINO == 1 || DEBUGFTDI == 1
       Serial.println(F("\nJoining..."));
