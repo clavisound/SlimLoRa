@@ -144,6 +144,15 @@ void setup() {
    }
 #endif // LORAWAN_KEEP_SESSION
 #endif // DEBUG_INO
+
+// Uncomment to ask for time and demodulation margin and gateway count
+// lora.TimeLinkCheck = 3; // 1 for only time, 2 for margin and gateway count. 3 for both.
+
+// with lora.epoch you have access to GPS epoch from LNS.
+// lora.fracSeconds holds the value of seconds in ms.
+// lora.margin holds the demodulation margin (0-20)
+// lora.GwCnt holds the number of Gateways received the message.
+
 } // setup()
 
 void loop() {

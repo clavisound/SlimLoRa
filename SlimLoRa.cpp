@@ -1445,6 +1445,10 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				#if DEBUG_SLIM >= 1
 				Serial.print(F("\nmargin/GwCnt: "));Serial.print(margin);Serial.print(F("/"));Serial.println(GwCnt);
 				#endif
+				
+				#ifdef SLIM_DEBUG_VARS	
+				LoRaWANreceived |= 0x20; // LinkCheck Received
+				#endif
 				#endif
 
 				i += LORAWAN_FOPT_LINK_CHECK_ANS_SIZE;
@@ -1745,6 +1749,9 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				#if DEBUG_SLIM >= 1
 				Serial.print(F("\nepoch from LNS: "));Serial.print(epoch);
 				Serial.print(F("\tfrac: "));Serial.print(fracSecond);
+				#endif
+				#ifdef SLIM_DEBUG_VARS	
+				LoRaWANreceived |= 0x40; // Time received
 				#endif
 				#endif
 				i += LORAWAN_FOPT_DEVICE_TIME_ANS_SIZE;

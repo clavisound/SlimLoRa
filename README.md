@@ -115,6 +115,8 @@ SlimLoRa changes the data of payload. Don't use payload data for program logic.
 
 You can monitor the duty cycle with the function `GetTXms()` after every transmission. SlimLoRa will return the duration in ms of the LAST transmission. You have to add this to a variable to your program to keep track the Duty Cycle every day. If you access SlimLoRa via `lora` object example `SlimLoRa lora = SlimLoRa(8);` you can also read (please don't write) the values `lora.slimTotalTXms` and `lora.slimLastTXms`. After one day remember to erase the slimTotalTXms with function `lora.ZeroTXms()` or `lora.slimTotalTXms = 0;`. I think I will remove the functions.
 
+If you send MAC request for Time or CheckLink you can read the variables with `lora.epoch` and `lora.margin`, lora.GwCnt`.
+
 I have also made some values public. Because the application can do something cool stuff like: if you are close to a GW you can check with frame counter if you transmit verbose data. So every 20 - 30 uplinks you can send more data.
 
 ## Drift - Only room temperature tested. Cold or Heat untested
