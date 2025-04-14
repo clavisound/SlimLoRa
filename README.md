@@ -38,7 +38,7 @@ The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks 
 - [x] Deep Sleep
 - [x] Restore session from EEPROM (arduino style)
 - [x] Downlink for application.
-- [x] Sends ACK to confirmed Downlink.
+- [x] ACK to confirmed Downlink.
 - [x] NbTrans - edit SlimLoRa.h to config.
 - [x] Most important MAC commands - more to follow
 - [x] Session saved to EEPROM. You only need to join once on the lifetime of the device.
@@ -50,6 +50,8 @@ The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks 
 - [x] Channel Mask
 - [x] RxTimingSetup
 - [x] DevStatusAns. Battery status is working, I think margin is fine.
+- [x] LinkCheckReq. (Margin and Gateways count)
+- [x] DeviceTimeReq. Fractional second on purpose is truncated to ms resolution. I can't undestand how much precise is the timing from LNS. Have to verify with GPS.
 
 # BUGS
 
@@ -114,6 +116,18 @@ SlimLoRa changes the data of payload. Don't use payload data for program logic.
 You can monitor the duty cycle with the function `GetTXms()` after every transmission. SlimLoRa will return the duration in ms of the LAST transmission. You have to add this to a variable to your program to keep track the Duty Cycle every day. If you access SlimLoRa via `lora` object example `SlimLoRa lora = SlimLoRa(8);` you can also read (please don't write) the values `lora.slimTotalTXms` and `lora.slimLastTXms`. After one day remember to erase the slimTotalTXms with function `lora.ZeroTXms()` or `lora.slimTotalTXms = 0;`. I think I will remove the functions.
 
 I have also made some values public. Because the application can do something cool stuff like: if you are close to a GW you can check with frame counter if you transmit verbose data. So every 20 - 30 uplinks you can send more data.
+
+## Drift - Only room temperature tested. Cold or Heat untested
+
+If your project relies on small battery, try to lower `SLIMLORA_DRIFT` from `2` to `1` or even to `0`. There is a danger to not receive downlinks. Verify the behaviour with cold and heat. Make sure your device / network can handle that. With MegaBrick and `SLIMLORA_DRIFT 1` I managed to join at with SF7 and receive downlinks in room temperature. Your device / network maybe is not capable of that. `3` and `2` seems to be ok with feather-32u4 for RX2 SF12 at 2s. Join is fine with `2`, `3`, `4`. With drift `1` join fails with feather-32u4, so the best for feather-32u4 is `2` or `3`. MegaBrick joins with `1` but fails with `0`. So best for MebaBrick is `1` or `2`.
+
+| Drift |    SF7  |   SF12  |
+|-------|---------|---------|
+|   5   |   100ms | 1100ms  |
+|   4   |    87ms |  918ms  |
+|   3   |    66ms |  756ms  |
+|   2   |    47ms |  558ms  |
+|   1   |    27ms |  362ms  |
 
 # Tips for your project
 

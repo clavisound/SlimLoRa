@@ -6,8 +6,6 @@
 #include <util/atomic.h>
 #include <avr/power.h>
 
-//#define DEBUG_RXSYMBOLS 1 // Masked 1 = duration, 2 breaks timing with debug prints
-
 // START OF USER DEFINED OPTIONS
 
 // Region. Valid Value: EU863. NOT USED needs further work: US902, AS920, AU915
@@ -86,21 +84,34 @@
 // I have seen minimal benefit, or it's bad implemented by the code.
 //#define REDUCE_LNA
 
-// END OF USER DEFINED OPTIONS
+// Drift adjustment. Default:	2 works with feather-32u4 TTN and helium at 5 seconds RX delay.
+// 2: Tested with Helium at SF7 feather-32u4
+// MegaBrick - no lower than 1 (room temperature)
+// 1: it works for 5s join SF7 and RX2 SF12 at 2s receive
+// 0: it works with Helium SF12 @ 2secs - MegaBrick
+// 0: DOES NOT joins at 5s SF7 - MegaBrick
+// Feather-32u4 - no lower than 2 (room temperature)
+// 1: downlink fails RX2 SF12 2s
+// 2: Join ok same room GW SF7
+#define SLIMLORA_DRIFT		2
 
-// Drift adjustment. Default:	5 works with feather-32u4 TTN and helium at 5 seconds RX delay.
-// Tested with TTN and SF7, SF8, SF9. Tested with Helium at SF10 to SF7.
-#define SLIMLORA_DRIFT		5
+// Uncomment this to enable MAC requests for TimeReq and LinkCheck (margin, gateway count)
+// This needs 397 of Program Flash and 9 bytes of RAM
+#define MAC_REQUESTS
+
+// END OF USER DEFINED OPTIONS
 
 #if ARDUINO_EEPROM == 1
 	#include <EEPROM.h>
 #endif
 
+#define DEBUG_RXSYMBOLS 1 // Masked 1 = duration, 2 breaks timing with debug prints
+
 // Arduino library of eeprom is simpler / with less functionality than avr/eeprom.h
 // It needs extra work. We need to define the address of each data.
 // It's better for future firmware updates. Data remains in same place in contrast of avr/eeprom.h
 #if ARDUINO_EEPROM == 1
-	#define EEPROM_OFFSET		  0	// Change this fom 0 to EEPROM size - 152 if you feel 
+	#define EEPROM_OFFSET		  0	// Change this from 0 to EEPROM size - 152 if you feel 
 						// that you gonna burn the EEPROM to use another area
 						// of EEPROM
 								// EEPROM reliability for AVR's. Around 1.000.000 writes.
@@ -175,6 +186,8 @@
 #define RFM_ERROR_CRC           -2
 #define RFM_ERROR_UNKNOWN       -3
 
+#define RFM_FREQ_MULTIPLIER	61035
+
 // LoRaWAN
 #define LORAWAN_MTYPE_JOIN_REQUEST          0x00
 #define LORAWAN_MTYPE_JOIN_ACCEPT           0x20
@@ -194,6 +207,10 @@
 
 #define LORAWAN_UPLINK_CHANNEL_COUNT        8 // Valid Value only 8. 
 					      // In future downlink channel must move to another index - not 8 or in another variable.
+
+// LoRaWAN epoch
+#define	LORAWAN_EPOCH_DRIFT	18 // Leap Seconds since 1980
+#define LORAWAN_DEVICE_TIME_FRACTIONAL_STEPS 0.00390625 // p. 32 aka: 0.5^8
 
 // LoRaWAN frame options
 #define LORAWAN_FOPT_LINK_CHECK_REQ         0x02
@@ -258,7 +275,7 @@
 #define LORAWAN_RX_MARGIN_MICROS            2000    // 2000 us
 #define LORAWAN_RX_SETUP_MICROS             2000    // 2000 us
 #define LORAWAN_RX_MIN_SYMBOLS              6
-#define LORAWAN_RX_MAX_SYMBOLS              1023    // MSB are located in register MODEM_CONFI_2 [0-1]
+#define LORAWAN_RX_MAX_SYMBOLS              1023    // MSB are located in register RFM_REG_MODEM_CONFIG_2 [0-1]
 						    // original was 255
 
 #define LORAWAN_FOPTS_MAX_SIZE              10
@@ -337,8 +354,15 @@ class SlimLoRa {
     uint16_t GetTxFrameCounter();
     void SetTxFrameCounter();
     void SetRxFrameCounter();
-
+    
+    // MAC Request variables
+#ifdef MAC_REQUESTS
+    uint8_t TimeLinkCheck;
+    uint32_t epoch;
+    uint8_t fracSecond;
     uint8_t margin, GwCnt; // For LinkCheckAns
+#endif
+
 #if COUNT_TX_DURATION == 1
     uint16_t slimLastTXms, slimTotalTXms;
 #endif

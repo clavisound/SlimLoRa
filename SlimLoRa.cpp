@@ -328,13 +328,20 @@ void SlimLoRa::printMAC(){
 	Serial.print(F("Rx1 DR offset\t: "));Serial.println(GetRx1DataRateOffset());
 	Serial.print(F("Rx2 DR RAM\t: "));Serial.println(rx2_data_rate_);
 	Serial.print(F("Rx2 DR EEPROM\t: "));Serial.println(GetRx2DataRate());
-	Serial.print(F("ADR_ACK_cnt\t: "));Serial.println(adr_ack_limit_counter_);
-       	Serial.print(F("\nrx_symbols_\t: "));Serial.print(rx_symbols_);
-       	Serial.print(F("\nrx_symbols_ MSB\t: "));Serial.println(RfmRead(RFM_REG_MODEM_CONFIG_2) & 0b11);
-      	Serial.print(F("Calculated delay RX1: "));Serial.print(CalculateRxDelay(data_rate_, GetRx1Delay() * MICROS_PER_SECOND));
-      	Serial.print(F("\nCalculated delay RX2: "));Serial.print(CalculateRxDelay(rx2_data_rate_, GetRx1Delay() * MICROS_PER_SECOND + MICROS_PER_SECOND));
-      	Serial.print(F("\nCalculated delay Join RX1: "));Serial.print(CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS));
-      	Serial.print(F("\nCalculated delay Join RX2: "));Serial.print(CalculateRxDelay(rx2_data_rate_, LORAWAN_JOIN_ACCEPT_DELAY2_MICROS));
+	Serial.print(F("ADR_ACK_cnt\t: "));Serial.print(adr_ack_limit_counter_);
+      	Serial.print(F("\nSlimLoRa drift\t: "));Serial.print(SLIMLORA_DRIFT);
+      	Serial.print(F("\ndelay RX1\t: "));Serial.print(CalculateRxDelay(data_rate_, GetRx1Delay() * MICROS_PER_SECOND));
+       	Serial.print(F("\trx_symbols_: "));Serial.print(rx_symbols_);
+       	Serial.print(F("\trx_symbols_ MSB: "));Serial.print(RfmRead(RFM_REG_MODEM_CONFIG_2) & 0b11);
+      	Serial.print(F("\ndelay RX2\t: "));Serial.print(CalculateRxDelay(rx2_data_rate_, GetRx1Delay() * MICROS_PER_SECOND + MICROS_PER_SECOND));
+       	Serial.print(F("\trx_symbols_: "));Serial.print(rx_symbols_);
+       	Serial.print(F("\trx_symbols_ MSB: "));Serial.print(RfmRead(RFM_REG_MODEM_CONFIG_2) & 0b11);
+      	Serial.print(F("\ndelay Join RX1\t: "));Serial.print(CalculateRxDelay(data_rate_, LORAWAN_JOIN_ACCEPT_DELAY1_MICROS));
+       	Serial.print(F("\trx_symbols_: "));Serial.print(rx_symbols_);
+       	Serial.print(F("\trx_symbols_ MSB: "));Serial.print(RfmRead(RFM_REG_MODEM_CONFIG_2) & 0b11);
+      	Serial.print(F("\ndelay Join RX2\t: "));Serial.print(CalculateRxDelay(rx2_data_rate_, LORAWAN_JOIN_ACCEPT_DELAY2_MICROS));
+       	Serial.print(F("\trx_symbols_: "));Serial.print(rx_symbols_);
+       	Serial.print(F("\trx_symbols_ MSB: "));Serial.println(RfmRead(RFM_REG_MODEM_CONFIG_2) & 0b11);
       	//Serial.print(F("\nLNA REG : "));Serial.println(RfmRead(RFM_REG_LNA));
       	//Serial.print(F("\nCONFIG_3: "));Serial.println(RfmRead(RFM_REG_MODEM_CONFIG_3));
 }
@@ -678,7 +685,7 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 #endif
 
 #if DEBUG_RXSYMBOLS >= 1 && DEBUG_SLIM > 0
-	Serial.print(F("\nRX duration (ms): "));Serial.println( (micros() - microsStart) / 1000 );
+	Serial.print(F("\n\n >>>RX duration (ms): "));Serial.println( (micros() - microsStart) / 1000 );
 #endif
 
 	// Clear interrupts
@@ -1413,6 +1420,8 @@ end:
  */
 void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 	uint8_t status, new_rx1_dr_offset, new_rx2_dr; // new_rx2_dr is also used as a temp value
+	uint8_t freqMSB, freqMID, freqLSB;
+	uint8_t freqNewMSB, freqNewMID, freqNewLSB;
 
 #ifdef SLIM_DEBUG_VARS
 	LoRaWANreceived |= 0x04; // MAC command
@@ -1421,21 +1430,24 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 	for (uint8_t i = 0; i < f_options_length; i++) {
 
 	#if DEBUG_SLIM >= 1
-	Serial.print(F("\nProcessing MAC\t: "));Serial.println(options[i]);
+	Serial.print(F("\nProcessing MAC\t: "));Serial.print(options[i]);
+	Serial.print(F("\tf_options_length: "));Serial.print(f_options_length);
+	Serial.print(F("\nlast_packet_snr_ 8bit / 4: "));Serial.print(last_packet_snr_);
 	#endif
 
 		switch (options[i]) {
 			case LORAWAN_FOPT_LINK_CHECK_ANS:
-				// EVAL p. 23
-				margin = options[i + 1];
+				#ifdef MAC_REQUESTS
+				// p. 23
+				margin = options[i + 1]; // 0-20, 255 is reserved
 				GwCnt  = options[i + 2];
 
 				#if DEBUG_SLIM >= 1
 				Serial.print(F("\nmargin/GwCnt: "));Serial.print(margin);Serial.print(F("/"));Serial.println(GwCnt);
 				#endif
+				#endif
 
 				i += LORAWAN_FOPT_LINK_CHECK_ANS_SIZE;
-
 				break;
 			case LORAWAN_FOPT_LINK_ADR_REQ:
 				// ChMask p. 24 and NbTrans. RP p. 18
@@ -1567,7 +1579,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				Serial.print(F("RX2_DR: "));Serial.println(rx2_data_rate_);
 				#endif
 
-				sticky_fopts_.fopts[sticky_fopts_.length++] = LORAWAN_FOPT_RX_PARAM_SETUP_ANS;
+				sticky_fopts_.fopts[sticky_fopts_.length++] = LORAWAN_FOPT_RX_PARAM_SETUP_ANS; // until a downlink received
 				sticky_fopts_.fopts[sticky_fopts_.length++] = status;
 
 				i += LORAWAN_FOPT_RX_PARAM_SETUP_REQ_SIZE;
@@ -1616,6 +1628,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				#endif
 
 				// convert to 6 bit. Code from RadioLib
+				// valid values: -32 to 31
 				if ( last_packet_snrB < 128 ) {
 					last_packet_snrB /= 4;
 				} else {
@@ -1636,7 +1649,54 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				// a: FSK, 
 				// b: remove the channels from PROGMEM
 				// c: and create a function to create channels.
-				status = 0;
+				
+				/* Hacky solution
+				 *
+				 * a. Check if the FREQ is already listed in PROGMEM.
+				 * if YES status |= 1
+				 *
+				 * b. Check if min DR is 0 and max DR 5
+				 * if YES status |= 2
+				 *
+				 */
+
+				// TODO: How Can I know the number of channels to 
+				// be created / modified?
+				// Maybe from f_options_length?
+
+				// ChIndex
+				new_rx2_dr = options[i + 1]; // store Channel Index to temp variable
+				if ( new_rx2_dr >= 0 && new_rx2_dr <= 7 ) {
+					// TODO compare first 20 bits with kFrequencyTable if they are the same.
+					freqMSB = pgm_read_byte(&(kFrequencyTable[new_rx2_dr][0]));
+					freqMID = pgm_read_byte(&(kFrequencyTable[new_rx2_dr][1]));
+					freqLSB = pgm_read_byte(&(kFrequencyTable[new_rx2_dr][2])) & 0xF0; // erase 4 LSB bits to keep 20bits resolution
+					
+					// Frequency
+					// TODO if Freq is 0 then channel is disabled
+					freqNewMSB = options[i + 2];
+					freqNewMID = options[i + 3];
+					freqNewLSB = options[i + 4];
+
+					#if DEBUG_SLIM == 1
+					Serial.print(F("\nfreqMSB   : "));Serial.print(freqMSB);
+					Serial.print(F("\nfreqNewMSB: "));Serial.print(freqNewMSB);
+					Serial.print(F("\nfreqMID   : "));Serial.print(freqMID);
+					Serial.print(F("\nfreqNewMID: "));Serial.print(freqNewMID);
+					Serial.print(F("\nfreqLSB   : "));Serial.print(freqLSB);
+					Serial.print(F("\nfreqNewLSB: "));Serial.print(freqNewLSB);
+					#endif
+
+					status |= 1;
+				}
+
+				if ( options[i + 5] & 0x0F == 0 && options[i + 5] & 0xF0 == 5 ) {
+					status |= 2; // DR ok
+				} 
+
+				// DEBUGING ERASE FOR PRODUCTION
+				status = 0; // 1 = FREQ ok, 2 DR ok
+
 				pending_fopts_.fopts[pending_fopts_.length++] = LORAWAN_FOPT_NEW_CHANNEL_ANS;
 				pending_fopts_.fopts[pending_fopts_.length++] = status;
 
@@ -1652,7 +1712,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				SetRx1Delay(new_rx2_dr);
 				rx1_delay_micros_ = GetRx1Delay() * MICROS_PER_SECOND;
 
-				sticky_fopts_.fopts[sticky_fopts_.length++] = LORAWAN_FOPT_RX_TIMING_SETUP_ANS;
+				sticky_fopts_.fopts[sticky_fopts_.length++] = LORAWAN_FOPT_RX_TIMING_SETUP_ANS; // sticky until downlink received.
 
 				i += LORAWAN_FOPT_RX_TIMING_SETUP_REQ_SIZE;
 				break;
@@ -1673,7 +1733,20 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				i += LORAWAN_FOPT_DL_CHANNEL_REQ_SIZE;
 				break;
 			case LORAWAN_FOPT_DEVICE_TIME_ANS:
-				// TODO p. 32
+				// p. 32
+				#ifdef MAC_REQUESTS 
+				// store 4 bytes of time epoch since 1980 and remove 18 leap seconds (thanks to RadioLib for the heads up)
+				epoch = ( (uint32_t) options[i + 4] << 24 
+						| (uint32_t) options[i + 3] << 16 
+						| options[i + 2] << 8 
+						| options[i + 1]) - LORAWAN_EPOCH_DRIFT;
+				// Fractional second 0-100. This calculation is NOT precise
+				fracSecond = ( options[i + 5] * LORAWAN_DEVICE_TIME_FRACTIONAL_STEPS ) * 100; // 100 = 1 second
+				#if DEBUG_SLIM >= 1
+				Serial.print(F("\nepoch from LNS: "));Serial.print(epoch);
+				Serial.print(F("\tfrac: "));Serial.print(fracSecond);
+				#endif
+				#endif
 				i += LORAWAN_FOPT_DEVICE_TIME_ANS_SIZE;
 				break;
 			default:
@@ -1785,7 +1858,7 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 	// Mark ack_ as true so the next uplink we will have ACK enabled.
 	if (packet[0] == LORAWAN_MTYPE_CONFIRMED_DATA_DOWN) {
-		ack_ = true;	 
+		ack_ = true;
 	}
 
 	// We received downlink. Reset some values.
@@ -2033,18 +2106,33 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 		packet[packet_length] |= LORAWAN_FCTRL_ACK;
 	}
 
+#ifdef MAC_REQUESTS
+	// first bit is for CheckTime
+	if ( ( TimeLinkCheck & 0x01 ) == 0x01 ) {
+		pending_fopts_.fopts[pending_fopts_.length++] = LORAWAN_FOPT_DEVICE_TIME_REQ;
+	}
+
+	// second bit is for CheckLink
+	if ( ( TimeLinkCheck & 0x02 ) == 0x02 ) {
+		pending_fopts_.fopts[pending_fopts_.length++] = LORAWAN_FOPT_LINK_CHECK_REQ;
+	}
+
+	// Reset TimeLinkCheck
+	TimeLinkCheck = 0;
+#endif
+
 	packet[packet_length++] |= pending_fopts_.length + sticky_fopts_.length;
 
 	// Uplink frame counter
 	packet[packet_length++] = tx_frame_counter_ & 0xFF;
 	packet[packet_length++] = tx_frame_counter_ >> 8;
 
-	// Frame options
+	// Apply Frame options
 	for (uint8_t i = 0; i < pending_fopts_.length; i++) {
 		packet[packet_length++] = pending_fopts_.fopts[i];
 	}
 
-	// Sticky Frame options
+	// Apply Sticky Frame options
 	for (uint8_t i = 0; i < sticky_fopts_.length; i++) {
 		packet[packet_length++] = sticky_fopts_.fopts[i];
 	}

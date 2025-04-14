@@ -1,4 +1,4 @@
-  /* Manage SlimLoRa EEPROM interactively
+ /* Manage SlimLoRa EEPROM interactively
  * SEP24 by clavisound
  * In SlimLoRa.h DEBUG_SLIM write 2 instead of 0 to display also sensitive data.
  */
