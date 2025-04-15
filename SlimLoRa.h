@@ -209,8 +209,8 @@
 					      // In future downlink channel must move to another index - not 8 or in another variable.
 
 // LoRaWAN epoch
-#define	LORAWAN_EPOCH_DRIFT	18 // Leap Seconds since 1980
-#define LORAWAN_DEVICE_TIME_FRACTIONAL_STEPS 0.00390625 // p. 32 aka: 0.5^8
+#define	LORAWAN_EPOCH_DRIFT			18 		// Leap Seconds since 1980
+#define LORAWAN_DEVICE_TIME_FRACTIONAL_STEPS	0.00390625	// p. 32 aka: 0.5^8
 
 // LoRaWAN frame options
 #define LORAWAN_FOPT_LINK_CHECK_REQ         0x02
@@ -313,6 +313,15 @@
 #define SF10BW125   2
 #define SF11BW125   1
 #define SF12BW125   0
+
+// SlimLoRa debug values for LoRaWANreceived
+#define SLIMLORA_JOINED_WINDOW1		0x01
+#define SLIMLORA_JOINED_WINDOW2		0x02
+#define SLIMLORA_MAC_PROCESSING		0x04
+#define SLIMLORA_DOWNLINK_RX1		0x08
+#define SLIMLORA_DOWNLINK_RX2		0x10
+#define SLIMLORA_LINK_CHECK_ANS		0x20
+#define SLIMLORA_LNS_TIME_ANS		0x40
 
 typedef struct {
     uint8_t length;

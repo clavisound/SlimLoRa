@@ -1391,9 +1391,9 @@ end:
 	#ifdef SLIM_DEBUG_VARS
 	if ( result == 0 ) {
 		if ( window == 1 ) {
-		LoRaWANreceived |= 0x01; // Join Accept Window 1
+		LoRaWANreceived |= SLIMLORA_JOINED_WINDOW1; // Join Accept Window 1
 		} else  {
-		LoRaWANreceived |= 0x02; // Join Accept Window 2
+		LoRaWANreceived |= SLIMLORA_JOINED_WINDOW2; // Join Accept Window 2
 		}
 	}
 	#endif
@@ -1424,7 +1424,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 	uint8_t freqNewMSB, freqNewMID, freqNewLSB;
 
 #ifdef SLIM_DEBUG_VARS
-	LoRaWANreceived |= 0x04; // MAC command
+	LoRaWANreceived |= SLIMLORA_MAC_PROCESSING; // MAC command
 #endif
 
 	for (uint8_t i = 0; i < f_options_length; i++) {
@@ -1439,7 +1439,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 			case LORAWAN_FOPT_LINK_CHECK_ANS:
 				#ifdef MAC_REQUESTS
 				// p. 23
-				margin = options[i + 1]; // 0-20, 255 is reserved
+				margin = options[i + 1]; // 0-254, 255 is reserved
 				GwCnt  = options[i + 2];
 
 				#if DEBUG_SLIM >= 1
@@ -1447,7 +1447,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				#endif
 				
 				#ifdef SLIM_DEBUG_VARS	
-				LoRaWANreceived |= 0x20; // LinkCheck Received
+				LoRaWANreceived |= SLIMLORA_LINK_CHECK_ANS; // LinkCheck Received
 				#endif
 				#endif
 
@@ -1751,7 +1751,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				Serial.print(F("\tfrac: "));Serial.print(fracSecond);
 				#endif
 				#ifdef SLIM_DEBUG_VARS	
-				LoRaWANreceived |= 0x40; // Time received
+				LoRaWANreceived |= SLIMLORA_LNS_TIME_ANS; // Time received
 				#endif
 				#endif
 				i += LORAWAN_FOPT_DEVICE_TIME_ANS_SIZE;
@@ -2000,9 +2000,9 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 end:
 #ifdef SLIM_DEBUG_VARS
 	if (window == 1) {
-		LoRaWANreceived |= 0x08; // RX1 received data
+		LoRaWANreceived |= SLIMLORA_DOWNLINK_RX1; // RX1 received data
 	} else {
-		LoRaWANreceived |= 0x10; // RX2 received data
+		LoRaWANreceived |= SLIMLORA_DOWNLINK_RX2; // RX2 received data
 	}
 #endif
 
@@ -2042,6 +2042,14 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 
 #ifdef SLIM_DEBUG_VARS
 	LoRaWANreceived = 0;
+#endif
+
+#ifdef MAC_REQUESTS 
+	// reset epoch and fracSecond to 1980 so user can simply test for epoch > 0 after TX to get the value.
+	epoch		= 0;
+	fracSecond	= 0;
+	// reset margin and GwCnt for the same reason to 0
+	GwCnt		= 0;	
 #endif
 	
 #if LORAWAN_OTAA_ENABLED
