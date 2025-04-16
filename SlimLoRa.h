@@ -357,7 +357,7 @@ class SlimLoRa {
     uint16_t tx_frame_counter_;
     uint16_t rx_frame_counter_;
     uint8_t NbTrans = NBTRANS;	// changed by the LNS or by DEFINE
-    uint8_t NbTrans_counter;	// if NbTrans_counter is the same with NbTrans, send new message
+    uint8_t NbTrans_counter;
     uint8_t pseudo_byte_;
     uint8_t tx_power;
     uint16_t GetTxFrameCounter();

@@ -1499,7 +1499,8 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				NbTrans = options[i + 4] & 0xF;
 				if ( NbTrans == 0 ) { NbTrans = NBTRANS; }	// Default NbTrans
 				NbTrans_counter = NbTrans;			// Reset counter
-				SetNbTrans();
+				SetNbTrans();					// Write to EEPROM
+				tx_frame_counter_++;			 	// We received downlink, increase Frame Counter
 
 				new_rx2_dr = options[i + 1] >> 4; 
 				tx_power   = options[i + 1] & 0xF;

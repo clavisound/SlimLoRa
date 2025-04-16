@@ -1,12 +1,12 @@
 ![CI](https://github.com/clavisound/SlimLoRa/actions/workflows/main.yml/badge.svg)
 
-# SlimLoRa - Propably the easiest and smallest footprint LoRaWAN library for Arduino library and EU868.
+# SlimLoRa - Probably the easiest and smallest footprint LoRaWAN library for Arduino library and EU868.
 
 This library is probably the most easy to use LoRaWAN library. The target is LoRaWAN-1.0.3 specification. It supports OTAA / Join, most important MAC commands - like DR, power, NBtrans, downlinks for user application and session is stored to EEPROM. Applications downlinks are static selectable via `#define` in `SlimLoRa.h`. Default is 11 bytes. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs around 52kBytes of program flash), or LMIC (around 36kBytes of program flash).
 
 SlimLoRa needs around 12558 Bytes* (13kBytes). SlimLoRa gives LoRaWAN life to old μCU's like ATmega 328 with 32kBytes of flash.
 
-* in fact, I think the overhead is around 9kBytes.
+\* in fact, I think the overhead is around 9kBytes.
 
 [SlimLoRa MAC response in MAC command via Helium original console.](https://krg.etraq.eu/minisites/lora/mac-command-response_crop.png)
 
@@ -191,16 +191,6 @@ The library has some support for LoRaWAN 1.1 which is not usable yet.
 This library does not implement any kind of event handling. A call to the Join and SendData methods will block for several seconds until the end of the second receive window.
 
 Be sure to put connected sensors into sleep mode before sending data to save energy!
-
-### Timer0
-SlimLoRa uses the Timer0 on every call of the Join or SendData methods. Between these calls Timer0 can be used by the user for other purposes.
-See also timing.h and timing.c.
-
-## Supported hardware
-
-Radios based on the SX1276 are supported (e.g. HopeRF RFM95).
-
-## Release History
 
 ## Contributions
 
