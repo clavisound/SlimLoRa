@@ -1744,7 +1744,14 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				epoch = ( (uint32_t) options[i + 4] << 24 
 						| (uint32_t) options[i + 3] << 16 
 						| options[i + 2] << 8 
-						| options[i + 1]) - LORAWAN_EPOCH_DRIFT;
+						| options[i + 1])
+					- LORAWAN_EPOCH_DRIFT + GetRx1Delay();
+				#if defined EPOCH_RX2_WINDOW_OFFSET && defined SLIM_DEBUG_VARS
+				// add one second if we are in RX2 window
+				if ( ( LoRaWANreceived && SLIMLORA_DOWNLINK_RX2 ) == SLIMLORA_DOWNLINK_RX2 ) {
+					epoch++;
+				}
+				#endif
 				// Fractional second 0-100. This calculation is NOT precise
 				fracSecond = ( options[i + 5] * LORAWAN_DEVICE_TIME_FRACTIONAL_STEPS ) * 100; // 100 = 1 second
 				#if DEBUG_SLIM >= 1

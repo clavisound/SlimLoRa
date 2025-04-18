@@ -46,8 +46,15 @@
 // 0 to disable
 #define DEBUG_SLIM   	0  // 1 is basic debugging, 2 more debugging. Enable this only to check values / registers.
 
-// Some extra variables to debug via LED or with with payload data
+// Identify RX / join window and LNS ANSwers (DeviceTime and LinkCheck)
+// For weird reason this adds a whooping 1768 bytes of program flash and 64 bytes of RAM.
 //#define SLIM_DEBUG_VARS
+
+// accurate epoch to second. If we received the epoch in RX2 window add one second to epoch.
+//#define EPOCH_RX2_WINDOW_OFFSET
+#if defined EPOCH_RX2_WINDOW_OFFSET && !defined SLIM_DEBUG_VARS
+#error You enabled EPOCH_RX2_WINDOW_OFFSET without SLIM_DEBUG_VARS
+#endif
 
 // Enable LoRaWAN Over-The-Air Activation
 #define LORAWAN_OTAA_ENABLED    1
