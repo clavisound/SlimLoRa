@@ -1644,7 +1644,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				#endif
 				
 				// convert 8bit signed to 6bit signed -32 to 31
-				pending_fopts_.fopts[pending_fopts_.length++] = (last_packet_snr_ & 0x80) >> 2 | last_packet_snr_ & 0x3F;
+				pending_fopts_.fopts[pending_fopts_.length++] = (last_packet_snr_ & 0x80) >> 2 | ( last_packet_snr_ & 0x3F);
 
 				i += LORAWAN_FOPT_DEV_STATUS_REQ_SIZE;
 				break;
@@ -1695,7 +1695,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 					status |= 1;
 				}
 
-				if ( options[i + 5] & 0x0F == 0 && options[i + 5] & 0xF0 == 5 ) {
+				if ( ( options[i + 5] & 0x0F ) == 0 && ( options[i + 5] & 0xF0 ) == 5 ) {
 					status |= 2; // DR ok
 				} 
 
@@ -1741,11 +1741,11 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				// p. 32
 				#ifdef MAC_REQUESTS 
 				// store 4 bytes of time epoch since 1980 and remove 18 leap seconds (thanks to RadioLib for the heads up)
-				epoch = ( (uint32_t) options[i + 4] << 24 
-						| (uint32_t) options[i + 3] << 16 
-						| options[i + 2] << 8 
-						| options[i + 1])
-					- LORAWAN_EPOCH_DRIFT + GetRx1Delay();
+				epoch = (	  ( (uint32_t) options[i + 4] << 24 )
+						| ( (uint32_t) options[i + 3] << 16 )
+						| ( (uint16_t) options[i + 2] << 8 )
+						|  options[i + 1]
+				       ) - LORAWAN_EPOCH_DRIFT + GetRx1Delay();
 				#if defined EPOCH_RX2_WINDOW_OFFSET && defined SLIM_DEBUG_VARS
 				// add one second if we are in RX2 window
 				if ( ( LoRaWANreceived && SLIMLORA_DOWNLINK_RX2 ) == SLIMLORA_DOWNLINK_RX2 ) {

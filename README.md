@@ -51,11 +51,11 @@ The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks 
 - [x] RxTimingSetup
 - [x] DevStatusAns. Battery status is working, I think margin is fine.
 - [x] LinkCheckReq. (Margin and Gateways count).
-- [x] DeviceTimeReq. Fractional second on purpose is truncated to cs (centiseconds). 1 = 10ms. I can't undestand how much precise is the timing from LNS. Have to verify with GPS.
+- [x] DeviceTimeReq. Fractional second on purpose is truncated to cs (centiseconds). 1 = 10ms. I can't undestand how much precise is the timing from LNS. Have to verify with GPS. TTN RX window is 5secs and Helium 1s. So epoch is off by 5 and 1 seconds. If you want to correct epoch, uncomment both `#define SLIM_DEBUG_VARS` and `#define EPOCH_RX2_WINDOW_OFFSET` with the price of 1768 program flash and 64 less bytes of RAM.
 
 # BUGS
 
-- [ ] SF7BW250 is working with TTN but SlimLoRa does not receives the downlink. This DR6 is currently not supported by Helium [chirpstack-4.7].
+- [ ] SF7BW250 is working with TTN but SlimLoRa does not receives the downlink. This DR6 is currently not supported by Helium packet brocker.
 
 # Untested
 
