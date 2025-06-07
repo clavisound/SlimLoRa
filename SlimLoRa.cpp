@@ -422,7 +422,7 @@ void SlimLoRa::sleep() {
       \param currentLimit Current limit to be set (in mA).
 */
 
-void SlimLoRa::setCurrentLimit(uint8_t currentLimit) {
+void SlimLoRa::SetCurrentLimit(uint8_t currentLimit) {
   // check allowed range
   if(!(((currentLimit >= 45) && (currentLimit <= 240)) || (currentLimit == 0))) {
     currentLimit = 60; // default value. Taken from RadioLib
@@ -629,7 +629,7 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 	RfmWrite(RFM_REG_LNA, modem_config_3);
 #endif
 
-	// [DISABLED by CLV] Automatic Gain Control / Low Data Rate Optimize
+	// Automatic Gain Control / Low Data Rate Optimize
 	RfmWrite(RFM_REG_MODEM_CONFIG_3, modem_config_3);
 
 	// Rx timeout
@@ -647,7 +647,8 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 	RfmWrite(RFM_REG_OP_MODE, 0x86);
 
 	// Wait for RxDone or RxTimeout
-	// TODO: switch to IRQ code to save some MCU cycles
+	// TODO: switch to IRQ code to save some MCU cycles if we are in RX2
+	// check with channel if we are in RX2.
 	
 	// Probably it breaks timing.
 	#if DEBUG_SLIM >= 2
@@ -1498,9 +1499,14 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				// Grab NbTrans from LNS
 				NbTrans = options[i + 4] & 0xF;
 				if ( NbTrans == 0 ) { NbTrans = NBTRANS; }	// Default NbTrans
+				
+				// Increase frame counter if we have new NbTrans value.
+				if ( NbTrans_counter != NbTrans ) {
+					tx_frame_counter_++;			// We received downlink with new NbTrans, increase Frame Counter
+				}
+
 				NbTrans_counter = NbTrans;			// Reset counter
 				SetNbTrans();					// Write to EEPROM
-				tx_frame_counter_++;			 	// We received downlink, increase Frame Counter
 
 				new_rx2_dr = options[i + 1] >> 4; 
 				tx_power   = options[i + 1] & 0xF;
@@ -1700,7 +1706,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				} 
 
 				// DEBUGING ERASE FOR PRODUCTION
-				status = 0; // 1 = FREQ ok, 2 DR ok
+				// status = 0; // 1 = FREQ ok, 2 DR ok
 
 				pending_fopts_.fopts[pending_fopts_.length++] = LORAWAN_FOPT_NEW_CHANNEL_ANS;
 				pending_fopts_.fopts[pending_fopts_.length++] = status;
@@ -1744,7 +1750,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				epoch = (	  ( (uint32_t) options[i + 4] << 24 )
 						| ( (uint32_t) options[i + 3] << 16 )
 						| ( (uint16_t) options[i + 2] << 8 )
-						|  options[i + 1]
+						| options[i + 1]
 				       ) - LORAWAN_EPOCH_DRIFT + GetRx1Delay();
 				#if defined EPOCH_RX2_WINDOW_OFFSET && defined SLIM_DEBUG_VARS
 				// add one second if we are in RX2 window

@@ -77,7 +77,9 @@
 // because you transmitting only on high Data Rates (DR). You save 76 byte of flash memory if you comment this.
 #define COUNT_TX_DURATION	1
 
-// You gain 12 bytes of program flash if you comment this. Use it only WITHOUT ADR.
+// You gain 12 bytes of program flash if you comment this.
+// Use it only WITHOUT ADR and only for experiments
+// since SlimLoRa can't receive SF7BW250 downlinks.
 // TTN does not want this. Helium is not supported.
 #define EU_DR6 // applicable for EU RU AS CN
 
@@ -460,7 +462,7 @@ class SlimLoRa {
     uint32_t slimStartTXtimestamp, slimEndTXtimestamp;
     void CalculateTXms();
 #endif
-    void setCurrentLimit(uint8_t currentLimit);
+    void SetCurrentLimit(uint8_t currentLimit);
     // Encryption
     void EncryptPayload(uint8_t *payload, uint8_t payload_length, unsigned int frame_counter, uint8_t direction);
     void CalculateMic(const uint8_t *key, uint8_t *data, uint8_t *initial_block, uint8_t *final_mic, uint8_t data_length);

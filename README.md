@@ -123,13 +123,13 @@ I have also made some values public like frame counter. Now the application can 
 
 If your project relies on small battery, try to lower `SLIMLORA_DRIFT` from `2` to `1` or even to `0`. There is a danger to not receive downlinks. Verify the behaviour with cold and heat. Make sure your device / network can handle that. With MegaBrick and `SLIMLORA_DRIFT 1` I managed to join at with SF7 and receive downlinks in room temperature. Your device / network maybe is not capable of that. `3` and `2` seems to be ok with feather-32u4 for RX2 SF12 at 2s. Join is fine with `2`, `3`, `4`. With drift `1` join fails with feather-32u4, so the best for feather-32u4 is `2` or `3`. MegaBrick joins with `1` but fails with `0`. So best for MebaBrick is `1` or `2`.
 
-| Drift |    SF7  |   SF12  |
-|-------|---------|---------|
-|   5   |   100ms | 1100ms  |
-|   4   |    87ms |  918ms  |
-|   3   |    66ms |  756ms  |
-|   2   |    47ms |  558ms  |
-|   1   |    27ms |  362ms  |
+| Drift |    SF7  | SF8   |  SF9  |   SF12  |
+|-------|---------|-------|-------|---------|
+|   5   |   100ms | ???ms | ???ms | 1100ms  |
+|   4   |    87ms | ???ms | ???ms |  918ms  |
+|   3   |    66ms | 282ms | 388ms |  756ms  |
+|   2   |    47ms | ???ms | ???ms |  558ms  |
+|   1   |    27ms | ???ms | ???ms |  362ms  |
 
 # Tips for your project
 
