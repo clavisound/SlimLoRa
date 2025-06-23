@@ -46,8 +46,8 @@
 // 0 to disable
 #define DEBUG_SLIM   	0  // 1 is basic debugging, 2 more debugging. Enable this only to check values / registers.
 
-// Identify RX / join window and LNS ANSwers (DeviceTime and LinkCheck)
-// For weird reason this adds a whooping 1768 bytes of program flash and 64 bytes of RAM.
+// Identify RX / join window and store LNS DeviceTime and LinkCheck
+// This adds 96 bytes of program flash and 1 byte of RAM.
 //#define SLIM_DEBUG_VARS
 
 // accurate epoch to second. If we received the epoch in RX2 window add one second to epoch.
@@ -81,7 +81,7 @@
 // Use it only WITHOUT ADR and only for experiments
 // since SlimLoRa can't receive SF7BW250 downlinks.
 // TTN does not want this. Helium is not supported.
-#define EU_DR6 // applicable for EU RU AS CN
+//#define EU_DR6 // applicable for EU RU AS CN
 
 // Enable this only if you have changed the clock of your AVR MCU.
 #define CATCH_DIVIDER
@@ -109,6 +109,11 @@
 #define MAC_REQUESTS
 
 // END OF USER DEFINED OPTIONS
+
+// TODO / NOT IMPLEMENTED YET: don't use flash memory (PROGMEM) for variables.
+// This is to help ATmega from BOD's if it's in the limits.
+//#define SLIMLORA_NO_PROGMEM
+
 
 #if ARDUINO_EEPROM == 1
 	#include <EEPROM.h>
@@ -180,6 +185,11 @@
 #define RFM_REG_INVERT_IQ               0x33
 #define RFM_REG_SYNC_WORD               0x39
 #define RFM_REG_INVERT_IQ_2             0x3B
+
+// Temperature register and low battery accessible via FSK mode
+#define RFM_REG_FSK_IMAGE_CAL		0x3B
+#define RFM_REG_FSK_TEMP		0x3C
+#define RFM_REG_FSK_LOW_BAT		0x3D
 
 // RFM status
 #define RFM_STATUS_TX_DONE              0x08
@@ -262,7 +272,6 @@
 // LoRaWAN Join packet sizes
 #define LORAWAN_JOIN_REQUEST_SIZE           18
 #define LORAWAN_JOIN_ACCEPT_MAX_SIZE        28
-
 
 // LoRaWAN delays in seconds
 #define RX_SECOND_WINDOW SF12BW125
@@ -369,6 +378,7 @@ class SlimLoRa {
     uint8_t NbTrans_counter;
     uint8_t pseudo_byte_;
     uint8_t tx_power;
+
     uint16_t GetTxFrameCounter();
     void SetTxFrameCounter();
     void SetRxFrameCounter();

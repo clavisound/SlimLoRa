@@ -219,7 +219,6 @@ void SlimLoRa::printHex(uint8_t *value, uint8_t len){
 #if DEBUG_SLIM >= 1
 void SlimLoRa::printDownlink(){
 	Serial.print(F("\nPort Down\t: "));	Serial.print(downPort);
-	Serial.print(F("\nfopts.length\t: "));	Serial.print(f_options_length);
 	Serial.print(F("\nPacket Length\t: "));	Serial.print(packet_length);
 	Serial.print(F("\nPayload Length\t: "));Serial.print(payload_length);
 	Serial.print(F("\nSNR 8bit\t: "));	Serial.print(last_packet_snrB);
@@ -376,7 +375,7 @@ void SlimLoRa::Begin() {
 	// LoRa sync word
 	RfmWrite(RFM_REG_SYNC_WORD, 0x34);
 
-	// EVAL
+	// Default 60. Does not harm
 //	SetCurrentLimit(60);
 
 	// Errata Note - 2.3 Receiver Spurious Reception
@@ -1584,9 +1583,14 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 					rx2_data_rate_ = new_rx2_dr;
 					SetRx2DataRate(rx2_data_rate_);
 				}
+				
+				// TODO verify that we support RX2 freq
 
 				#if DEBUG_SLIM >= 1
 				Serial.print(F("\nRX1_DR_OFFSET: "));Serial.println(rx1_data_rate_offset_);
+				Serial.print(F("\nfreq1: "));Serial.print(options[i + 2], HEX);
+				Serial.print(F("\tfreq2: "));Serial.print(options[i + 3], HEX);
+				Serial.print(F("\tfreq3: "));Serial.print(options[i + 4], HEX);
 				Serial.print(F("RX2_DR: "));Serial.println(rx2_data_rate_);
 				#endif
 
@@ -1690,6 +1694,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 					freqNewLSB = options[i + 4];
 
 					#if DEBUG_SLIM == 1
+					Serial.print(F("\nindex     : "));Serial.print(new_rx2_dr);
 					Serial.print(F("\nfreqMSB   : "));Serial.print(freqMSB);
 					Serial.print(F("\nfreqNewMSB: "));Serial.print(freqNewMSB);
 					Serial.print(F("\nfreqMID   : "));Serial.print(freqMID);
@@ -1701,7 +1706,9 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 					status |= 1;
 				}
 
-				if ( ( options[i + 5] & 0x0F ) == 0 && ( options[i + 5] & 0xF0 ) == 5 ) {
+				// Hacky solution. I have to store the requested DR's
+				// MinDR [3-0], MaxDR [7-4]
+				if ( ( options[i + 5] & 0x0F ) == 0x00 && ( options[i + 5] & 0xF0 ) == 0x50 ) { // SlimLoRa supports DR0 to DR5 EU: SF7BW125
 					status |= 2; // DR ok
 				} 
 
@@ -1890,9 +1897,9 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 	NbTrans_counter = NbTrans;
 
 	// Grab frame options size in bytes.
-	f_options_length = packet[5] & 0xF; // p. 17
-	
-	// If we don't have payload port must be null. In that case maybe we have MAC commands, ACK - not implemented -, or nothing.
+	f_options_length = packet[5] & 0x0F; // p. 17
+
+	// If we don't have payload, port must be null. In that case maybe we have MAC commands, ACK - not implemented -, or nothing.
 	if ( packet_length == LORAWAN_MAC_AND_FRAME_HEADER + f_options_length + LORAWAN_MIC_SIZE ) {
 
 		#if DEBUG_SLIM >= 1
@@ -1917,9 +1924,11 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 	// Parse MAC commands from payload if packet on port 0
 	if (downPort == 0) {
+
 		#if DEBUG_SLIM >= 1
-			Serial.print(F("\n\nMAC Options Mode"));
+			Serial.print(F("\n\nMAC ENCrypted Mode"));
 		#endif
+
 		payload_length = packet_length - LORAWAN_MAC_AND_FRAME_HEADER - f_options_length - LORAWAN_MIC_SIZE;
 		EncryptPayload(&packet[LORAWAN_MAC_AND_FRAME_HEADER + f_options_length + LORAWAN_PORT_SIZE], payload_length, frame_counter, LORAWAN_DIRECTION_DOWN);
 
@@ -2304,9 +2313,14 @@ void SlimLoRa::EncryptPayload(uint8_t *payload, uint8_t payload_length, unsigned
 	uint8_t block_a[16];
 
 #if LORAWAN_OTAA_ENABLED
-	uint8_t dev_addr[4], app_s_key[16];
+	uint8_t dev_addr[4], app_s_key[16]; //, nwk_s_key[16];
 	GetDevAddr(dev_addr);
-	GetAppSKey(app_s_key);
+	// special case. We have to use NwkSKey for downlink in port 0.
+	if ( downPort == 0 && direction == LORAWAN_DIRECTION_DOWN ) {
+		GetNwkSEncKey(app_s_key);
+	} else {
+		GetAppSKey(app_s_key);
+	}
 #endif // LORAWAN_OTAA_ENABLED
 
 	// Calculate number of blocks
