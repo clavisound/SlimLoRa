@@ -32,7 +32,8 @@
 // #define MAX_FCOUNT 50000
 // I think helium needs re-join. EVAL with chirpstack
 
-// I propose to you that you config your device on the console.helium.com to 5 seconds RX DELAY.
+// I propose to you that you config your device on the console.helium.com 
+// to 5 seconds RX DELAY.
 // Make sure this value is the same with TTN console.
 #define NET_TTN_RX_DELAY	5
 
@@ -43,8 +44,9 @@
 #define ARDUINO_EEPROM	1	// Uses static storage, but it helps debugging.
 
 // Debug SlimLoRa library via Serial.print() 
-// 0 to disable
-#define DEBUG_SLIM   	0  // 1 is basic debugging, 2 more debugging. Enable this only to check values / registers.
+#ifndef DEBUG_SLIM 	
+#define DEBUG_SLIM   	0  // 1 is basic debugging, 2 more debugging, 0 to disable.
+#endif
 
 // Identify RX / join window and store LNS DeviceTime and LinkCheck
 // This adds 96 bytes of program flash and 1 byte of RAM.
@@ -108,7 +110,7 @@
 // This needs 397 of Program Flash and 9 bytes of RAM
 #define MAC_REQUESTS
 
-// default is 64. That means 51 bytes of payload.
+// default is 64. That means 51 bytes of payload for SF10, SF11, SF12.
 // If you send or receive MAC commands along with big payloads
 // expect buffer overflows! Maximum for frame options is 15 bytes
 // So you can expect 51 - 15 bytes is the maximum packet that SlimLoRa
@@ -417,8 +419,8 @@ class SlimLoRa {
 	uint8_t downPort;
 			
 #if DEBUG_SLIM >= 1
-	void printMAC(void);
-	void printDownlink(void);
+	void printMAC();
+	void printDownlink();
 	uint8_t packet[SLIM_LORAWAN_PACKET_SIZE];
 	int8_t packet_length;
 	uint8_t f_options_length, payload_length;

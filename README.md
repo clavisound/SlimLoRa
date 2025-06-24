@@ -130,7 +130,7 @@ With `lora.TimeCheckLink = 3;` before uplink you can have access to all the abov
 
 # Payload size
 
-Maximum uplink payload size in ideal situations is 51 bytes but *don't* count on that. You can change that with `SLIM_LORAWAN_PACKET_SIZE` in `SlimLoRa.h`. In reality you can be sure that you can send `51 - 15 = 36` bytes.
+Maximum uplink payload size in ideal situations (for SF10, SF11, SF12) is 51 bytes but *don't* count on that. You can change that with `SLIM_LORAWAN_PACKET_SIZE` in `SlimLoRa.h`. For SF7, SF8, SF9 the protocol (p. 28 RP) says: 155 and 222 bytes of payload. In reality you can be sure that you can send `51 - 15 = 36` bytes.
 
 For downlinks the limit is 12 bytes via `DOWNLINK_PAYLOAD_SIZE`.
 

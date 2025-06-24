@@ -1,10 +1,28 @@
  /* Manage SlimLoRa EEPROM interactively
- * SEP24 by clavisound
+ * Started SEP24 by clavisound
  * In SlimLoRa.h DEBUG_SLIM write 2 instead of 0 to display also sensitive data.
+ */
+
+// #define DEBUG_SLIM 1 // This is not working. Fault of Arduino IDE
+
+/* How to enable DEBUG_SLIM
+ * 
+ * >>> FAILED with Arduino IDE 1.8.19
+ * for IDE add this compiler.cpp.extra_flags=-DDEBUG_SLIM=1 build_opt.txt
+ * 
+ * >>> Works
+ * arduino-cli compile ./ -b adafruit:avr:adafruit32u4 --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
+ * 
+ * PlatformIO .ini
+ * 
+ * Add:
+ * build_flags = -DDEBUG_SLIM=1
+ * 
  */
 
 #include <EEPROM.h>
 #include "SlimLoRa.h"
+
 #define DEVICE 'feather'
 #define TOTALBYTES EEPROM_END // EEPROM_END grabbed from SlimLoRa.h
 

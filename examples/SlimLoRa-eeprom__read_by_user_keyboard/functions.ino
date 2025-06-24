@@ -1,6 +1,5 @@
 void printMenu(){
   Serial.println(F("d: setRXdelay (1 to 9 seconds)"));
-  Serial.println(F("e: EEPROM address of data, E [capital]: EEPROM address to COPY data."));
   Serial.println(F("i: increase FCnt, k: disable joined, j: enable joined"));
   Serial.print(F("Z: EraZe original: "));Serial.println(originalOffset);
   
@@ -9,6 +8,7 @@ void printMenu(){
 
   //TODO
   //Serial.println(F("[1-9]: RX1 delay, r: rx1 data rate offset, R: rx2 data rate"));
+  //Serial.println(F("e: EEPROM address of data, E [capital]: EEPROM address to COPY data."));
   Serial.println(F("m: read all MAC values."));
   Serial.println(F("s: swap MAC status."));
   Serial.flush();
@@ -143,4 +143,4 @@ void eraseOriginal(){
     Serial.println(originalOffset + temp);
     Serial.flush();
   }
-}
+}       
