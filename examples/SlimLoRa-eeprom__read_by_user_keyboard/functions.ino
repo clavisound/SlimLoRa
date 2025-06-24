@@ -1,4 +1,5 @@
 void printMenu(){
+  Serial.println(F("d: setRXdelay (1 to 9 seconds)"));
   Serial.println(F("e: EEPROM address of data, E [capital]: EEPROM address to COPY data."));
   Serial.println(F("i: increase FCnt, k: disable joined, j: enable joined"));
   Serial.print(F("Z: EraZe original: "));Serial.println(originalOffset);
@@ -112,6 +113,23 @@ void swapMACstatus(){
     EEPROM.update(originalOffset + temp, bufferTarget[temp]);
     Serial.print(F("original byte: "));Serial.print(temp);
     Serial.print(F("->: "));Serial.println(bufferTarget[temp]);
+  }
+}
+
+void setRXdelay(){
+  Serial.print(F("\n\nEnter a number 0 to 9"));
+    while (Serial.available() > 0 ) {
+      inByte = Serial.read();
+       if ( ( inByte > ASCII_ZERO ) && ( inByte < 9 + ASCII_ZERO ) ) {
+        Serial.print(F("\tdone."));
+        delay(3000);
+        Serial.flush();
+        lora.SetRx1Delay(inByte);
+        
+        return;
+    } else {
+        Serial.print(F("\nWrong byte HEX: "));Serial.print(inByte, HEX);
+    }
   }
 }
 

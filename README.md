@@ -63,7 +63,7 @@ The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks 
 - [ ] AVR style EERPOM
 
 ## EEPROM handling to consider
-I recommend `ARDUINO_EEPROM == 1` in `SlimLoRa.h` otherwise when you use `avr/eeprom.h` style and you compile with different options, or if you change part of your sketch relative to EEPROM (EEMEM) the **address of the data are changing places!** This is a "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h. With avr style if you change your sketch, maybe you need to re-join. With arduino eeprom style you don't need to re-join.
+I recommend `ARDUINO_EEPROM == 1` in `SlimLoRa.h` otherwise when you use `avr/eeprom.h` style and you compile with different options, or if you change part of your sketch relative to EEPROM (EEMEM) the **address of the data are changing places!** This is a "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h. With avr style if you change your sketch, the behaviour of SlimLoRa is unpredictable. You need to re-join. With arduino eeprom style the behaviour is predictable and toy don't need to re-join.
 
 Solutions with avr style.
 
@@ -81,6 +81,7 @@ Solutions with avr style.
 
 # TODO's (PR's welcome) - In order of importance.
 
+- [ ] MAC command `NEW_CHANNEL_REQ` is not properly implemented. SlimLoRa responds with "fine" to help LNS stop sends downlinks but in reality it does not modify the channels and DR's.
 - [ ] Join back-off
 - [ ] Extern variable for Duty Cycle if the application can provide time.
 - [ ] Confirmed Uplink
@@ -119,6 +120,14 @@ If you send MAC request for Time or CheckLink you can read the variables from `l
 
 I have also made some values public like frame counter. Now the application can do something cool stuff like: every X frame counter you can transmit verbose data. So every 20 - 30 uplinks you can send more data. Yes, this can be done on app logic, but one less variable is used like that.
 
+# Advanced usage
+
+You can have access to epoch time, if before uplink you issue `lora.TimeCheckLink = 1;` you will have access to `lora.epoch` and `lora.fracSecond` after LNS responds with the epoch time. Complicated example has this info too.
+
+With `lora.TimeCheckLink = 2;` before uplink you can have access to `lora.margin` (0-254) and `lora.GwCnt` variables.
+
+With `lora.TimeCheckLink = 3;` before uplink you can have access to all the above: `lora.epoch`, `lora.fracSecond`, `lora.margin` (0-254) and `lora.GwCnt` variables.
+
 ## Drift - Only room temperature tested. Cold or Heat untested
 
 If your project relies on small battery, try to lower `SLIMLORA_DRIFT` from `2` to `1` or even to `0`. There is a danger to not receive downlinks. Verify the behaviour with cold and heat. Make sure your device / network can handle that. With MegaBrick and `SLIMLORA_DRIFT 1` I managed to join at with SF7 and receive downlinks in room temperature. Your device / network maybe is not capable of that. `3` and `2` seems to be ok with feather-32u4 for RX2 SF12 at 2s. Join is fine with `2`, `3`, `4`. With drift `1` join fails with feather-32u4, so the best for feather-32u4 is `2` or `3`. MegaBrick joins with `1` but fails with `0`. So best for MebaBrick is `1` or `2`.
@@ -133,12 +142,12 @@ If your project relies on small battery, try to lower `SLIMLORA_DRIFT` from `2` 
 
 # Tips for your project
 
-If you need to handle array data with EEPROM some helper function `getArrayEEPROM`, `setArrayEEPROM` and `printHex` are public to use them in your program.
+If you need to handle array data with EEPROM some helper functions `getArrayEEPROM`, `setArrayEEPROM` and `printHex` are public to use them in your program.
 
 # Customization
 
 `#define MAC_REQUESTS` enables MAC requests for `DeviceTime` and `LinkCheck`. Comment to gain 397 program Flash and 9 bytes of RAM.
-`#define SLIM_DEBUG_VARS` enables a `lora.LoRaWANreceived` variable to check if you received a MAC command, a downlink, in Join 1st or 2nd windows, or downlink or 1st or 2nd window.
+`#define SLIM_DEBUG_VARS` enables a `lora.LoRaWANreceived` variable to check if you received a MAC command, a downlink, a Join Accept message in 1st or 2nd window, or downlink in 1st or 2nd window.
 
 ---
 

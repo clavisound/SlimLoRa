@@ -8,6 +8,8 @@
 #define DEVICE 'feather'
 #define TOTALBYTES EEPROM_END // EEPROM_END grabbed from SlimLoRa.h
 
+#define ASCII_ZERO  48
+
 uint8_t  inByte;
 uint16_t temp;
 
@@ -33,13 +35,13 @@ void setup() {
   lora.Begin();
   lora.sleep();
   printMenu();
-//  lora.SetRx1Delay(5);
 }
 
 void loop()
 { 
   while (Serial.available() > 0) {
     inByte = Serial.read();
+    if (inByte == 'd') { setRXdelay(); break; }
     if (inByte == 'e') { eepromOffset(); break; }
     if (inByte == 'i') { increaseFCnt(); break; }
     //if(inByte == 'a') { lora.SetAppSKey(key); break; }

@@ -1656,7 +1656,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				// convert 8bit signed to 6bit signed -32 to 31
 				pending_fopts_.fopts[pending_fopts_.length++] = (last_packet_snr_ & 0x80) >> 2 | ( last_packet_snr_ & 0x3F);
 
-				i += LORAWAN_FOPT_DEV_STATUS_REQ_SIZE;
+				//i += LORAWAN_FOPT_DEV_STATUS_REQ_SIZE;
 				break;
 			case LORAWAN_FOPT_NEW_CHANNEL_REQ:
 				// TODO p. 28
@@ -1898,6 +1898,10 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 	// Grab frame options size in bytes.
 	f_options_length = packet[5] & 0x0F; // p. 17
+					     //
+#if DEBUG_SLIM >= 1
+	Serial.print(F("\nf_options_length: "));Serial.print(f_options_length);
+#endif
 
 	// If we don't have payload, port must be null. In that case maybe we have MAC commands, ACK - not implemented -, or nothing.
 	if ( packet_length == LORAWAN_MAC_AND_FRAME_HEADER + f_options_length + LORAWAN_MIC_SIZE ) {
@@ -1962,8 +1966,8 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 			printDownlink();
 		#endif
 
-		// stollen from MAC command
-		payload_length = packet_length - LORAWAN_MAC_AND_FRAME_HEADER - f_options_length - LORAWAN_MIC_SIZE;
+		// stollen from MAC command. Removing port size.
+		payload_length = packet_length - LORAWAN_MAC_AND_FRAME_HEADER - f_options_length - LORAWAN_MIC_SIZE - LORAWAN_PORT_SIZE;
 		#if DEBUG_SLIM >= 1
 			Serial.print(F("\nPacket RAW HEX\t: "));printHex(packet, packet_length);
 			printDownlink();
@@ -1975,7 +1979,7 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 		// Store downlink payload to downlinkData. Skip MAC header and Device Address.
 		temp = LORAWAN_START_OF_FRM_PAYLOAD + f_options_length;		// Data starts at 10th byte and ends 4 bytes before MIC.
 										// If we have frame options we have to read bytes after the frame options.
-		for ( ; downlinkSize < payload_length - 1; downlinkSize++) {	// BUG? payload_length is always plus 1. WHY?
+		for ( ; downlinkSize < payload_length; downlinkSize++) {	// BUG? payload_length is always plus 1. WHY? Because I din't removed Fport byte.
 			
 			if ( downlinkSize > DOWNLINK_PAYLOAD_SIZE ) {		// Protection for buffer overflow.
 										// If downlinkSize > DOWNLINK_PAYLOAD_SIZE invalidate and abort income data.
