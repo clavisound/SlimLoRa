@@ -29,6 +29,7 @@
 #define ASCII_ZERO  48
 
 uint8_t  inByte;
+uint8_t  menuPrinted;
 uint16_t temp;
 
 // 0, 152, 304, 456, 608, 760
@@ -52,25 +53,30 @@ void setup() {
 
   lora.Begin();
   lora.sleep();
-  printMenu();
 }
 
 void loop()
-{ 
+{
+
+  if ( menuPrinted == 0 ) {
+    printMenu();
+    menuPrinted = 1;
+  }
+  
   while (Serial.available() > 0) {
     inByte = Serial.read();
-    if (inByte == 'd') { setRXdelay(); break; }
-    if (inByte == 'e') { eepromOffset(); break; }
-    if (inByte == 'i') { increaseFCnt(); break; }
-    //if(inByte == 'a') { lora.SetAppSKey(key); break; }
-    //if(inByte == 'e') { break; } // devEUI is in firmware.
-    if (inByte == 'k') { lora.SetHasJoined(false); break; }
-    if (inByte == 'j') { lora.SetHasJoined(true); break; }
-    // if (inByte > 0 || inByte < 10 ) { lora.SetRx1Delay(inByte); break; }
-    if (inByte == 'r') { rx1droffset(); break; }
-    if (inByte == 'R') { rx2dr(); break; }
-    if (inByte == 'm') { lora.printMAC(); break; }
-    if (inByte == 's') { swapMACstatus(); break; }
-    if (inByte == 'Z') { eraseOriginal(); break; }
+    if (inByte == 'd') { setRXdelay(); menuPrinted = 0; break; }
+    if (inByte == 'e') { eepromOffset(); menuPrinted = 0; break; }
+    if (inByte == 'i') { increaseFCnt(); menuPrinted = 0; break; }
+    //if(inByte == 'a') { lora.SetAppSKey(key); menuPrinted = 0; break; }
+    //if(inByte == 'e') { menuPrinted = 0; break; } // devEUI is in firmware.
+    if (inByte == 'k') { lora.SetHasJoined(false); menuPrinted = 0; break; }
+    if (inByte == 'j') { lora.SetHasJoined(true); menuPrinted = 0; break; }
+    // if (inByte > 0 || inByte < 10 ) { lora.SetRx1Delay(inByte); menuPrinted = 0; break; }
+    if (inByte == 'o') { rx1droffset(); menuPrinted = 0; break; }
+    if (inByte == 'R') { rx2dr(); menuPrinted = 0; break; }
+    if (inByte == 'm') { lora.printMAC(); menuPrinted = 0; break; }
+    if (inByte == 's') { swapMACstatus(); menuPrinted = 0; break; }
+    if (inByte == 'Z') { eraseOriginal(); menuPrinted = 0; break; }
   }
 }
