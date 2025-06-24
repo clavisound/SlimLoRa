@@ -66,7 +66,7 @@
 #define EEPROM_WRITE_RX_COUNT	10	// SlimLoRa default: 3		clv: 10
 
 // downlink size payload. You can gain some flash / RAM memory here
-#define DOWNLINK_PAYLOAD_SIZE	12	// more than 51 bytes is impossible in SF12
+#define DOWNLINK_PAYLOAD_SIZE	12	// more than 51 bytes is impossible in SF12. I suggest 12 bytes.
 
 // LoRaWAN ADR
 // https://lora-developers.semtech.com/documentation/tech-papers-and-guides/implementing-adaptive-data-rate-adr/implementing-adaptive-data-rate/
@@ -107,6 +107,13 @@
 // Uncomment this to enable MAC requests for TimeReq and LinkCheck (margin, gateway count)
 // This needs 397 of Program Flash and 9 bytes of RAM
 #define MAC_REQUESTS
+
+// default is 64. That means 51 bytes of payload.
+// If you send or receive MAC commands along with big payloads
+// expect buffer overflows! Maximum for frame options is 15 bytes
+// So you can expect 51 - 15 bytes is the maximum packet that SlimLoRa
+// can handle.
+#define SLIM_LORAWAN_PACKET_SIZE	64
 
 // END OF USER DEFINED OPTIONS
 
@@ -412,7 +419,7 @@ class SlimLoRa {
 #if DEBUG_SLIM >= 1
 	void printMAC(void);
 	void printDownlink(void);
-	uint8_t packet[64];
+	uint8_t packet[SLIM_LORAWAN_PACKET_SIZE];
 	int8_t packet_length;
 	uint8_t f_options_length, payload_length;
 #endif

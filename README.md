@@ -63,7 +63,7 @@ The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks 
 - [ ] AVR style EERPOM
 
 ## EEPROM handling to consider
-I recommend `ARDUINO_EEPROM == 1` in `SlimLoRa.h` otherwise when you use `avr/eeprom.h` style and you compile with different options, or if you change part of your sketch relative to EEPROM (EEMEM) the **address of the data are changing places!** This is a "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h. With avr style if you change your sketch, the behaviour of SlimLoRa is unpredictable. You need to re-join. With arduino eeprom style the behaviour is predictable and toy don't need to re-join.
+I recommend `ARDUINO_EEPROM == 1` in `SlimLoRa.h` otherwise when you use `avr/eeprom.h` style and you compile with different options, or if you change part of your sketch relative to EEPROM (EEMEM) the **address of the data are changing places!** This is a "[bug](https://arduino.stackexchange.com/a/93879/59046)" on avr/eeprom.h. With avr style if you change your sketch, the behaviour of SlimLoRa is unpredictable. You need to re-join. With arduino eeprom style the behaviour is predictable and you don't need to re-join.
 
 Solutions with avr style.
 
@@ -128,17 +128,25 @@ With `lora.TimeCheckLink = 2;` before uplink you can have access to `lora.margin
 
 With `lora.TimeCheckLink = 3;` before uplink you can have access to all the above: `lora.epoch`, `lora.fracSecond`, `lora.margin` (0-254) and `lora.GwCnt` variables.
 
+# Payload size
+
+Maximum uplink payload size in ideal situations is 51 bytes but *don't* count on that. You can change that with `SLIM_LORAWAN_PACKET_SIZE` in `SlimLoRa.h`. In reality you can be sure that you can send `51 - 15 = 36` bytes.
+
+For downlinks the limit is 12 bytes via `DOWNLINK_PAYLOAD_SIZE`.
+
 ## Drift - Only room temperature tested. Cold or Heat untested
 
 If your project relies on small battery, try to lower `SLIMLORA_DRIFT` from `2` to `1` or even to `0`. There is a danger to not receive downlinks. Verify the behaviour with cold and heat. Make sure your device / network can handle that. With MegaBrick and `SLIMLORA_DRIFT 1` I managed to join at with SF7 and receive downlinks in room temperature. Your device / network maybe is not capable of that. `3` and `2` seems to be ok with feather-32u4 for RX2 SF12 at 2s. Join is fine with `2`, `3`, `4`. With drift `1` join fails with feather-32u4, so the best for feather-32u4 is `2` or `3`. MegaBrick joins with `1` but fails with `0`. So best for MebaBrick is `1` or `2`.
 
-| Drift |    SF7  | SF8   |  SF9  |   SF12  |
-|-------|---------|-------|-------|---------|
-|   5   |   100ms | ???ms | ???ms | 1100ms  |
-|   4   |    87ms | ???ms | ???ms |  918ms  |
-|   3   |    66ms | 282ms | 388ms |  756ms  |
-|   2   |    47ms | ???ms | ???ms |  558ms  |
-|   1   |    27ms | ???ms | ???ms |  362ms  |
+| Drift |    SF7  |   SF8   |   SF9   |  SF10   |  SF11   |     SF12      |
+|-------|---------|---------|---------|---------|---------|---------------|
+|   5   |   100ms |   112ms |   124ms |   149ms |   296ms |(656ms) 1112ms |
+|   4   |    87ms |    92ms |   104ms |   124ms |   263ms |(558ms)  918ms |
+|   3   |    66ms |    73ms |    84ms |   108ms |   214ms |(460ms)  756ms |
+|   2   |    47ms |    53ms |    63ms |    84ms |   182ms |(362ms)  558ms |
+|   1   |    27ms |    32ms |    43ms |    67ms |   133ms |(263ms)  362ms |
+
+In parentheses the RX1 duration.
 
 # Tips for your project
 

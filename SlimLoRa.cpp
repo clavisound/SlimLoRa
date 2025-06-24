@@ -1979,10 +1979,11 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 		// Store downlink payload to downlinkData. Skip MAC header and Device Address.
 		temp = LORAWAN_START_OF_FRM_PAYLOAD + f_options_length;		// Data starts at 10th byte and ends 4 bytes before MIC.
 										// If we have frame options we have to read bytes after the frame options.
-		for ( ; downlinkSize < payload_length; downlinkSize++) {	// BUG? payload_length is always plus 1. WHY? Because I din't removed Fport byte.
+		for ( ; downlinkSize < payload_length; downlinkSize++) {
+
 			
-			if ( downlinkSize > DOWNLINK_PAYLOAD_SIZE ) {		// Protection for buffer overflow.
-										// If downlinkSize > DOWNLINK_PAYLOAD_SIZE invalidate and abort income data.
+			if ( downlinkSize >= DOWNLINK_PAYLOAD_SIZE ) {		// Protection for buffer overflow.
+										// If downlinkSize >= DOWNLINK_PAYLOAD_SIZE invalidate and abort income data.
 
 				#if DEBUG_SLIM >= 1
 				Serial.print(F("\ndownlinkSize is larger than DOWNLINK_PAYLOAD_SIZE: "));Serial.print(DOWNLINK_PAYLOAD_SIZE);
@@ -1996,11 +1997,10 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 			downlinkData[downlinkSize] = packet[temp];
 			temp++;
 		}
-			
+
 		#if DEBUG_SLIM >= 1
 		if ( downlinkSize > 0 ) {
 			Serial.print(F("\nDownlinkData\t: "));printHex(downlinkData, downlinkSize);
-			//printMAC();
 		}
 		#endif
 	}
