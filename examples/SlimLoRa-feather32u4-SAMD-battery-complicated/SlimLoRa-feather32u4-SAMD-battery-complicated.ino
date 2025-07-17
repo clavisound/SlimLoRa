@@ -16,11 +16,22 @@
  * 
  * Software:
  * Arduino 1.8.19 (x86_64 binary on Linux),
- * SleepyDog library from Adafruit,
- * Arduino Low Power (for mightybrick)
+ * 
+ * AVR / ATMega
+ * SleepyDog library from Adafruit
+ * 
+ * SAMD
+ * SleepyDog library from Adafruit
+ * RTC library
+ * Arduino Low Power
+ * SparkFun External EEPROM
  * In 01_config.h tab add your keys from your Network provider.
  * 
  * You may need to edit SlimLoRa.h for various options.
+ * 
+ * Feather32u4 deep sleep: 200μA. (If I remember correctly. Offender is the LDO)
+ * MegaBrick   deep sleep: 23μA.
+ * MightBrick  deep sleep: 27μA.
  * 
  */
 
