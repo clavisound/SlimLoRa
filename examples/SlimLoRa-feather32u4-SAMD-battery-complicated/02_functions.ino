@@ -1,3 +1,21 @@
+/*
+	Decoder:
+
+function decodeUplink(input) {
+  var data = {};
+  var length  = input.bytes.length;
+  var speed   = 0;
+  data.payload_length = input.bytes.length;
+
+  //  data.fPort = input.fPort;
+  
+  if ( length === 1 ) {
+  data.battery = (input.bytes[0] + 450) * 0.0064453125; // for feather32u4
+  return {
+    data: data
+  };
+  }
+*/
 #if DEBUG_INO == 1
   uint8_t temp[16];
   uint32_t tempCounters;
@@ -21,12 +39,6 @@ void checkBatt(){
     // IMPORTANT: 465.5 = 3.0Volt. < DON'T GO THERE! Those are safe: 480 = 3.1Volts, 496 = 3.2 volts
     // Capacity measured with voltage is not linear! https://learn.adafruit.com/assets/979
     // 3.95V is 80%, 3.8V = 60%, 3.75 = 40%, 3.7Volt = 20%
-    if ( vbat < 29 ) {
-      vbatC = 0;
-    }
-    else {
-    vbatC = map(vbat, 30, 200, 0, 3);
-    }
     #endif
     
     #if DEVICE == MIGHTYBRICK
@@ -34,16 +46,7 @@ void checkBatt(){
                                                   // * 0.6375 to convert to feather ratio resistors
                                                   // so the decoder will be the same.
                                                   // UNVERIFIED: MightyBrick has 11:40 ratio of resistors. Maybe 33kΩ and 120kΩ.
-
-    if ( vbat < 29 ) {
-      vbatC = 0;
-    }
-    else {
-    vbatC = map(vbat, 30, 200, 0, 3);
-    }
     #endif
-      
-    if ( vbatC > 3 ){ vbatC = 3; } // sometimes vbat is > 635 (aka: 185 after 8bit conversion) and we have overflow.
     
     #if DEBUG_INO == 1
       // feather
@@ -54,7 +57,7 @@ void checkBatt(){
       Serial.print(F(", VBatC (range): ")); Serial.println(vbatC);
     #endif
     
-    payload[0] = vbatC; // loraData[0] = highByte(vbat);loraData[1] = lowByte(vbat);
+    payload[0] = vbat; // loraData[0] = highByte(vbat);loraData[1] = lowByte(vbat);
 }
 
 // function to wait and blink
