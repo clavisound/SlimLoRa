@@ -62,6 +62,7 @@ void blinkLed(uint16_t times, uint16_t duration, uint8_t pause) { // x, ms, seco
   if ( times == 0 ) times = 1; // make sure we have one loop
   for ( times > 0; times--; ) {
     digitalWrite(LED_BUILTIN, HIGH);
+    
     #if DEBUG_INO == 1
       delay(duration);
       digitalWrite(LED_BUILTIN, LOW);
@@ -71,10 +72,11 @@ void blinkLed(uint16_t times, uint16_t duration, uint8_t pause) { // x, ms, seco
         Serial.print(F("."));
       }
       delay(pause * 1000);
-    #else
+    #else // not DEBUG_INO 
       Watchdog.sleep(duration);               // Sleep for up to 8 seconds (8000ms, 4000, 2000, 1000, 500, 250, 120, 60, 30, 15ms)
       digitalWrite(LED_BUILTIN, LOW);
       Watchdog.sleep(pause * 1000);           // Sleep for up to 8 seconds (8000ms, 4000, 2000, 1000, 500, 250, 120, 60, 30, 15ms)
     #endif
+    
   }
 }

@@ -263,8 +263,8 @@ void loop() {
     Serial.print(F("\nSleeping for minutes: "));Serial.print(minutes);
   #endif
 
-   // blink every 3 seconds for ~15 minutes. We joined.
-   blinkLed(20 * minutes, 50, 3);
+   // blink every 8 seconds for ~15 minutes. We joined.
+   blinkLed(7 * minutes, 50, 8); // SAMD max is 16, AVR / ATmega is 8
   
  } // (Get)HasJoined()
 } // loop()
