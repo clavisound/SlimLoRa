@@ -1,10 +1,12 @@
 #ifndef SLIM_LORA_H
 #define SLIM_LORA_H
 
+/*
 #include <stddef.h>
 #include <stdint.h>
 #include <util/atomic.h>
 #include <avr/power.h>
+*/
 
 // START OF USER DEFINED OPTIONS
 
@@ -32,8 +34,6 @@
 // #define MAX_FCOUNT 50000
 // I think helium needs re-join. EVAL with chirpstack
 
-// I propose to you that you config your device on the console.helium.com 
-// to 5 seconds RX DELAY.
 // Make sure this value is the same with TTN console.
 #define NET_TTN_RX_DELAY	5
 
@@ -41,12 +41,16 @@
 #define NET_HELIUM_RX_DELAY	5
 
 // Select Arduino style EEPROM handling.
-#define ARDUINO_EEPROM	1	// Uses static storage, but it helps debugging.
-
-// Debug SlimLoRa library via Serial.print() 
-#ifndef DEBUG_SLIM 	
-#define DEBUG_SLIM   	0  // 1 is basic debugging, 2 more debugging, 0 to disable.
+#ifndef ARDUINO_EEPROM
+#define ARDUINO_EEPROM	1	// 1: Uses static EEPROM storage. It helps debugging and to restore session after power cycle / or reset.
+				// 2: for external I2C EEPROM. You also need SparkFun External EEPROM library
 #endif
+
+// Save 332 bytes of RAM. Only for AVR's / ATmega's
+#define SLIMLORA_USE_PROGMEM
+
+// Debug SlimLoRa library via Serial.print()
+#define DEBUG_SLIM   	0  // 1 is basic debugging, 2 more debugging, 0 to disable.
 
 // Identify RX / join window and store LNS DeviceTime and LinkCheck
 // This adds 96 bytes of program flash and 1 byte of RAM.
@@ -86,8 +90,8 @@
 //#define EU_DR6 // applicable for EU RU AS CN
 
 // Enable this only if you have changed the clock of your AVR MCU.
-#define CATCH_DIVIDER
-#if defined CATCH_DIVIDER && !defined (__AVR__) 
+//#define CATCH_DIVIDER
+#if defined CATCH_DIVIDER && !defined (__AVR__)
 #error You defined CATCH_DIVIDER but this is supported only for AVR / ATmega MCUs. Uncomment CATCH_DIVIDER
 #endif
 
@@ -110,22 +114,50 @@
 // This needs 397 of Program Flash and 9 bytes of RAM
 #define MAC_REQUESTS
 
-// default is 64. That means 51 bytes of payload for SF10, SF11, SF12.
+// default is 64. That means 51 bytes of LoRaWAN payload for SF10, SF11, SF12.
 // If you send or receive MAC commands along with big payloads
 // expect buffer overflows! Maximum for frame options is 15 bytes
-// So you can expect 51 - 15 bytes is the maximum packet that SlimLoRa
-// can handle.
+// So you can expect 51 - 15 = 36 bytes is the maximum packet that SlimLoRa
+// can handle in worst case scenario.
 #define SLIM_LORAWAN_PACKET_SIZE	64
 
 // END OF USER DEFINED OPTIONS
 
-// TODO / NOT IMPLEMENTED YET: don't use flash memory (PROGMEM) for variables.
-// This is to help ATmega from BOD's if it's in the limits.
-//#define SLIMLORA_NO_PROGMEM
+#if ARDUINO_EEPROM == 1 && !defined (__AVR__)
+#error You defined internal ARDUINO_EEPROM but you dont have an AVR / ATmega
+#endif
 
+#ifdef SLIMORA_USE_PROGMEM && !defined (__AVR__)
+#error You defined SLIMORA_USE_PROGMEM but you dont have an AVR / ATmega
+#endif
+
+#if ARDUINO_EEPROM == 0
+	#include <avr/eeprom.h>
+#endif
 
 #if ARDUINO_EEPROM == 1
 	#include <EEPROM.h>
+#endif
+
+#if ARDUINO_EEPROM == 2
+
+	#include <Wire.h>
+	#include "SparkFun_External_EEPROM.h"
+
+	extern ExternalEEPROM EEPROM;
+
+	#ifndef SLIMLORA_EEPROM_MEMORY_TYPE
+	#define SLIMLORA_EEPROM_MEMORY_TYPE	2	// TODO: this is valid only for 2kbit EEPROM (512 bytes)
+	#endif
+
+	#ifndef EXTERNAL_EEPROM_ADDRESS
+	#define EXTERNAL_EEPROM_ADDRESS      0x50	// 24AA02E64 EERPROM of MightyBrick EEPROM listes from HEX: 0x50 to 0x57
+	#endif
+
+	#ifndef EXTERNAL_EEPROM_EUI_ADDRESS
+	#define EXTERNAL_EEPROM_EUI_ADDRESS  0xF8	// M24AA02E6 EEPROM
+	#endif
+
 #endif
 
 #define DEBUG_RXSYMBOLS 1 // Masked 1 = duration, 2 breaks timing with debug prints
@@ -133,7 +165,7 @@
 // Arduino library of eeprom is simpler / with less functionality than avr/eeprom.h
 // It needs extra work. We need to define the address of each data.
 // It's better for future firmware updates. Data remains in same place in contrast of avr/eeprom.h
-#if ARDUINO_EEPROM == 1
+#if ARDUINO_EEPROM >= 1
 	#define EEPROM_OFFSET		  0	// Change this from 0 to EEPROM size - 152 if you feel 
 						// that you gonna burn the EEPROM to use another area
 						// of EEPROM
@@ -153,9 +185,8 @@
 	#define EEPROM_NW_ENC_KEY	 68 + EEPROM_OFFSET	// 16 bytes array
 	#define EEPROM_NBTRANS		 84 + EEPROM_OFFSET	// 4 bits [0-15]. 4 BITS to spare
 	#define EEPROM_CHMASK		 85 + EEPROM_OFFSET	// 2 bytes
-	#define EEPROM_DOWNPACKET	 87 + EEPROM_OFFSET	// 64 bytes array
-	#define EEPROM_DOWNPORT		151 + EEPROM_OFFSET	// 1 byte
-	#define EEPROM_END		151 + EEPROM_OFFSET	// last byte of SlimLoRa on EEPROM
+	#define EEPROM_NETID		 87 + EEPROM_OFFSET	// 4 bytes
+	#define EEPROM_END		 90 + EEPROM_OFFSET	// last byte of SlimLoRa on EEPROM
 #endif
 
 #define MICROS_PER_SECOND               1000000
@@ -167,7 +198,7 @@
 #define RFM_REG_FR_MSB                  0x06
 #define RFM_REG_FR_MID                  0x07
 #define RFM_REG_FR_LSB                  0x08
-#define RFM_REG_PA_CONFIG               0x09 
+#define RFM_REG_PA_CONFIG               0x09
 #define RFM_REG_PA_DAC                  0x4D ///<PA Higher Power Settings
 #define RFM_REG_OCP_TRIM		0x0B
 #define RFM_REG_LNA			0x0C
@@ -233,7 +264,7 @@
 #define LORAWAN_DIRECTION_UP                0
 #define LORAWAN_DIRECTION_DOWN              1
 
-#define LORAWAN_UPLINK_CHANNEL_COUNT        8 // Valid Value only 8. 
+#define LORAWAN_UPLINK_CHANNEL_COUNT        8 // Valid Value only 8.
 					      // In future downlink channel must move to another index - not 8 or in another variable.
 
 // LoRaWAN epoch
@@ -391,7 +422,7 @@ class SlimLoRa {
     uint16_t GetTxFrameCounter();
     void SetTxFrameCounter();
     void SetRxFrameCounter();
-    
+
     // MAC Request variables
 #ifdef MAC_REQUESTS
     uint8_t TimeLinkCheck;
@@ -408,7 +439,7 @@ class SlimLoRa {
     void    ZeroTXms();
 #endif // COUNT_TX_DURATION
 
-#if ARDUINO_EEPROM == 1
+#if ARDUINO_EEPROM >= 1
     void getArrayEEPROM(uint16_t eepromAdr, uint8_t *arrayData, uint8_t size);
     void setArrayEEPROM(uint16_t eepromAdr, uint8_t *arrayData, uint8_t size);
     void printHex(uint8_t *value, uint8_t len);
@@ -417,7 +448,7 @@ class SlimLoRa {
 	uint8_t downlinkData[DOWNLINK_PAYLOAD_SIZE];
 	uint8_t downlinkSize;
 	uint8_t downPort;
-			
+
 #if DEBUG_SLIM >= 1
 	void printMAC();
 	void printDownlink();
@@ -453,7 +484,7 @@ class SlimLoRa {
 #if DEBUG_SLIM >= 1
     int8_t last_packet_snrB;
 #endif
-    
+
     uint16_t ChMask;
 
     static const uint8_t kFrequencyTable[9][3];
