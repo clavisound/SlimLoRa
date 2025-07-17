@@ -10,32 +10,49 @@
  * https://github.com/clavisound/SlimLoRa
  * I am pretty sure TinyLoRa code will be helpful to write the US frequencies.
  * 
- * Hardware: feather32u4
+ * Hardware: feather32u4 or MightyBrick (not available to tindie.com yet)
  * For other pin configuration you have to modify the SlimLoRa library.
  * Send PR's to https://github.com/clavisound/SlimLoRa
  * 
  * Software:
  * Arduino 1.8.19 (x86_64 binary on Linux),
  * SleepyDog library from Adafruit,
- * In 01_config tab add your keys from your Network provider.
+ * Arduino Low Power (for mightybrick)
+ * In 01_config.h tab add your keys from your Network provider.
  * 
  * You may need to edit SlimLoRa.h for various options.
  * 
  */
 
-#include <stdint.h>
+#define FEATHER32U4 1
+#define MIGHTYBRICK 2
 
+#define DEVICE FEATHER32U4
+
+#include <stdint.h>
 #include "SlimLoRa.h"
+#include "01_config.h"
+
+#if DEVICE == FEATHER32U4
 #include <Adafruit_SleepyDog.h>
+#define RFM_CS_PIN  8 // pin to enable LoRa module
+#define VBATPIN    A9 // pin to measure battery voltage.
+#endif
+
+#if DEVICE == MIGHTYBRICK
+#include <Adafruit_SleepyDog.h>
+#include "ArduinoLowPower.h"
+#define RFM_CS_PIN            11
+#define VBATPIN               A3
+#define EEPROM_ADDRESS      0x50
+#define EEPROUM_EUI_ADDRESS 248
+#endif
 
 // program behaviour
 #define DEBUG_INO   1     // DEBUG via Serial.print
                           // You also need DEBUG_SLIM 1 in SlimLoRa.h
 #define PHONEY      0     // don't transmit. for DEBUGing
 #define POWER	14     // Transmittion power
-
-// pin to measure battery voltage - works with Feather32u4
-#define VBATPIN   A9
 
 uint8_t joinEfforts = 5; // how many times we will try to join.
 
@@ -44,10 +61,11 @@ uint8_t dataRate, txPower = POWER, payload[1], payload_length, vbatC;
 uint8_t fport = 1;
 uint8_t minutes = 5;
 
-SlimLoRa lora = SlimLoRa(8);    // OK for feather 32u4 (CS featherpin. Aka: nss_pin for SlimLoRa). TODO: support other pin configurations.
+SlimLoRa lora = SlimLoRa(RFM_CS_PIN);    // OK for feather 32u4 (CS featherpin. Aka: nss_pin for SlimLoRa). TODO: support other pin configurations.
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT); // Initialize pin LED_BUILTIN as an output
+    pinMode(VBATPIN, INPUT);
   
     delay(3000);
     #if DEBUG_INO == 1
@@ -55,20 +73,30 @@ void setup() {
       Serial.println(F("Starting"));
     #endif
 
+  #if DEVICE == MIGHTYBRICK
+  analogReference(AR_DEFAULT); 
+  // EEPROM MightyBrick. SlimLoRa needs this.
+  Wire.begin();
+  Wire.setClock(400000);
+  EEPROM.setMemoryType(2);
+
+  //EEPROM.get(248, DevEUI); 		// SparkFun Style
+  lora.getArrayEEPROM(248, DevEUI, 8);  // SlimLoRa Style
+
+  #if DEBUG_INO == 1
+  lora.printHex(DevEUI, 8);
+  #endif
+  
+  #endif
+  
     lora.Begin();
     lora.SetDataRate(SF7BW125);
-    //lora.SetDataRate(SF7BW250); // Testing, ignore this.
     lora.SetPower(txPower);
     lora.SetAdrEnabled(1); // 0 to disable. Network can still send ADR command to device. This is preference, not an order.
 
     // increase frame counter after reset
     lora.tx_frame_counter_ += EEPROM_WRITE_TX_COUNT;
     lora.SetTxFrameCounter();
-
-    // for DEBUG only, don't use those.
-    //lora.ForceTxFrameCounter(3);
-    //lora.SetDevNonce(1812);
-    //lora.SetJoinNonce(1812);
 
     // Show data stored in EEPROM
     #if DEBUG_INO == 1
@@ -77,6 +105,10 @@ void setup() {
 
     // Just a delay for 7 seconds
      blinkLed(14, 500, 1); // times, duration (ms), seconds
+
+     #if DEBUG_INO == 1
+     checkBatt();
+     #endif
 
     // Join if we have efforts.
     #if LORAWAN_KEEP_SESSION == 1 && LORAWAN_OTAA_ENABLED == 1 // lora.GetHasJoined needs LORAWAN_KEEP_SESSION
@@ -194,9 +226,8 @@ void loop() {
 
         // update the interval of reporting
         minutes = lora.downlinkData[0];
-        
-        // in case payload of downlink is zero
-        if ( minutes < 1 ) {
+        // in case payload of downlink is too small.
+        if ( minutes < 2 ) {
           minutes = 2;
         } // minutes
       

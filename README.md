@@ -74,7 +74,7 @@ Solutions with AVR style.
 
 ## SAMD EEPROM
 
-SAMD series don't have EEPROM like ATmegas, so if you have an external I2C EEPROM you can define in `SlimLoRa.h`: `#define ARDUINO_EEPROM 2` to enable the external EEPROM. In that case, you need the [SparkFun External EEPROM](https://github.com/sparkfun/SparkFun_External_EEPROM_Arduino_Library/) library. Make sure that other values like `#define SLIMLORA_EEPROM_MEMORY_TYPE` and others are properly defined. Check the example SlimLoRa-battery-complicated.
+SAMD series don't have EEPROM like ATmegas, so if you have an external I2C EEPROM you can define in `SlimLoRa.h`: `#define ARDUINO_EEPROM 2` to enable the external EEPROM. In that case, you need the [SparkFun External EEPROM](https://github.com/sparkfun/SparkFun_External_EEPROM_Arduino_Library/) library. Make sure that other values like `#define SLIMLORA_EEPROM_MEMORY_TYPE` and others are properly defined. Check the example SlimLoRa-battery-feather32u4-SAMD-complicated.
 
 # Semi-Working
 
