@@ -48,10 +48,8 @@ extern const uint8_t AppSKey[16];
 extern const uint8_t DevAddr[4];
 #endif // LORAWAN_OTAA_ENABLED
 
-#ifdef CATCH_DIVIDER
-  #if defined(__AVR__)
+#if defined CATCH_DIVIDER && defined (__AVR__)
     uint8_t clockShift;
-  #endif
 #endif
 
 #if DEBUG_RXSYMBOLS >= 1
@@ -402,8 +400,7 @@ void SlimLoRa::Begin() {
 
 	SPI.begin();
 
-#ifdef CATCH_DIVIDER && defined (__AVR__)
-	// for printMAC correct values.
+#if defined CATCH_DIVIDER && defined (__AVR__)
 	clockShift = clock_prescale_get();
 #endif
 
@@ -784,14 +781,12 @@ int8_t SlimLoRa::RfmReceivePacket(uint8_t *packet, uint8_t packet_max_length, ui
 void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t channel, uint8_t dri) {
 	// TODO if dri is FSK re-init modem.
 
-	#ifdef CATCH_DIVIDER
-		#if defined(__AVR__)
-			clockShift = clock_prescale_get();
-			#if DEBUG_SLIM >= 1
-			Serial.print(F("\nclockShift: "));Serial.println(clockShift);
-			#endif
-		#endif
-	#endif
+#if defined CATCH_DIVIDER && defined (__AVR__)
+	clockShift = clock_prescale_get();
+#if DEBUG_SLIM >= 1
+	Serial.print(F("\nclockShift: "));Serial.println(clockShift);
+#endif
+#endif
 
 	uint8_t modem_config_3;
 
@@ -1062,13 +1057,9 @@ uint32_t SlimLoRa::CalculateRxDelay(uint8_t data_rate, uint32_t delay) {
 #endif
 	offset = CalculateRxWindowOffset(micros_per_half_symbol);
 
-#ifdef CATCH_DIVIDER
-	#if defined(__AVR__)
-		return (CalculateDriftAdjustment(delay + offset, micros_per_half_symbol)) >> clockShift;
-	#else // For SAMD and other non-AVR, CATCH_DIVIDER is not supported.
-		return CalculateDriftAdjustment(delay + offset, micros_per_half_symbol);
-	#endif
-#else
+#if defined CATCH_DIVIDER && defined (__AVR__)
+	return (CalculateDriftAdjustment(delay + offset, micros_per_half_symbol)) >> clockShift;
+#else // For SAMD and other non-AVR, CATCH_DIVIDER is not supported.
 	return CalculateDriftAdjustment(delay + offset, micros_per_half_symbol);
 #endif
 }

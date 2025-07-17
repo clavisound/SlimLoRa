@@ -65,7 +65,8 @@
 // Enable LoRaWAN Over-The-Air Activation
 #define LORAWAN_OTAA_ENABLED    1
 // Store the session data to EEPROM
-#define LORAWAN_KEEP_SESSION    1
+#define LORAWAN_KEEP_SESSION    1 // needs 254 program flash for ATmega, 356 for SAMD.
+				  // Don't disabled. Unless you know what you are doing.
 
 // Store counters every X times to protect EEPROM from constant writings
 #define EEPROM_WRITE_TX_COUNT	200	// SlimLoRa default: 10 	clv: 200
@@ -123,12 +124,12 @@
 
 // END OF USER DEFINED OPTIONS
 
-#if ARDUINO_EEPROM == 1 && !defined (__AVR__)
+#if (ARDUINO_EEPROM == 1 || ARDUINO_EEPROM == 0) && !defined (__AVR__)
 #error You defined internal ARDUINO_EEPROM but you dont have an AVR / ATmega
 #endif
 
-#ifdef SLIMORA_USE_PROGMEM && !defined (__AVR__)
-#error You defined SLIMORA_USE_PROGMEM but you dont have an AVR / ATmega
+#if defined SLIMLORA_USE_PROGMEM && !defined (__AVR__)
+#error You defined SLIMLORA_USE_PROGMEM but you dont have an AVR / ATmega
 #endif
 
 #if ARDUINO_EEPROM == 0
@@ -169,6 +170,7 @@
 	#define EEPROM_OFFSET		  0	// Change this from 0 to EEPROM size - 152 if you feel 
 						// that you gonna burn the EEPROM to use another area
 						// of EEPROM
+
 								// EEPROM reliability for AVR's. Around 1.000.000 writes.
 	#define EEPROM_DEVADDR		  0 + EEPROM_OFFSET	// 4 bytes array
 	#define EEPROM_TX_COUNTER	  4 + EEPROM_OFFSET	// 4 bytes but in practice 2 bytes: future proof 4 bytes
