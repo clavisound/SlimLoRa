@@ -4,7 +4,7 @@
 
 This library is probably the most easy to use LoRaWAN library. The target is LoRaWAN-1.0.3 specification. It supports OTAA / Join, most important MAC commands - like DR, power, NBtrans, downlinks for user application and session is stored to EEPROM. Applications downlinks are static selectable via `#define` in `SlimLoRa.h`. Default is 11 bytes. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs around 52kBytes of program flash), or LMIC (around 36kBytes of program flash).
 
-SlimLoRa needs around 12558 Bytes* (13kBytes). SlimLoRa gives LoRaWAN life to old μCUs like the ATmega 328 with 32kBytes of flash. For SAMD with an external I2C EEPROM, it needs around 32kB.
+SlimLoRa needs around 12558 Bytes* (13kBytes). SlimLoRa gives LoRaWAN life to old μCUs like the ATmega 328 with 32kBytes of flash. For SAMD with an external I2C EEPROM, it needs around 32kB. The price of 32-bits?
 
 \* in fact, I think the overhead is around 9kBytes.
 
@@ -137,6 +137,8 @@ With `lora.TimeCheckLink = 3;` before an uplink, you can have access to all of t
 The maximum uplink payload size in ideal situations (for SF10, SF11, SF12) is 51 bytes but *don't* count on that. You can change that with `SLIM_LORAWAN_PACKET_SIZE` in `SlimLoRa.h`. For SF7, SF8, SF9 the protocol (p. 28 RP) says: 155 and 222 bytes of payload. In reality, you can be sure that you can send `51 - 15 = 36` bytes.
 
 For downlinks, the limit is 12 bytes via `DOWNLINK_PAYLOAD_SIZE`.
+
+You can change those values in the loss of RAM.
 
 ## Drift - Only room temperature tested. Cold or Heat untested
 

@@ -44,8 +44,8 @@
 #include "ArduinoLowPower.h"
 #define RFM_CS_PIN            11
 #define VBATPIN               A3
-#define EEPROM_ADDRESS      0x50
-#define EEPROUM_EUI_ADDRESS 248
+#define EEPROM_ADDRESS      0x50 // I2C address
+#define EEPROM_EUI_ADDRESS  0xF8
 #endif
 
 // program behaviour
@@ -56,7 +56,8 @@
 
 uint8_t joinEfforts = 5; // how many times we will try to join.
 
-uint32_t joinStart, joinEnd, RXend, vbat, newfCnt;
+uint32_t joinStart, joinEnd, RXend, newfCnt;
+uint16_t vbat;
 uint8_t dataRate, txPower = POWER, payload[1], payload_length, vbatC;
 uint8_t fport = 1;
 uint8_t minutes = 5;
@@ -84,6 +85,7 @@ void setup() {
   lora.getArrayEEPROM(248, DevEUI, 8);  // SlimLoRa Style
 
   #if DEBUG_INO == 1
+  Serial.print(F("\nDevEUI from EEPROM: "));
   lora.printHex(DevEUI, 8);
   #endif
   
@@ -100,11 +102,11 @@ void setup() {
 
     // Show data stored in EEPROM
     #if DEBUG_INO == 1
-      Serial.println(F("\nAfter 7 seconds the program will start."));
+      Serial.println(F("\nAfter 9 seconds the program will start."));
     #endif // DEBUG_INO
 
-    // Just a delay for 7 seconds
-     blinkLed(14, 500, 1); // times, duration (ms), seconds
+    // Delay for 9 seconds with blink
+     blinkLed(6, 500, 1); // times, duration (ms), seconds
 
      #if DEBUG_INO == 1
      checkBatt();
@@ -211,9 +213,13 @@ void loop() {
   #endif
     checkBatt();
 
+    #if PHONEY == 0
     payload_length = sizeof(payload);
     lora.SendData(fport, payload, payload_length);
     switchDR(); //NOWEB Testing, ignore this.
+    #else // PHONEY
+    Serial.print(F("\nFake uplink."));
+    #endif
 
     // if we received downlink on port 1 change the minutes interval.
     if ( lora.downlinkSize > 0 ) {
