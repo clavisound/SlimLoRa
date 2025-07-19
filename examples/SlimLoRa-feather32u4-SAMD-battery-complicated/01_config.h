@@ -1,5 +1,7 @@
-#define HLM // TTN or HLM (helium) MSB values
+#ifndef SLIMLORA_EEPROM_CONF
+#define SLIMLORA_EEPROM_CONF
 
+#define DEBUG_SLIM 1
 // JS DECODER for TTN or Helium.
 /*
 
@@ -32,3 +34,5 @@ return decoded;
   uint8_t AppSKey[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }; // You need to add those values.
   uint8_t DevAddr[4]  = { 0x00, 0x00, 0x00, 0x00 };
 #endif // LORAWAN_OTAA_ENABLED
+
+#endif //config.h 

@@ -220,16 +220,18 @@ void loop() {
 #endif // LORAWAN_KEEP_SESSION
 
   #if DEBUG_INO == 1
-    Serial.println(F("\nSending uplink."));
+    Serial.print(F("\nSending uplink."));
   #endif
+  
     checkBatt();
 
     #if PHONEY == 0
     payload_length = sizeof(payload);
     lora.SendData(fport, payload, payload_length);
-    switchDR(); //NOWEB Testing, ignore this.
+    //switchDR(); //NOWEB Testing, ignore this.
+    
     #else // PHONEY
-    Serial.print(F("\nFake uplink."));
+      Serial.print(F("\nFake uplink."));
     #endif
 
     // if we received downlink on port 1 change the minutes interval.

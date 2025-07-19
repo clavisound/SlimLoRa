@@ -53,11 +53,15 @@ void checkBatt(){
       Serial.print(F("\nVBat (8bit): ")); Serial.print(vbat);Serial.print(F(", VBat (volt): ")); Serial.print((vbat + 450) * 0.0064453125); // * 2 * 3.3 / 1024
       // MIGHTYBRICK - without correction.
       //Serial.print(F("\nVBat (8bit): ")); Serial.print(vbat);Serial.print(F(", VBat (volt): ")); Serial.print(((vbat + 450) * 1.275 * 3.3 ) / 1024);
-      Serial.print("\nRAW:");Serial.println(analogRead(VBATPIN));
+      //Serial.print("\nRAW:");Serial.println(analogRead(VBATPIN));
       Serial.print(F(", VBatC (range): ")); Serial.println(vbatC);
     #endif
     
     payload[0] = vbat; // loraData[0] = highByte(vbat);loraData[1] = lowByte(vbat);
+
+    #if DEBUG_INO == 1
+      Serial.print("_ checkBatt");
+    #endif
 }
 
 // function to wait and blink

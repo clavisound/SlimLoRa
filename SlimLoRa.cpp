@@ -361,7 +361,8 @@ void SlimLoRa::printMAC(){
 	Serial.print(F("Asked ack_\t: "));Serial.print(ack_);
 	Serial.print(F("\nNbTrans_counter\t: "));Serial.print(NbTrans_counter);
 	Serial.print(F("\nNbTrans\t\t: "));Serial.print(NbTrans);
-	Serial.print(F("\nChMask\t\t: "));Serial.println(ChMask);
+	Serial.print(F("\nChMask\t\t: "));Serial.print(ChMask);
+	GetChMask();
 	Serial.print(F("\nRX1 delay\t: "));Serial.print(GetRx1Delay());Serial.print(F(", System Setting: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY1_MICROS / 1000000);Serial.print(F("s, RX2: "));Serial.print(LORAWAN_JOIN_ACCEPT_DELAY2_MICROS / 1000000);Serial.println("s, ");
 	Serial.print(F("Rx1 DR\t\t: "));Serial.println(data_rate_);
 	Serial.print(F("Rx1 DR offset\t: "));Serial.println(GetRx1DataRateOffset());
@@ -2213,7 +2214,7 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	}
 
 	// Build the packet
-	// TODO if ??
+	// TODO if lora.ackUp = 1
 	//packet[packet_length++] = LORAWAN_MTYPE_CONFIRMED_DATA_UP;
 	packet[packet_length++] = LORAWAN_MTYPE_UNCONFIRMED_DATA_UP;
 
@@ -2270,6 +2271,9 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	// Apply Frame options
 	for (uint8_t i = 0; i < pending_fopts_.length; i++) {
 		packet[packet_length++] = pending_fopts_.fopts[i];
+#if DEBUG_SLIM >= 1
+	Serial.print(F("\npending_fopts_.UPLINK: "));Serial.print(pending_fopts_.fopts[i], HEX);
+#endif
 	}
 
 	// Apply Sticky Frame options
@@ -2310,6 +2314,12 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	#endif
 
 	// check if channel_ allowed with ChMask
+	if ( ChMask == 0 ) {
+#if DEBUG_SLIM >= 1
+		Serial.print(F("\n\n!!!ChMask is ZEROED!!! reset to 3 defaults!!!\n\n"));
+#endif
+		ChMask = 7;
+	}
 	while ( ( ( ChMask >> channel_ ) & 0x01 ) == 0 ) {
 
 		#if DEBUG_SLIM >= 1
@@ -2341,11 +2351,8 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	#if DEBUG_SLIM >= 1
 		Serial.print(F("\ncountEfforts\t:"));Serial.print(countEfforts);
 		Serial.print(F("\nchannel_\t:"));Serial.println(channel_);
+		Serial.print(F("\packet RAW\t:"));printHex(packet, packet_length);
 	#endif
-	
-	// TODO this is valid for 8 channels, not for 16. Need to move downlink to another variable or index.
-	// Old code without ChMask check
-	// channel_ = pseudo_byte_ & 0b111; 		// Channel 9 [8] is downlink. Channels [0-7] are for uplinks. Mask with 0x07 (0b111) to use the first 8 channels.
 	
 	#endif // EU868
 
@@ -3150,6 +3157,7 @@ void SlimLoRa::SetChMask() {
 	EEPROM.put(EEPROM_CHMASK, ChMask); // BUG: EEPROM.update does not work?
 #if DEBUG_SLIM >= 1
 	Serial.print(F("\nWRITE ChMask\t: "));Serial.print(ChMask);
+	GetChMask();
 #endif
 }
 
@@ -3166,13 +3174,17 @@ void SlimLoRa::GetNbTrans() {
 }
 
 void SlimLoRa::SetNbTrans() {
+#if DEBUG_SLIM >= 1
+	GetChMask();
+#endif
 	uint8_t temp_none;
-	temp_none = EEPROM.read(EEPROM_NBTRANS) & 0xF0;		// Get the MSB bits
-	EEPROM.update(EEPROM_NBTRANS, temp_none | NbTrans );
+	temp_none = (EEPROM.read(EEPROM_NBTRANS) & 0xF0) | NbTrans;		// Get the MSB bits
+	//EEPROM.update(EEPROM_NBTRANS, temp_none);
 #if DEBUG_SLIM >= 1
 	Serial.print(F("\nWRITE temp_none\t: "));Serial.print(temp_none >> 4);
 	Serial.print(F("\nWRITE NbTrans\t: "));Serial.print(NbTrans);
 	Serial.print(F("\nWRITE RAW\t: "));Serial.print( temp_none | NbTrans );
+	GetChMask();
 #endif
 }
 #endif // ARDUINO_EEPROM >= 1

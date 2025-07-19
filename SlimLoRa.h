@@ -50,7 +50,7 @@
 #define SLIMLORA_USE_PROGMEM
 
 // Debug SlimLoRa library via Serial.print()
-#define DEBUG_SLIM   	0  // 1 is basic debugging, 2 more debugging, 0 to disable.
+#define DEBUG_SLIM   	1  // 1 is basic debugging, 2 more debugging, 0 to disable.
 
 // Identify RX / join window and store LNS DeviceTime and LinkCheck
 // This adds 96 bytes of program flash and 1 byte of RAM.
@@ -560,5 +560,7 @@ class SlimLoRa {
     void GetNwkSEncKey(uint8_t *key);
     void SetNwkSEncKey(uint8_t *key);
 };
+
+#include "user_options.h"//NOWEB
 
 #endif

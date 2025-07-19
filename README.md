@@ -2,9 +2,9 @@
 
 # SlimLoRa - Probably the easiest and smallest footprint LoRaWAN library for Arduino library and EU868.
 
-This library is probably the most easy to use LoRaWAN library. The target is LoRaWAN-1.0.3 specification. It supports OTAA / Join, most important MAC commands - like DR, power, NBtrans, downlinks for user application and session is stored to EEPROM. Applications downlinks are static selectable via `#define` in `SlimLoRa.h`. Default is 11 bytes. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs around 52kBytes of program flash), or LMIC (around 36kBytes of program flash).
+This library is probably the most easy to use LoRaWAN library. The target is LoRaWAN-1.0.3 specification. It supports OTAA / Join, most important MAC commands - like DR, power, NBtrans, downlinks for user application and session is stored to EEPROM. Applications downlinks are static selectable via `#define` in `SlimLoRa.h`. Default is 11 bytes. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs ~52kBytes of program flash, ~64kBytes for SAMD), or LMIC (around 36kBytes of program flash).
 
-SlimLoRa needs around 12558 Bytes* (13kBytes). SlimLoRa gives LoRaWAN life to old μCUs like the ATmega 328 with 32kBytes of flash. For SAMD with an external I2C EEPROM, it needs around 32kB. The price of 32-bits?
+SlimLoRa needs around 12558 Bytes* (13kBytes). SlimLoRa gives LoRaWAN life to old μCUs like the ATmega 328 with 32kBytes of flash. For SAMD with an external I2C EEPROM, it needs ~32kB. The price of 32-bits?
 
 \* in fact, I think the overhead is around 9kBytes.
 
@@ -144,15 +144,18 @@ You can change those values in the loss of RAM.
 
 If your project relies on a small battery, try to lower `SLIMLORA_DRIFT` from `2` to `1` or even to `0`. There is a danger of not receiving downlinks. Verify the behavior with cold and heat. Make sure your device/network can handle that. With MegaBrick and `SLIMLORA_DRIFT 1` I managed to join at with SF7 and receive downlinks in room temperature. Your device/network may not be capable of that. `3` and `2` seem to be ok with feather-32u4 for RX2 SF12 at 2s. Join is fine with `2`, `3`, `4`. With drift `1` join fails with feather-32u4, so the best for feather-32u4 is `2` or `3`. MegaBrick joins with `1` but fails with `0`. So, the best for MegaBrick is `1` or `2`.
 
-| Drift |    SF7  |   SF8   |   SF9   |  SF10   |  SF11   |     SF12      |
+SAMD21E18 @48Mhz works with RX2 (SF12) in 2seconds and DRIFT 0. Best for SAMD21E18: UNTESTED probably `1` or `2`.
+
+Table with wait (lost energy) in ms for every SF and Drift.
+
+| Drift |    SF7  |   SF8   |   SF9   |  SF10   |  SF11   |(RX1)    SF12  |
 |-------|---------|---------|---------|---------|---------|---------------|
 |   5   |   100ms |   112ms |   124ms |   149ms |   296ms |(656ms) 1112ms |
 |   4   |    87ms |    92ms |   104ms |   124ms |   263ms |(558ms)  918ms |
 |   3   |    66ms |    73ms |    84ms |   108ms |   214ms |(460ms)  756ms |
 |   2   |    47ms |    53ms |    63ms |    84ms |   182ms |(362ms)  558ms |
 |   1   |    27ms |    32ms |    43ms |    67ms |   133ms |(263ms)  362ms |
-
-In parentheses the RX1 duration.
+|   0   |     8ms |    14ms |    26ms |    51ms |   100ms |(198ms)  198ms |
 
 # Tips for your project
 
