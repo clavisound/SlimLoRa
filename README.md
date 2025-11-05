@@ -76,6 +76,10 @@ Solutions with AVR style.
 
 SAMD series don't have EEPROM like ATmegas, so if you have an external I2C EEPROM you can define in `SlimLoRa.h`: `#define ARDUINO_EEPROM 2` to enable the external EEPROM. In that case, you need the [SparkFun External EEPROM](https://github.com/sparkfun/SparkFun_External_EEPROM_Arduino_Library/) library. Make sure that other values like `#define SLIMLORA_EEPROM_MEMORY_TYPE` and others are properly defined. Check the example SlimLoRa-battery-feather32u4-SAMD-complicated.
 
+You also need to start I2C and several other EEPROM settings like `Wire.begin();
+  Wire.setClock(400000);
+  EEPROM.setMemoryType(SLIMLORA_EEPROM_MEMORY_TYPE);`
+
 # Semi-Working
 
 - [x] `ADR_ACK_LIMIT`, must follow the directive on p. 17 based on `ADR_ACK_DELAY`
@@ -163,12 +167,12 @@ If you need to handle array data with EEPROM, some helper functions `getArrayEEP
 
 # Customization
 
-`#define MAC_REQUESTS` enables MAC requests for `DeviceTime` and `LinkCheck`. Comment it out to gain 397 bytes of program flash and 9 bytes of RAM.
+`#define MAC_REQUESTS` enables MAC requests for `DeviceTime` and `LinkCheck`. Comment it to gain 397 bytes of program flash and 9 bytes of RAM.
 `#define SLIM_DEBUG_VARS` enables a `lora.LoRaWANreceived` variable to check if you received a MAC command, a downlink, a Join Accept message in the 1st or 2nd window, or a downlink in the 1st or 2nd window.
 
 # PROGMEM
 
-It seems that when using PROGMEM for memory operations, the AVR's current consumption increases, and the speed is lower. If you have 336 bytes of SRAM to spare, you can comment out `#define SLIMLORA_USE_PROGMEM` to gain speed and lower current consumption.
+It seems that when using PROGMEM for memory operations, the AVR's current consumption increases, and the speed is lower. If you have 336 bytes of SRAM to spare, you can comment `#define SLIMLORA_USE_PROGMEM` to gain speed and lower current consumption.
 
 ---
 

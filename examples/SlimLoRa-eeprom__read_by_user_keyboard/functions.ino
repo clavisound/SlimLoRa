@@ -12,6 +12,8 @@ void printMenu(){
   //Serial.println(F("e: EEPROM address of data, E [capital]: EEPROM address to COPY data."));
   Serial.println(F("m: read all MAC values."));
   Serial.println(F("s: swap MAC status."));
+  Serial.println(F("F: erase *ALL* EEPROM."));
+  //Serial.print(F("\tEEPROM size: "));Serial.print(eeprom_size);
   Serial.flush();
 }
 
@@ -145,4 +147,16 @@ void eraseOriginal(){
     Serial.println(originalOffset + temp);
     Serial.flush();
   }
-}       
+}
+
+void fullErase(){
+  
+  Serial.println(F("Erasing all EEPROM: "));
+  
+  // erase original
+  for ( temp = 0; temp <= eeprom_size; temp++ ) {
+    EEPROM.update(temp, 0xFF);
+    Serial.println(temp);
+    Serial.flush();
+  }
+}

@@ -925,7 +925,11 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 	if ( NbTrans_counter == 0 ) {
 		tx_frame_counter_++;
 		adr_ack_limit_counter_++;
+#ifdef DYNAMIC_ADR_ACK_LIMIT
+		if ( adr_ack_limit_counter_ >= adr_ack_limit ) {
+#else
 		if ( adr_ack_limit_counter_ >= LORAWAN_ADR_ACK_LIMIT ) {
+#endif
 			adr_ack_delay_counter_++;
 		}
 		NbTrans_counter = NbTrans;
@@ -1982,6 +1986,8 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 #if DEBUG_SLIM >= 1
 	Serial.print(F("MIC error: "));Serial.println(LORAWAN_ERROR_INVALID_MIC);
 #endif
+		downlinkSize	= 0;
+		downPort	= 0;
 		return LORAWAN_ERROR_INVALID_MIC;
 	}
 
@@ -2188,7 +2194,11 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 
 	// ADR back-off
 	// TODO p. 17, after first increase if DR, increase every LORAWAN_ADR_ACK_DELAY overflow
-	if (adr_enabled_ && adr_ack_limit_counter_ >= LORAWAN_ADR_ACK_LIMIT && adr_ack_delay_counter_ == 0 ) {
+#ifdef DYNAMIC_ADR_ACK_LIMIT
+	if (adr_enabled_ && adr_ack_limit_counter_ >= adr_ack_limit && adr_ack_delay_counter_ >= LORAWAN_ADR_ACK_DELAY ) {
+#else
+	if (adr_enabled_ && adr_ack_limit_counter_ >= LORAWAN_ADR_ACK_LIMIT && adr_ack_delay_counter_ >= LORAWAN_ADR_ACK_DELAY ) {
+#endif
 		adr_ack_delay_counter_++; // this way, this if statement will be executed only once
 		if ( data_rate_ > SF12BW125 ) {
 			data_rate_--;
@@ -2237,7 +2247,11 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	
 		// Request ADR if adr_ack_limit_counter_ is over the limit of LORAWAN_ADR_ACK_LIMIT
 		// p. 17
+#ifdef DYNAMIC_ADR_ACK_LIMIT
 		if (adr_ack_limit_counter_ >= LORAWAN_ADR_ACK_LIMIT ) {
+#else
+		if (adr_ack_limit_counter_ >= adr_ack_limit ) {
+#endif
 			packet[packet_length] |= LORAWAN_FCTRL_ADR_ACK_REQ;
 		}
 	}

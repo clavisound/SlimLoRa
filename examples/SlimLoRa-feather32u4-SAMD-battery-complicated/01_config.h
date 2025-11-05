@@ -2,6 +2,8 @@
 #define SLIMLORA_EEPROM_CONF
 
 #define DEBUG_SLIM 1
+
+#define HLM
 // JS DECODER for TTN or Helium.
 /*
 

@@ -32,13 +32,14 @@ uint8_t  inByte;
 uint8_t  menuPrinted;
 uint16_t temp;
 
-// 0, 152, 304, 456, 608, 760
-uint16_t originalOffset = 152;
-uint16_t targetOffset   = 410;
+uint16_t originalOffset = EEPROM_OFFSET;
+uint16_t targetOffset   = EEPROM_OFFSET + EEPROM_END;
 
 //uint8_t tempOffset     = 615; // valid for 1K EEPROM. Not used.
 uint8_t key[16], keystrokes[8];
 uint8_t bufferOriginal[TOTALBYTES], bufferTarget[TOTALBYTES];
+
+uint32_t eeprom_size;
 
 #if DEVICE == 'megaBrick'
   SlimLoRa lora = SlimLoRa(4);
@@ -53,6 +54,8 @@ void setup() {
 
   lora.Begin();
   lora.sleep();
+
+  eeprom_size = EEPROM.length();
 }
 
 void loop()
@@ -78,5 +81,6 @@ void loop()
     if (inByte == 'm') { lora.printMAC(); menuPrinted = 0; break; }
     if (inByte == 's') { swapMACstatus(); menuPrinted = 0; break; }
     if (inByte == 'Z') { eraseOriginal(); menuPrinted = 0; break; }
+    if (inByte == 'F') { fullErase(); menuPrinted = 0; break; }
   }
 }

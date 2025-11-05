@@ -1,12 +1,6 @@
 #ifndef SLIM_LORA_H
 #define SLIM_LORA_H
 
-/*
-#include <stddef.h>
-#include <stdint.h>
-#include <util/atomic.h>
-#include <avr/power.h>
-*/
 
 // START OF USER DEFINED OPTIONS
 
@@ -50,10 +44,10 @@
 #define SLIMLORA_USE_PROGMEM
 
 // Debug SlimLoRa library via Serial.print()
-#define DEBUG_SLIM   	1  // 1 is basic debugging, 2 more debugging, 0 to disable.
+#define DEBUG_SLIM	0	// is basic debugging, 2 more debugging, 0 to disable.
 
 // Identify RX / join window and store LNS DeviceTime and LinkCheck
-// This adds 96 bytes of program flash and 1 byte of RAM.
+// This adds 96 bytes of program flash and 1 byte of RAM. 112 bytes for SAMD.
 //#define SLIM_DEBUG_VARS
 
 // accurate epoch to second. If we received the epoch in RX2 window add one second to epoch.
@@ -100,15 +94,17 @@
 // I have seen minimal benefit, or it's bad implemented by the code.
 //#define REDUCE_LNA
 
-// Drift adjustment. Default:	2 works with feather-32u4 TTN and helium at 5 seconds RX delay.
-// 2: Tested with Helium at SF7 feather-32u4
-// MegaBrick - no lower than 1 (room temperature)
-// 1: it works for 5s join SF7 and RX2 SF12 at 2s receive
-// 0: it works with Helium SF12 @ 2secs - MegaBrick
-// 0: DOES NOT joins at 5s SF7 - MegaBrick
-// Feather-32u4 - no lower than 2 (room temperature)
-// 1: downlink fails RX2 SF12 2s
-// 2: Join ok same room GW SF7
+/* Drift adjustment.
+  Default:	2 works with feather-32u4 TTN and helium at 5 seconds RX delay.
+  Tested with Helium at SF7 feather-32u4
+*/
+
+/*  MegaBrick - no lower than 1 (room temperature)
+ 1: it works for 5s join SF7 and RX2 SF12 at 2s receive
+ 0: it works with Helium SF12 @ 2secs - MegaBrick
+ 0: DOES NOT joins at 5s SF7 - MegaBrick
+ With clock_div_4 DRIFT 1 fails to receive downlinks.
+*/
 #define SLIMLORA_DRIFT		2
 
 // Uncomment this to enable MAC requests for TimeReq and LinkCheck (margin, gateway count)
@@ -162,6 +158,7 @@
 #endif
 
 #define DEBUG_RXSYMBOLS 1 // Masked 1 = duration, 2 breaks timing with debug prints
+#define DYNAMIC_ADR_ACK_LIMIT	// If you want change dynamically ACK_LIMIT via variable: adr_ack_limit
 
 // Arduino library of eeprom is simpler / with less functionality than avr/eeprom.h
 // It needs extra work. We need to define the address of each data.
@@ -465,6 +462,10 @@ class SlimLoRa {
 
 #if DEBUG_RXSYMBOLS >= 2
 	uint16_t rx_symbolsB;
+#endif
+
+#ifdef DYNAMIC_ADR_ACK_LIMIT
+	uint8_t adr_ack_limit = LORAWAN_ADR_ACK_LIMIT;
 #endif
 
 #if DEBUG_SLIM == 0 // if not debuging, those are private. If debugging everything is public
