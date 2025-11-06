@@ -1,0 +1,64 @@
+name: Arduino CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Arduino CLI
+      uses: arduino/arduino-cli-setup-action@v2.3.0
+      id: arduino-cli-setup
+      with:
+        version: 'latest' # Use latest stable version
+
+    - name: Install SlimLoRa library
+      # This command installs the library located at the root of the repository.
+      # It assumes 'library.properties' is correctly configured.
+      run: arduino-cli lib install --path .
+
+    - name: Install cores
+      run: |
+        arduino-cli core update-index
+        arduino-cli core install arduino:avr
+        arduino-cli core install esp32:esp32
+        arduino-cli core install arduino:samd
+        arduino-cli core install adafruit:samd
+
+    - name: Compile examples for Arduino Uno
+      run: |
+        arduino-cli compile --fqbn arduino:avr:uno \
+          examples/simple \
+          examples/SlimLoRa-eeprom__read_by_user_keyboard \
+          examples/SlimLoRa-erase-session \
+          examples/SlimLoRa-simple-clv
+
+    - name: Compile examples for ESP32 Dev Module
+      run: |
+        arduino-cli compile --fqbn esp32:esp32:esp32 \
+          examples/simple \
+          examples/SlimLoRa-eeprom__read_by_user_keyboard \
+          examples/SlimLoRa-erase-session \
+          examples/SlimLoRa-simple-clv
+
+    - name: Compile examples for Arduino Zero (SAMD)
+      run: |
+        arduino-cli compile --fqbn arduino:samd:arduino_zero \
+          examples/simple \
+          examples/SlimLoRa-eeprom__read_by_user_keyboard \
+          examples/SlimLoRa-erase-session \
+          examples/SlimLoRa-simple-clv
+
+    - name: Compile examples for Adafruit Feather 32u4
+      run: |
+        arduino-cli compile --fqbn adafruit:samd:feather_32u4 \
+          examples/SlimLoRa-feather32u4-battery-simple-otaa \
+          examples/SlimLoRa-feather32u4-SAMD-battery-complicated
