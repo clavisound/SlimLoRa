@@ -31,15 +31,16 @@ jobs:
       run: |
         arduino-cli core update-index
         arduino-cli core install arduino:avr
-        arduino-cli core install esp32:esp32
-        arduino-cli core install arduino:samd
+      #arduino-cli core install esp32:esp32
+      # arduino-cli core install arduino:samd
 
-# examples/SlimLoRa-eeprom__read_by_user_keyboard   # examples/SlimLoRa-erase-session  # examples/SlimLoRa-simple-clv
+# examples/SlimLoRa-erase-session  # examples/SlimLoRa-simple-clv
 
     - name: Compile examples for Arduino Uno
       run: |
-        arduino-cli compile --fqbn arduino:avr:uno --library . examples/simple/simple.ino
+        arduino-cli compile --fqbn arduino:avr:uno --library . examples/simple/simple.ino --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
         arduino-cli compile --fqbn arduino:avr:uno --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
+    # arduino-cli compile --fqbn arduino:avr:uno --library . examples/SlimLoRa-simple-clv
           
     - name: Compile examples for ESP32 Dev Module
       run: |
