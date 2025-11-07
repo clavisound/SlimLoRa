@@ -22,13 +22,14 @@ jobs:
       # It assumes 'library.properties' is correctly configured.
       run: arduino-cli lib SlimLoRa
 
+# arduino-cli core install MightyCore:avr@2.2.2 --additional-urls https://mcudude.github.io/MightyCore/package_MCUdude_MightyCore_index.json
+# arduino-cli core install MightyCore:avr@2.2.2 --additional-urls https://lps29.github.io/MightyBrick/package_LowPowerSolutions_index.json
     - name: Install cores
       run: |
         arduino-cli core update-index
         arduino-cli core install arduino:avr
         arduino-cli core install esp32:esp32
         arduino-cli core install arduino:samd
-        arduino-cli core install adafruit:samd
 
     - name: Compile examples for Arduino Uno
       run: |
