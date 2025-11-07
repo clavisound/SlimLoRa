@@ -14,14 +14,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-#    - name: Install Arduino CLI
-#      uses: arduino/setup-arduino-cli@v2
+    - name: Install Arduino CLI
+      uses: arduino/setup-arduino-cli@v2
 
-    - name: Set up Arduino CLI
-      run: |
+#    - name: Set up Arduino CLI
+#      run: |
          # Download and install Arduino CLI
-         curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
-         echo "$HOME/bin" >> $GITHUB_PATH # Add Arduino CLI to PATH
+#         curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
+#         echo "$HOME/bin" >> $GITHUB_PATH # Add Arduino CLI to PATH
 
     #- name: Install SlimLoRa library
       # This command installs the library located at the root of the repository.
