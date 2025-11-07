@@ -39,7 +39,7 @@ jobs:
     - name: Compile examples for Arduino Uno
       run: |
         arduino-cli compile --fqbn arduino:avr:uno --library . examples/simple/simple.ino
-        examples/SlimLoRa-eeprom__read_by_user_keyboard --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
+        arduino-cli compile --fqbn arduino:avr:uno --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
           
     - name: Compile examples for ESP32 Dev Module
       run: |
