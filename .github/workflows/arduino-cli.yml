@@ -16,9 +16,6 @@ jobs:
 
     - name: Install Arduino CLI
       uses: arduino/setup-arduino-cli@v2
-      id: arduino-cli-setup
-      with:
-        version: 'latest' # Use latest stable version
 
     - name: Install SlimLoRa library
       # This command installs the library located at the root of the repository.
