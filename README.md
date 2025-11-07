@@ -1,4 +1,4 @@
-![CI](https://github.com/clavisound/SlimLoRa/actions/workflows/main.yml/badge.svg)
+![CI](https://github.com/clavisound/SlimLoRa/actions/workflows/main.yml/badge.svg) [![Arduino CI](https://github.com/clavisound/SlimLoRa/actions/workflows/arduino-cli.yml/badge.svg)](https://github.com/clavisound/SlimLoRa/actions/workflows/arduino-cli.yml)
 
 # SlimLoRa - Probably the easiest and smallest footprint LoRaWAN library for Arduino library and EU868.
 
