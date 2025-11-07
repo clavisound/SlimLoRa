@@ -31,7 +31,7 @@ jobs:
       run: |
         arduino-cli core update-index
         arduino-cli core install arduino:avr
-      #arduino-cli core install esp32:esp32
+      #  arduino-cli core install esp32:esp32
       # arduino-cli core install arduino:samd
 
 # examples/SlimLoRa-erase-session  # examples/SlimLoRa-simple-clv
@@ -41,18 +41,18 @@ jobs:
         arduino-cli compile --fqbn arduino:avr:uno --library . examples/simple/simple.ino
         arduino-cli compile --fqbn arduino:avr:uno --library . examples/SlimLoRa-simple-clv
 
-    - name: Arduino Uno DEBUG_SLIM
+    - name: Adafruit Feather 32u4
       run: |
-        arduino-cli compile --fqbn arduino:avr:uno --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
+        arduino-cli compile --fqbn adafruit:avr:feather_32u4 examples/SlimLoRa-feather32u4-battery-simple-otaa
+
+    #- name: Arduino Uno DEBUG_SLIM
+    #  run: |
+        #arduino-cli compile --fqbn arduino:avr:uno --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
           
-    - name: Compile examples for ESP32 Dev Module
-      run: |
-        arduino-cli compile --fqbn esp32:esp32:esp32 --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2\""
+    #- name: Compile examples for ESP32 Dev Module
+    #  run: |
+    #    arduino-cli compile --fqbn esp32:esp32:esp32 --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2\""
         
-    - name: Compile examples for Arduino Zero (SAMD)
-      run: |
-        arduino-cli compile --fqbn arduino:samd:arduino_zero examples/simple
-        
-    - name: Compile examples for Adafruit Feather 32u4
-      run: |
-        arduino-cli compile --fqbn adafruit:samd:feather_32u4 examples/SlimLoRa-feather32u4-battery-simple-otaa
+    #- name: Compile examples for Arduino Zero (SAMD)
+    #  run: |
+    #    arduino-cli compile --fqbn arduino:samd:arduino_zero examples/simple
