@@ -44,7 +44,7 @@ jobs:
 
     - name: Adafruit Feather 32u4
       run: |
-        arduino-cli compile --fqbn adafruit:avr:feather_32u4 examples/SlimLoRa-feather32u4-battery-simple-otaa
+        arduino-cli compile --fqbn adafruit:avr:32u4 examples/SlimLoRa-feather32u4-battery-simple-otaa
 
     #- name: Arduino Uno DEBUG_SLIM
     #  run: |
