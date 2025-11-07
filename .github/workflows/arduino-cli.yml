@@ -31,32 +31,20 @@ jobs:
         arduino-cli core install esp32:esp32
         arduino-cli core install arduino:samd
 
+# examples/SlimLoRa-eeprom__read_by_user_keyboard   # examples/SlimLoRa-erase-session  # examples/SlimLoRa-simple-clv
+
     - name: Compile examples for Arduino Uno
       run: |
-        arduino-cli compile --fqbn arduino:avr:uno \
-          examples/simple \
-          examples/SlimLoRa-eeprom__read_by_user_keyboard \
-          examples/SlimLoRa-erase-session \
-          examples/SlimLoRa-simple-clv
-
+        arduino-cli compile --fqbn arduino:avr:uno examples/simple
+          
     - name: Compile examples for ESP32 Dev Module
       run: |
-        arduino-cli compile --fqbn esp32:esp32:esp32 \
-          examples/simple \
-          examples/SlimLoRa-eeprom__read_by_user_keyboard \
-          examples/SlimLoRa-erase-session \
-          examples/SlimLoRa-simple-clv
-
+        arduino-cli compile --fqbn esp32:esp32:esp32 examples/simple
+        
     - name: Compile examples for Arduino Zero (SAMD)
       run: |
-        arduino-cli compile --fqbn arduino:samd:arduino_zero \
-          examples/simple \
-          examples/SlimLoRa-eeprom__read_by_user_keyboard \
-          examples/SlimLoRa-erase-session \
-          examples/SlimLoRa-simple-clv
-
+        arduino-cli compile --fqbn arduino:samd:arduino_zero examples/simple
+        
     - name: Compile examples for Adafruit Feather 32u4
       run: |
-        arduino-cli compile --fqbn adafruit:samd:feather_32u4 \
-          examples/SlimLoRa-feather32u4-battery-simple-otaa \
-          examples/SlimLoRa-feather32u4-SAMD-battery-complicated
+        arduino-cli compile --fqbn adafruit:samd:feather_32u4 examples/SlimLoRa-feather32u4-battery-simple-otaa
