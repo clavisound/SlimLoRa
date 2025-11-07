@@ -36,11 +36,14 @@ jobs:
 
 # examples/SlimLoRa-erase-session  # examples/SlimLoRa-simple-clv
 
-    - name: Compile examples for Arduino Uno
+    - name: Arduino Uno Production
       run: |
         arduino-cli compile --fqbn arduino:avr:uno --library . examples/simple/simple.ino
+        arduino-cli compile --fqbn arduino:avr:uno --library . examples/SlimLoRa-simple-clv
+
+    - name: Arduino Uno DEBUG_SLIM
+      run: |
         arduino-cli compile --fqbn arduino:avr:uno --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
-    # arduino-cli compile --fqbn arduino:avr:uno --library . examples/SlimLoRa-simple-clv
           
     - name: Compile examples for ESP32 Dev Module
       run: |
