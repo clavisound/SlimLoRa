@@ -41,7 +41,7 @@ jobs:
 
     - name: Compile examples for Arduino Uno
       run: |
-        arduino-cli compile --fqbn arduino:avr:uno examples/simple
+        arduino-cli compile --fqbn arduino:avr:uno examples/simple/simple.ino
           
     - name: Compile examples for ESP32 Dev Module
       run: |
