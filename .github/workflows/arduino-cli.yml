@@ -20,7 +20,7 @@ jobs:
     - name: List installed libraries
       run: arduino-cli lib list
 
-    - name: Install SlimLoRa library
+    - name: Install SparkFun EEPROM library
       # This command installs the library located at the root of the repository.
       # It assumes 'library.properties' is correctly configured.
       run: arduino-cli lib install 'SparkFun External EEPROM Arduino Library'
@@ -39,10 +39,11 @@ jobs:
     - name: Compile examples for Arduino Uno
       run: |
         arduino-cli compile --fqbn arduino:avr:uno --library . examples/simple/simple.ino
+        examples/SlimLoRa-eeprom__read_by_user_keyboard --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
           
     - name: Compile examples for ESP32 Dev Module
       run: |
-        arduino-cli compile --fqbn esp32:esp32:esp32 --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM 2\""
+        arduino-cli compile --fqbn esp32:esp32:esp32 --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2\""
         
     - name: Compile examples for Arduino Zero (SAMD)
       run: |
