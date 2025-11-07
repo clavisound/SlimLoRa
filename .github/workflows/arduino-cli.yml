@@ -36,7 +36,7 @@ jobs:
 
 
 # arduino-cli core install MightyCore:avr@2.2.2 --additional-urls https://mcudude.github.io/MightyCore/package_MCUdude_MightyCore_index.json
-# arduino-cli core install MightyCore:avr@2.2.2 --additional-urls https://lps29.github.io/MightyBrick/package_LowPowerSolutions_index.json
+# arduino-cli core install MightyBrick:samd@1.0.0 --additional-urls https://lps29.github.io/MightyBrick/package_LowPowerSolutions_index.json
     - name: Install cores
       run: |
         arduino-cli core update-index
@@ -52,7 +52,7 @@ jobs:
           
     - name: Compile examples for ESP32 Dev Module
       run: |
-        arduino-cli compile --fqbn esp32:esp32:esp32 examples/simple
+        arduino-cli compile --fqbn esp32:esp32:esp32 --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-UMY_MACRO\""
         
     - name: Compile examples for Arduino Zero (SAMD)
       run: |
