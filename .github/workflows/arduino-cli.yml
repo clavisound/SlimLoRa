@@ -20,10 +20,10 @@ jobs:
     - name: List installed libraries
       run: arduino-cli lib list
 
-    # - name: Install SlimLoRa library
+    - name: Install SlimLoRa library
       # This command installs the library located at the root of the repository.
       # It assumes 'library.properties' is correctly configured.
-      #run: arduino-cli lib install SlimLoRa
+      run: arduino-cli lib install 'SparkFun Exteran EEPROM Arduino Libary'
       
 # arduino-cli core install MightyCore:avr@2.2.2 --additional-urls https://mcudude.github.io/MightyCore/package_MCUdude_MightyCore_index.json
 # arduino-cli core install MightyBrick:samd@1.0.0 --additional-urls https://lps29.github.io/MightyBrick/package_LowPowerSolutions_index.json
@@ -42,7 +42,7 @@ jobs:
           
     - name: Compile examples for ESP32 Dev Module
       run: |
-        arduino-cli compile --fqbn esp32:esp32:esp32 --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM\""
+        arduino-cli compile --fqbn esp32:esp32:esp32 --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM 2\""
         
     - name: Compile examples for Arduino Zero (SAMD)
       run: |
