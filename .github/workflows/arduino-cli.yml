@@ -46,9 +46,9 @@ jobs:
       run: |
         arduino-cli compile --fqbn adafruit:avr:feather32u4 --library . examples/SlimLoRa-feather32u4-battery-simple-otaa
 
-    #- name: Arduino Uno DEBUG_SLIM
-    #  run: |
-        #arduino-cli compile --fqbn arduino:avr:uno --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
+    - name: Arduino Uno DEBUG_SLIM
+      run: |
+       arduino-cli compile --fqbn arduino:avr:uno --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
           
     #- name: Compile examples for ESP32 Dev Module
     #  run: |
