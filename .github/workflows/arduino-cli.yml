@@ -14,7 +14,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Arduino CLI
+    - name: Install Arduino CLI
       uses: arduino/setup-arduino-cli@v2
       id: arduino-cli-setup
       with:
