@@ -17,10 +17,16 @@ jobs:
     - name: Install Arduino CLI
       uses: arduino/setup-arduino-cli@v2
 
-    - name: Install SlimLoRa library
+    - name: Set up Arduino CLI
+      run: |
+         # Download and install Arduino CLI
+         curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
+         echo "$HOME/bin" >> $GITHUB_PATH # Add Arduino CLI to PATH
+
+    #- name: Install SlimLoRa library
       # This command installs the library located at the root of the repository.
       # It assumes 'library.properties' is correctly configured.
-      run: arduino-cli config set library.user-libraries-path .
+      #run: arduino-cli lib install SlimLoRa
 
 # arduino-cli core install MightyCore:avr@2.2.2 --additional-urls https://mcudude.github.io/MightyCore/package_MCUdude_MightyCore_index.json
 # arduino-cli core install MightyCore:avr@2.2.2 --additional-urls https://lps29.github.io/MightyBrick/package_LowPowerSolutions_index.json
