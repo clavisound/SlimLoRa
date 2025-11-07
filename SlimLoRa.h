@@ -44,7 +44,9 @@
 #define SLIMLORA_USE_PROGMEM
 
 // Debug SlimLoRa library via Serial.print()
+#ifndef DEBUG_SLIM
 #define DEBUG_SLIM	0	// is basic debugging, 2 more debugging, 0 to disable.
+#endif
 
 // Identify RX / join window and store LNS DeviceTime and LinkCheck
 // This adds 96 bytes of program flash and 1 byte of RAM. 112 bytes for SAMD.
