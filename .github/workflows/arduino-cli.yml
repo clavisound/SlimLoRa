@@ -34,7 +34,9 @@ jobs:
         arduino-cli core install adafruit:avr --additional-urls https://adafruit.github.io/arduino-board-index/package_adafruit_index.json
         arduino-cli core install arduino:samd
       # arduino-cli core install esp32:esp32
-      
+
+    - name: List installed boards
+      run: arduino-cli board listall
 
 # examples/SlimLoRa-erase-session  # examples/SlimLoRa-simple-clv
 
