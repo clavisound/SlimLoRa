@@ -1,7 +1,6 @@
 #ifndef SLIM_LORA_H
 #define SLIM_LORA_H
 
-
 // START OF USER DEFINED OPTIONS
 
 // Region. Valid Value: EU863. NOT USED needs further work: US902, AS920, AU915
@@ -41,7 +40,13 @@
 #endif
 
 // Save 332 bytes of RAM. Only for AVR's / ATmega's
+#ifndef SLIMLORA_USE_PROGMEM
 #define SLIMLORA_USE_PROGMEM
+#endif
+
+#if !defined(__AVR__)
+#undef SLIMLORA_USE_PROGMEM
+#endif
 
 // Debug SlimLoRa library via Serial.print()
 #ifndef DEBUG_SLIM
@@ -86,10 +91,12 @@
 // TTN does not want this. Helium is not supported.
 //#define EU_DR6 // applicable for EU RU AS CN
 
-// Enable this only if you have changed the clock of your AVR MCU.
+// Enable this only if you have change the clock of your AVR MCU with clock_prescale_set(clock_div_X)
 //#define CATCH_DIVIDER
-#if defined CATCH_DIVIDER && !defined (__AVR__)
-#error You defined CATCH_DIVIDER but this is supported only for AVR / ATmega MCUs. Uncomment CATCH_DIVIDER
+
+// Disable CATCH_DIVIDER for non-AVR MCU's
+#if !defined (__AVR__)
+#undef CATCH_DIVIDER
 #endif
 
 // Reduce LNA gain if DR is fast. Probably we are close to a gateway.
@@ -121,6 +128,11 @@
 #define SLIM_LORAWAN_PACKET_SIZE	64
 
 // END OF USER DEFINED OPTIONS
+
+// Disable CATCH_DIVIDER for non-AVR MCU's
+#if !defined (__AVR__)
+#define ARDUINO_EEPROM 2
+#endif
 
 #if (ARDUINO_EEPROM == 1 || ARDUINO_EEPROM == 0) && !defined (__AVR__)
 #error You defined internal ARDUINO_EEPROM but you dont have an AVR / ATmega
