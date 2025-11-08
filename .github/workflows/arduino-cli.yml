@@ -45,7 +45,7 @@ jobs:
         arduino-cli compile --fqbn arduino:avr:uno --library . examples/simple/simple.ino
         arduino-cli compile --fqbn arduino:avr:uno --library . examples/SlimLoRa-simple-clv
 
-    - name: Adafruit Feather 32u4
+    - name: Adafruit Feather 32u4 Production
       run: |
         arduino-cli compile --fqbn adafruit:avr:feather32u4 --library . examples/simple/simple.ino
         arduino-cli compile --fqbn adafruit:avr:feather32u4 --library . examples/SlimLoRa-simple-clv
@@ -60,7 +60,10 @@ jobs:
     #  run: |
     #    arduino-cli compile --fqbn esp32:esp32:esp32 --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2\""
         
-    - name: Compile examples for Arduino Zero (SAMD)
+    - name: Arduino Zero (SAMD) Production
       run: |
-            arduino-cli compile --fqbn arduino:samd:arduino_zero_native --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2\""
-            arduino-cli compile --fqbn arduino:samd:arduino_zero_native --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2 -DDEBUG_SLIM=1\""
+        arduino-cli compile --fqbn arduino:samd:arduino_zero_native --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2\""
+
+    - name: Arduino Zero (SAMD) DEBUG_SLIM
+      run: |
+        arduino-cli compile --fqbn arduino:samd:arduino_zero_native --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2 -DDEBUG_SLIM=1\""
