@@ -1,6 +1,7 @@
 #ifndef SLIM_LORA_H
 #define SLIM_LORA_H
 
+#include <avr/power.h>
 // START OF USER DEFINED OPTIONS
 
 // Region. Valid Value: EU863. NOT USED needs further work: US902, AS920, AU915
