@@ -33,7 +33,7 @@ jobs:
         arduino-cli core install arduino:avr
         arduino-cli core install adafruit:avr --additional-urls https://adafruit.github.io/arduino-board-index/package_adafruit_index.json
         arduino-cli core install arduino:samd
-      # arduino-cli core install esp32:esp32
+    # arduino-cli core install esp32:esp32
 
     - name: List installed boards
       run: arduino-cli board listall
@@ -56,14 +56,18 @@ jobs:
        arduino-cli compile --fqbn arduino:avr:uno --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
 
     # TODO: non atomic operations
-    #- name: Compile examples for ESP32 Dev Module
-    #  run: |
-    #    arduino-cli compile --fqbn esp32:esp32:esp32 --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2\""
+    # - name: Compile examples for ESP32 Dev Module
+     # run: |
+     #  arduino-cli compile --fqbn esp32:esp32:esp32 --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2\""
         
     - name: Arduino Zero (SAMD) Production
       run: |
         arduino-cli compile --fqbn arduino:samd:arduino_zero_native --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2\""
 
+# arduino-cli compile --fqbn arduino:samd:arduino_zero_native --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
     - name: Arduino Zero (SAMD) DEBUG_SLIM
       run: |
-        arduino-cli compile --fqbn arduino:samd:arduino_zero_native --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
+        arduino-cli compile --fqbn arduino:samd:arduino_zero_native --library . examples/SlimLoRa-eeprom__read_by_user_keyboard \
+        --build-property "compiler.cpp.extra_flags=-USLIMLORA_USE_PROGMEM" \
+        --build-property "compiler.cpp.extra_flags=-DARDUINO_EEPROM=2" \
+        --build-property "compiler.cpp.extra_flags=-DDEBUG_SLIM=1"
