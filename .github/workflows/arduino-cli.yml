@@ -32,8 +32,8 @@ jobs:
         arduino-cli core update-index
         arduino-cli core install arduino:avr
         arduino-cli core install adafruit:avr --additional-urls https://adafruit.github.io/arduino-board-index/package_adafruit_index.json
-      #  arduino-cli core install esp32:esp32
-      # arduino-cli core install arduino:samd
+        arduino-cli core install esp32:esp32
+        arduino-cli core install arduino:samd
 
 # examples/SlimLoRa-erase-session  # examples/SlimLoRa-simple-clv
 
@@ -50,10 +50,10 @@ jobs:
       run: |
        arduino-cli compile --fqbn arduino:avr:uno --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
           
-    #- name: Compile examples for ESP32 Dev Module
-    #  run: |
-    #    arduino-cli compile --fqbn esp32:esp32:esp32 --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2\""
+    - name: Compile examples for ESP32 Dev Module
+      run: |
+        arduino-cli compile --fqbn esp32:esp32:esp32 --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2\""
         
-    #- name: Compile examples for Arduino Zero (SAMD)
-    #  run: |
-    #    arduino-cli compile --fqbn arduino:samd:arduino_zero examples/simple
+    - name: Compile examples for Arduino Zero (SAMD)
+      run: |
+            arduino-cli compile --fqbn esp32:esp32:esp32 --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2\""
