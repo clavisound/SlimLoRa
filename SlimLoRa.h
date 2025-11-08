@@ -490,6 +490,8 @@ class SlimLoRa {
 
 #if DEBUG_SLIM == 0 // if not debuging, those are private. If debugging everything is public
   private:
+#else
+  public:
 #endif
     uint8_t pin_nss_;	// TODO TinyLoRa irg_, rst_ bat_; bat=battery level pin
     uint8_t channel_;
