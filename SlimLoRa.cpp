@@ -25,10 +25,6 @@
 
 #if ARDUINO_EEPROM == 2
 	ExternalEEPROM EEPROM;
-        #define put putChanged // Arduino put method uses update.
-			       // SparkFun EXTERNAL EEPROM does not have update
-			       // function but putChanged.
-        #define update putChanged // Arduino put method uses update.
 #endif
 
 #if defined (__AVR__) && defined SLIMLORA_USE_PROGMEM

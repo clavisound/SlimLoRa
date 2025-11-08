@@ -162,6 +162,10 @@
 	#include "SparkFun_External_EEPROM.h"
 
 	extern ExternalEEPROM EEPROM;
+        #define put putChanged // Arduino put method uses update.
+			       // SparkFun EXTERNAL EEPROM does not have update
+			       // function but putChanged.
+        #define update putChanged // Arduino put method uses update.
 
 	#ifndef SLIMLORA_EEPROM_MEMORY_TYPE
 	#define SLIMLORA_EEPROM_MEMORY_TYPE	2	// TODO: this is valid only for 2kbit EEPROM (512 bytes)
