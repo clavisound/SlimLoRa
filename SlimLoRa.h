@@ -482,9 +482,15 @@ class SlimLoRa {
 	uint8_t adr_ack_limit = LORAWAN_ADR_ACK_LIMIT;
 #endif
 
-#if DEBUG_SLIM == 0 // if not debuging, those are private. If debugging everything is public
-  private:
-#endif
+    // Public declaration for SetHasJoined
+    #if LORAWAN_KEEP_SESSION
+        void SetHasJoined(bool value);
+    #endif
+
+  #if DEBUG_SLIM == 0 // if not debuging, those are private. If debugging everything is public
+    private:
+  #endif // DEBUG_SLIM == 0
+
     uint8_t pin_nss_;	// TODO TinyLoRa irg_, rst_ bat_; bat=battery level pin
     uint8_t channel_;
     uint8_t rx1_data_rate_offset_;
@@ -557,10 +563,6 @@ class SlimLoRa {
     void SetChMask();
     void GetNbTrans();
     void SetNbTrans();
-
-#if LORAWAN_KEEP_SESSION
-    void SetHasJoined(bool value);
-#endif // LORAWAN_KEEP_SESSION
     void SetDevAddr(uint8_t *dev_addr);
     uint16_t GetDevNonce();
     void SetDevNonce(uint16_t dev_nonce);
