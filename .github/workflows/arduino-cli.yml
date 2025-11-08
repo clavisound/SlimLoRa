@@ -47,6 +47,8 @@ jobs:
 
     - name: Adafruit Feather 32u4
       run: |
+        arduino-cli compile --fqbn adafruit:avr:feather32u4 --library . examples/simple/simple.ino
+        arduino-cli compile --fqbn adafruit:avr:feather32u4 --library . examples/SlimLoRa-simple-clv
         arduino-cli compile --fqbn adafruit:avr:feather32u4 --library . examples/SlimLoRa-feather32u4-battery-simple-otaa
 
     - name: Arduino Uno DEBUG_SLIM
@@ -61,3 +63,4 @@ jobs:
     - name: Compile examples for Arduino Zero (SAMD)
       run: |
             arduino-cli compile --fqbn arduino:samd:arduino_zero_native --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2\""
+            arduino-cli compile --fqbn arduino:samd:arduino_zero_native --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
