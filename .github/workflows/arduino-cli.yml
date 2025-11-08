@@ -63,4 +63,4 @@ jobs:
     - name: Compile examples for Arduino Zero (SAMD)
       run: |
             arduino-cli compile --fqbn arduino:samd:arduino_zero_native --library . examples/simple --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2\""
-            arduino-cli compile --fqbn arduino:samd:arduino_zero_native --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-DDEBUG_SLIM=1\""
+            arduino-cli compile --fqbn arduino:samd:arduino_zero_native --library . examples/SlimLoRa-eeprom__read_by_user_keyboard --build-property "compiler.cpp.extra_flags=\"-USLIMLORA_USE_PROGMEM -DARDUINO_EEPROM=2 -DDEBUG_SLIM=1\""
