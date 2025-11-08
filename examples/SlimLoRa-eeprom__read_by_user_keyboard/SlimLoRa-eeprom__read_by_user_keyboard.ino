@@ -1,4 +1,4 @@
-/* Manage SlimLoRa EEPROM interactively
+ /* Manage SlimLoRa EEPROM interactively
  * Started SEP24 by clavisound
  * In SlimLoRa.h DEBUG_SLIM write 2 instead of 0 to display also sensitive data.
  */
@@ -21,8 +21,9 @@
  */
 
 #if ARDUINO_EEPROM == 1
-  #include <EEPROM.h>
+#include <EEPROM.h>
 #endif
+
 #include "SlimLoRa.h"
 
 #define DEVICE 'feather'
