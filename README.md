@@ -101,6 +101,8 @@ You also need to start I2C and several other EEPROM settings like `Wire.begin();
 - [ ] Duty Cycle per channel.
 - [ ] Respect Dwell MAC command (only for US902?)
 - [ ] CFlist only for US and AS?
+- [ ] Class C (better with clockdivider or even better with INT code)
+- [ ] TS001 e.t.c.
 
 # Clock Divider support
 

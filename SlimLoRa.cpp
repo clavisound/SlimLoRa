@@ -354,7 +354,7 @@ void SlimLoRa::printMAC(){
 #endif // LORAWAN_OTAA_ENABLED
 	Serial.print(F("\nTx#\t\t: "));Serial.print(GetTxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(tx_frame_counter_);
 	Serial.print(F("Rx#\t\t: "));Serial.print(GetRxFrameCounter());Serial.print(F("\tRAM: "));Serial.println(rx_frame_counter_);
-	Serial.print(F("Asked ack_\t: "));Serial.print(ack_);
+	Serial.print(F("ACK\t: "));Serial.print(ack_);
 	Serial.print(F("\nNbTrans_counter\t: "));Serial.print(NbTrans_counter);
 	Serial.print(F("\nNbTrans\t\t: "));Serial.print(NbTrans);
 	Serial.print(F("\nChMask\t\t: "));Serial.print(ChMask);
@@ -505,11 +505,16 @@ void SlimLoRa::wait_until(unsigned long microsstamp) {
 #endif
 
 	while (1) {
+
+#ifdef ATOMIC_ENABLE
 		// overflow fail safe logic used. Described here: https://arduino.stackexchange.com/a/12588/59046
 		// WAS: FORCEON
 		ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+#endif
 			delta = microsstamp - micros(); // overflow after 70 minutes
+#ifdef ATOMIC_ENABLE
 		}
+#endif
 		if (delta <= 0) {
 			break;
 		}
@@ -887,12 +892,16 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 	// END OF TinyLoRa
 	while ((RfmRead(RFM_REG_IRQ_FLAGS) & RFM_STATUS_TX_DONE) != RFM_STATUS_TX_DONE);
 
+#ifdef ATOMIC_ENABLE
 	// https://arduino.stackexchange.com/questions/77494/which-arduinos-support-atomic-block
 	// disable interrupts.
 	// WAS: FORCEON
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		tx_done_micros_ = micros();
+#endif
+#ifdef ATOMIC_ENABLE
 	}
+#endif
 
 #if COUNT_TX_DURATION == 1
 	// EVAL: maybe this is breaking timing.
@@ -2011,7 +2020,7 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 
 	// Grab frame options size in bytes.
 	f_options_length = packet[5] & 0x0F; // p. 17
-					     //
+
 #if DEBUG_SLIM >= 1
 	Serial.print(F("\nf_options_length: "));Serial.print(f_options_length);
 #endif
@@ -2166,7 +2175,6 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	// start fresh
 	downlinkSize	= 0;
 	downPort	= 0;
-	ack_		= 0;
 
 #ifdef SLIM_DEBUG_VARS
 	LoRaWANreceived = 0;
@@ -2220,9 +2228,11 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	}
 
 	// Build the packet
-	// TODO if lora.ackUp = 1
-	//packet[packet_length++] = LORAWAN_MTYPE_CONFIRMED_DATA_UP;
-	packet[packet_length++] = LORAWAN_MTYPE_UNCONFIRMED_DATA_UP;
+	if ( ack_ ) {
+		packet[packet_length++] = LORAWAN_MTYPE_CONFIRMED_DATA_UP;
+	} else {
+		packet[packet_length++] = LORAWAN_MTYPE_UNCONFIRMED_DATA_UP;
+	}
 
 #if LORAWAN_OTAA_ENABLED
 	packet[packet_length++] = dev_addr[3];
@@ -2255,6 +2265,7 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	// if we received a confirmed downlink respond with ACK
 	if ( ack_ == true ) {
 		packet[packet_length] |= LORAWAN_FCTRL_ACK;
+		ack_ = false;
 	}
 
 #ifdef MAC_REQUESTS

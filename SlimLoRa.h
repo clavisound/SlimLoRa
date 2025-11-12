@@ -14,16 +14,20 @@
 // NbTrans (re-transmissions). Normally 1 max is 15
 // Olivier Seller for static devices proposes 4.
 // See TTN conference Amsterdam 2024 at 7 minute presentation.
+#ifndef NBTRANS
 #define NBTRANS	1
+#endif
 
 // TTN or Helium. Don't change those values
 #define NET_TTN		1
 #define NET_HELIUM	2
 
 // change this according to your network
+#ifndef NETWORK
 #define NETWORK NET_TTN	// Two options: NET_HELIUM = helium, NET_TTN = TheThingsNetwork
 				// NET_TTN: RX2 SF9
 				// NET_HLM: RX2 SF12
+#endif
 
 // TODO: https://github.com/Xinyuan-LilyGO/tbeam-helium-mapper/blob/00cec9c130d4452839dcf933905f5624d9711e41/main/main.cpp#L195
 // Helium requires a FCount reset sometime before hitting 0xFFFF
@@ -124,18 +128,27 @@
 
 // Uncomment this to enable MAC requests for TimeReq and LinkCheck (margin, gateway count)
 // This needs 397 of Program Flash and 9 bytes of RAM
+#ifndef MAC_REQUESTS
 #define MAC_REQUESTS
+#endif
 
 // default is 64. That means 51 bytes of LoRaWAN payload for SF10, SF11, SF12.
 // If you send or receive MAC commands along with big payloads
 // expect buffer overflows! Maximum for frame options is 15 bytes
-// So you can expect 51 - 15 = 36 bytes is the maximum packet that SlimLoRa
-// can handle in worst case scenario.
+// So you can expect 51 - 15 - 9 LoRaWAN headers = 27 bytes for
+// worst case scenario.
+// Without MAC commands is 51 - 9 = 45 bytes for SF10-SF12
+// Without MAC commands is 64 - 9 = 55 bytes for SF7-9
+#ifndef SLIM_LORAWAN_PACKET_SIZE
 #define SLIM_LORAWAN_PACKET_SIZE	64
+#endif
+
+#define DYNAMIC_ADR_ACK_LIMIT	// If you want change dynamically ACK_LIMIT via variable: adr_ack_limit
+#define ATOMIC_ENABLE		// COST: 64 bytes Uncomment if you trust your code and there is not interruption when transmitting.
 
 // END OF USER DEFINED OPTIONS
 
-// Disable CATCH_DIVIDER for non-AVR MCU's
+// SlimLoRa needs EEPROM or fails. TODO: && with KEEP_SESSION
 #if !defined (__AVR__)
 #define ARDUINO_EEPROM 2
 #endif
@@ -181,8 +194,7 @@
 
 #endif
 
-#define DEBUG_RXSYMBOLS 1 // Masked 1 = duration, 2 breaks timing with debug prints
-#define DYNAMIC_ADR_ACK_LIMIT	// If you want change dynamically ACK_LIMIT via variable: adr_ack_limit
+#define DEBUG_RXSYMBOLS 1	// Masked 1 = duration, 2 breaks timing with debug prints
 
 // Arduino library of eeprom is simpler / with less functionality than avr/eeprom.h
 // It needs extra work. We need to define the address of each data.
