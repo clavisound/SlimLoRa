@@ -4,7 +4,7 @@ This document lists important `#define` directives in `SlimLoRa.h` that you can 
 
 Arduino IDE has the limitation that you can't define in your sketch the library behaviour. First is compiled the library and THEN your sketch. But not everything is lost. You can comppile with arduino-cli with the options you want.
 
-Example usage with `arduino-cli -v compile ./ -b adafruit:avr:32u4 --build-property "compiler.cpp.extra_flags=-DSLIMLORA_UPLINK_PACKET_SIZE=24 -DLORAWAN_OTAA_ENABLED=1 -DEEPROM_OFFSET=192 -DDEBUG_SLIM=1"` e.t.c.
+Example usage with `arduino-cli -v compile ./ -b adafruit:avr:32u4 --build-property "compiler.cpp.extra_flags=-DSLIMLORA_UPLINK_PACKET_SIZE=24 -DLORAWAN_OTAA_ENABLED=1 -DEEPROM_OFFSET=192 -DDEBUG_SLIM=1" e.t.c.
 
 ## General Network & LoRaWAN Settings
 
@@ -53,7 +53,6 @@ Example usage with `arduino-cli -v compile ./ -b adafruit:avr:32u4 --build-prope
 
 | Define                | Default | Description                                                                                                                                                                                                                                                                          | Example Usage                                |
 | :-------------------- | :------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------- |
-| `REDUCE_LNA`          | (undefined) | **Reduce LNA Gain.** If defined, reduces the LNA (Low Noise Amplifier) gain if the data rate is fast, assuming the device is close to a gateway. May or may not improve performance.                                                                                              | `#define REDUCE_LNA`                         |
 | `MAC_REQUESTS`        | (defined) | **Enable MAC Requests.** If defined, enables support for LoRaWAN MAC requests like `TimeReq` and `LinkCheck`. Adds significant Flash and RAM but provides network diagnostic features.                                                                                        | `#undef MAC_REQUESTS` (to disable)         |
 | `EPOCH_RX2_WINDOW_OFFSET` | (undefined) | **Epoch RX2 Window Offset.** If defined, adds one second to the epoch time if it's received in the RX2 window, to improve epoch accuracy. Requires `SLIM_DEBUG_VARS` to be enabled.                                                                                            | `#define EPOCH_RX2_WINDOW_OFFSET`            |
 | `EU_DR6`              | (undefined) | **Enable EU Data Rate 6.** If defined, enables specific handling for EU DR6 (SF7BW250). Note: TTN generally does not allow this, and Helium does not support it. Use only for experiments without ADR.                                                                         | `#define EU_DR6`                             |
