@@ -32,8 +32,10 @@
 // TODO: https://github.com/Xinyuan-LilyGO/tbeam-helium-mapper/blob/00cec9c130d4452839dcf933905f5624d9711e41/main/main.cpp#L195
 // Helium requires a FCount reset sometime before hitting 0xFFFF
 // 50,000 makes it obvious it was intentional
+// I think helium needs re-join. TODO: EVAL with chirpstack
+#ifndef MAX_FCOUNT
 // #define MAX_FCOUNT 50000
-// I think helium needs re-join. EVAL with chirpstack
+#endif
 
 // Make sure this value is the same with TTN console.
 #define NET_TTN_RX_DELAY	5
@@ -58,7 +60,7 @@
 
 // Debug SlimLoRa library via Serial.print()
 #ifndef DEBUG_SLIM
-#define DEBUG_SLIM	0	// is basic debugging, 2 more debugging, 0 to disable.
+#define DEBUG_SLIM   	0  // 1 is basic debugging, 2 more debugging, 0 to disable.
 #endif
 
 // Identify RX / join window and store LNS DeviceTime and LinkCheck
@@ -72,26 +74,47 @@
 #endif
 
 // Enable LoRaWAN Over-The-Air Activation
+#ifndef LORAWAN_OTAA_ENABLED
 #define LORAWAN_OTAA_ENABLED    1
+#endif
+
 // Store the session data to EEPROM
+#ifndef LORAWAN_KEEP_SESSION
 #define LORAWAN_KEEP_SESSION    1 // needs 254 program flash for ATmega, 356 for SAMD.
-				  // Don't disabled. Unless you know what you are doing.
+				  // Don't disabled it. Unless you know what you are doing.
+#endif
 
 // Store counters every X times to protect EEPROM from constant writings
+#ifndef EEPROM_WRITE_TX_COUNT
 #define EEPROM_WRITE_TX_COUNT	200	// SlimLoRa default: 10 	clv: 200
+#endif
+
+#ifndef EEPROM_WRITE_RX_COUNT
 #define EEPROM_WRITE_RX_COUNT	10	// SlimLoRa default: 3		clv: 10
+#endif
 
 // downlink size payload. You can gain some flash / RAM memory here
-#define DOWNLINK_PAYLOAD_SIZE	12	// more than 51 bytes is impossible in SF12. I suggest 12 bytes.
+#ifndef SLIMLORA_DOWNLINK_PAYLOAD_SIZE
+#define SLIMLORA_DOWNLINK_PAYLOAD_SIZE	12	// more than 51 bytes are impossible in SF12.
+						// SF12 in Europe is 36 bytes (15 byte are MAC commands worst case scenario
+						// I suggest 12 bytes. MAX is around 250 bytes for SF7
+#endif
 
 // LoRaWAN ADR
 // https://lora-developers.semtech.com/documentation/tech-papers-and-guides/implementing-adaptive-data-rate-adr/implementing-adaptive-data-rate/
+#ifndef LORAWAN_ADR_ACK_LIMIT
 #define LORAWAN_ADR_ACK_LIMIT   164	// Request downlink after XX uplinks to verify we have connection.	Minimum sane value: 64
+#endif
+
+#ifndef LORAWAN_ADR_ACK_DELAY
 #define LORAWAN_ADR_ACK_DELAY   32	// Wait XX times to consider connection lost.				Minimum sane value: 32
+#endif
 
 // if you you want to save 6 bytes of RAM and you don't need to provision the Duty Cycle
 // because you transmitting only on high Data Rates (DR). You save 76 byte of flash memory if you comment this.
+#ifndef COUNT_TX_DURATION
 #define COUNT_TX_DURATION	1
+#endif
 
 // You gain 12 bytes of program flash if you comment this.
 // Use it only WITHOUT ADR and only for experiments
@@ -100,9 +123,8 @@
 //#define EU_DR6 // applicable for EU RU AS CN
 
 // Enable this only if you have changed the clock of your AVR MCU.
-#ifndef CATCH_DIVIDER
-#define CATCH_DIVIDER
-#endif
+// with clock_prescale_set(clock_div_X);
+//#define CATCH_DIVIDER
 
 // Disable CATCH_DIVIDER for non-AVR MCU's
 #if !defined (__AVR__)
@@ -124,13 +146,13 @@
  0: DOES NOT joins at 5s SF7 - MegaBrick
  With clock_div_4 DRIFT 1 fails to receive downlinks.
 */
+#ifndef SLIMLORA_DRIFT
 #define SLIMLORA_DRIFT		2
+#endif
 
 // Uncomment this to enable MAC requests for TimeReq and LinkCheck (margin, gateway count)
 // This needs 397 of Program Flash and 9 bytes of RAM
-#ifndef MAC_REQUESTS
-#define MAC_REQUESTS
-#endif
+//#define MAC_REQUESTS
 
 // default is 64. That means 51 bytes of LoRaWAN payload for SF10, SF11, SF12.
 // If you send or receive MAC commands along with big payloads
@@ -139,12 +161,16 @@
 // worst case scenario.
 // Without MAC commands is 51 - 9 = 45 bytes for SF10-SF12
 // Without MAC commands is 64 - 9 = 55 bytes for SF7-9
-#ifndef SLIM_LORAWAN_PACKET_SIZE
-#define SLIM_LORAWAN_PACKET_SIZE	64
+#ifndef SLIMLORA_UPLINK_PACKET_SIZE
+#define SLIMLORA_UPLINK_PACKET_SIZE	64 // Safest value around 255 bytes
 #endif
 
 #define DYNAMIC_ADR_ACK_LIMIT	// If you want change dynamically ACK_LIMIT via variable: adr_ack_limit
 #define ATOMIC_ENABLE		// COST: 64 bytes Uncomment if you trust your code and there is not interruption when transmitting.
+
+#ifndef ENABLE_CONF_UPLINKS
+#define ENABLE_CONF_UPLINKS	0 // At the expense of 26 bytes of Program Flash and one byte of SRAM
+#endif
 
 // END OF USER DEFINED OPTIONS
 
@@ -194,15 +220,19 @@
 
 #endif
 
-#define DEBUG_RXSYMBOLS 1	// Masked 1 = duration, 2 breaks timing with debug prints
+#ifndef DEBUG_RXSYMBOLS
+#define DEBUG_RXSYMBOLS 0	// Masked 1 = duration, 2 breaks timing with debug prints
+#endif
 
 // Arduino library of eeprom is simpler / with less functionality than avr/eeprom.h
 // It needs extra work. We need to define the address of each data.
 // It's better for future firmware updates. Data remains in same place in contrast of avr/eeprom.h
 #if ARDUINO_EEPROM >= 1
-	#define EEPROM_OFFSET		  0	// Change this from 0 to EEPROM size - 152 if you feel 
+	#ifndef EEPROM_OFFSET
+	#define EEPROM_OFFSET		  0	// Change this from 0 to EEPROM size - EEPROM_END if you feel 
 						// that you gonna burn the EEPROM to use another area
 						// of EEPROM
+	#endif
 
 								// EEPROM reliability for AVR's. Around 1.000.000 writes.
 	#define EEPROM_DEVADDR		  0 + EEPROM_OFFSET	// 4 bytes array
@@ -428,7 +458,7 @@ typedef struct {
 
 class SlimLoRa {
   public:
-    SlimLoRa(uint8_t pin_nss); // TODO: TinyLoRa rfm_dio0 (7), rfm_nss (8), rfm_rst (4)
+    SlimLoRa(uint8_t pin_nss); // TODO: TinyLoRa rfm_dio0 (7), rfm_nss (8), rfm_rst (4), bat pin? EEPROM?
     void Begin(void);
     void sleep(void);
     bool HasJoined(void);
@@ -480,14 +510,14 @@ class SlimLoRa {
     void printHex(uint8_t *value, uint8_t len);
 #endif
 
-	uint8_t downlinkData[DOWNLINK_PAYLOAD_SIZE];
+	uint8_t downlinkData[SLIMLORA_DOWNLINK_PAYLOAD_SIZE];
 	uint8_t downlinkSize;
 	uint8_t downPort;
 
 #if DEBUG_SLIM >= 1
 	void printMAC();
 	void printDownlink();
-	uint8_t packet[SLIM_LORAWAN_PACKET_SIZE];
+	uint8_t packet[SLIMLORA_UPLINK_PACKET_SIZE];
 	int8_t packet_length;
 	uint8_t f_options_length, payload_length;
 #endif
@@ -509,13 +539,18 @@ class SlimLoRa {
 #else
   public:
 #endif
-    uint8_t pin_nss_;	// TODO TinyLoRa irg_, rst_ bat_; bat=battery level pin
+    uint8_t pin_nss_;	// TODO TinyLoRa irg_, rst_ bat_; bat=battery level pin, EEPROM start
     uint8_t channel_;
     uint8_t rx1_data_rate_offset_;
     uint8_t rx2_data_rate_ = RX_SECOND_WINDOW;
     uint32_t rx1_delay_micros_;
     bool has_joined_	= false;
     bool ack_		= false;
+
+#if ENABLE_CONF_UPLINKS == 1
+    bool upToAck_	= false;
+#endif
+
     fopts_t pending_fopts_ = {0};
     fopts_t sticky_fopts_ = {0};
     uint16_t rx_symbols_ = LORAWAN_RX_MIN_SYMBOLS;
@@ -599,7 +634,5 @@ class SlimLoRa {
     void GetNwkSEncKey(uint8_t *key);
     void SetNwkSEncKey(uint8_t *key);
 };
-
-#include "SlimLoRa_options.h"
 
 #endif

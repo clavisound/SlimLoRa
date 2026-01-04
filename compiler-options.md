@@ -8,17 +8,6 @@ Example usage with `arduino-cli -v compile ./ -b adafruit:avr:32u4 --build-prope
 
 With -U flag you undefine a variable.
 
-UNTESTED: you store a file `SlimLoRa_options.h` in your Arduino sketch. Problably IDE will catch the file and pass the variables to SlimLoRa
-
-```
-#define NBTRANS 2
-#define DEBUG_SLIM 1
-#define SLIMLORA_DOWNLINK_PAYLOAD_SIZE 36
-#undefine MAC_REQUESTS
-#define EPOCH_RX2_WINDOW_OFFSET
-```
-
-
 ## General Network & LoRaWAN Settings
 
 | Define                | Default | Description                                                                                                                                                                                                                                                                          | Example Usage                                |

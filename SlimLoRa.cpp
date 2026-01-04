@@ -66,7 +66,7 @@ uint8_t eeprom_lw_rx2_data_rate		EEMEM = 0;
 uint8_t eeprom_lw_rx1_delay		EEMEM = 0;
 uint8_t eeprom_lw_NbTrans		EEMEM = 0;
 uint16_t eeprom_lw_ChMask		EEMEM = 0;
-uint8_t eeprom_lw_down_packet[64];
+uint8_t eeprom_lw_down_packet[SLIMLORA_DOWNLINK_PAYLOAD_SIZE];
 uint8_t eeprom_lw_down_port;
 #endif
 
@@ -209,6 +209,7 @@ const uint8_t SlimLoRa::kSTable[16][16] = {
 };
 
 // TODO add pins for IRQ.
+// TODO add EEPROM_OFFSET
 SlimLoRa::SlimLoRa(uint8_t pin_nss) {
 	pin_nss_ = pin_nss;
 }
@@ -904,7 +905,6 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 #endif
 
 #if COUNT_TX_DURATION == 1
-	// EVAL: maybe this is breaking timing.
 	// Works with SF7 JOIN 		TTN GW 		in same room 	delay of 5s
 	// Works with SF8 JOIN 		Helium GW	in outdoors 	delay of 5s
 	// Works with SF7 downlinks 	Helium GW	in same room 	delay 2s - RX2 window
@@ -926,7 +926,7 @@ void SlimLoRa::RfmSendPacket(uint8_t *packet, uint8_t packet_length, uint8_t cha
 	// Increase tx_frame_counter if NbTrans_counter is 0 and reset NbTrans_counter
 	// p. 19 l. 520
 	// TODO fCnt don't increase if we have CONFIRMED_DATA_UP without ACK
-	// semi TODO fCnt don't increase if we havee UNCONFIRMED_DATA_UP and NbTrans to do.
+	// semi TODO fCnt don't increase if we have UNCONFIRMED_DATA_UP and NbTrans to do.
 	if ( NbTrans_counter == 0 ) {
 		tx_frame_counter_++;
 		adr_ack_limit_counter_++;
@@ -1504,9 +1504,9 @@ end:
 	#ifdef SLIM_DEBUG_VARS
 	if ( result == 0 ) {
 		if ( window == 1 ) {
-		LoRaWANreceived |= SLIMLORA_JOINED_WINDOW1; // Join Accept Window 1
+			LoRaWANreceived |= SLIMLORA_JOINED_WINDOW1; // Join Accept Window 1
 		} else  {
-		LoRaWANreceived |= SLIMLORA_JOINED_WINDOW2; // Join Accept Window 2
+			LoRaWANreceived |= SLIMLORA_JOINED_WINDOW2; // Join Accept Window 2
 		}
 	}
 	#endif
@@ -1776,8 +1776,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				// TODO p. 28
 				// Not supported yet. Have to implement
 				// a: FSK,
-				// b: remove the channels from PROGMEM
-				// c: and create a function to create channels.
+				// b: and create a function to create channels.
 				
 				/* Hacky solution
 				 *
@@ -1916,7 +1915,7 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 	uint32_t rx_delay;
 
 #if DEBUG_SLIM == 0
-	uint8_t packet[64];
+	uint8_t packet[SLIMLORA_DOWNLINK_PAYLOAD_SIZE];
 	int8_t packet_length;
 
 	uint8_t f_options_length, payload_length;
@@ -2104,11 +2103,11 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 		for ( ; downlinkSize < payload_length; downlinkSize++) {
 
 			
-			if ( downlinkSize >= DOWNLINK_PAYLOAD_SIZE ) {		// Protection for buffer overflow.
+			if ( downlinkSize >= SLIMLORA_DOWNLINK_PAYLOAD_SIZE) {		// Protection for buffer overflow.
 										// If downlinkSize >= DOWNLINK_PAYLOAD_SIZE invalidate and abort income data.
 
 				#if DEBUG_SLIM >= 1
-				Serial.print(F("\ndownlinkSize is larger than DOWNLINK_PAYLOAD_SIZE: "));Serial.print(DOWNLINK_PAYLOAD_SIZE);
+				Serial.print(F("\ndownlinkSize is larger than SLIMLORA_DOWNLINK_PAYLOAD_SIZE: "));Serial.print(SLIMLORA_DOWNLINK_PAYLOAD_SIZE);
 				Serial.print(F("\ndownlinkSize: "));Serial.print(downlinkSize);
 				#endif
 
@@ -2167,7 +2166,7 @@ end:
  * @param payload_length Length of the data to be transmitted.
  */
 void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length) {
-	uint8_t packet[64];
+	uint8_t packet[SLIMLORA_UPLINK_PACKET_SIZE];
 	uint8_t packet_length = 0;
 
 	uint8_t mic[4];
@@ -2197,7 +2196,7 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 	EncryptPayload(payload, payload_length, tx_frame_counter_, LORAWAN_DIRECTION_UP);
 
 	// ADR back-off
-	// TODO p. 17, after first increase if DR, increase every LORAWAN_ADR_ACK_DELAY overflow
+	// TODO p. 17, after first increase of DR, increase every LORAWAN_ADR_ACK_DELAY overflow
 #ifdef DYNAMIC_ADR_ACK_LIMIT
 	if (adr_enabled_ && adr_ack_limit_counter_ >= adr_ack_limit && adr_ack_delay_counter_ >= LORAWAN_ADR_ACK_DELAY ) {
 #else
@@ -2227,12 +2226,17 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 #endif
 	}
 
-	// Build the packet
-	if ( ack_ ) {
+	// Confirmed uplink or not?
+#if ENABLE_CONF_UPLINKS == 1
+	if ( upToAck_ ) {
 		packet[packet_length++] = LORAWAN_MTYPE_CONFIRMED_DATA_UP;
+		upToAck_ = false;
 	} else {
 		packet[packet_length++] = LORAWAN_MTYPE_UNCONFIRMED_DATA_UP;
 	}
+#else
+	packet[packet_length++] = LORAWAN_MTYPE_UNCONFIRMED_DATA_UP;
+#endif
 
 #if LORAWAN_OTAA_ENABLED
 	packet[packet_length++] = dev_addr[3];
@@ -2252,11 +2256,12 @@ void SlimLoRa::Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length)
 		packet[packet_length] |= LORAWAN_FCTRL_ADR;
 	
 		// Request ADR if adr_ack_limit_counter_ is over the limit of LORAWAN_ADR_ACK_LIMIT
-		// p. 17
+		// Don't send ADR_ACK_REQ if we are in SF12. Nothing better can be done.
+		// p. 17 TODO: UNTESTED
 #ifdef DYNAMIC_ADR_ACK_LIMIT
-		if (adr_ack_limit_counter_ >= LORAWAN_ADR_ACK_LIMIT ) {
+		if (adr_ack_limit_counter_ >= adr_ack_limit && data_rate_ != SF12BW125 ) {
 #else
-		if (adr_ack_limit_counter_ >= adr_ack_limit ) {
+		if (adr_ack_limit_counter_ >= LORAWAN_ADR_ACK_LIMIT && data_rate_ != SF12BW125 ) {
 #endif
 			packet[packet_length] |= LORAWAN_FCTRL_ADR_ACK_REQ;
 		}
