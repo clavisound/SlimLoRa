@@ -4,7 +4,9 @@ This document lists important `#define` directives in `SlimLoRa.h` that you can 
 
 Arduino IDE has the limitation that you can't define in your sketch the library behaviour. First is compiled the library and THEN your sketch. But not everything is lost. You can comppile with arduino-cli with the options you want.
 
-Example usage with `arduino-cli -v compile ./ -b adafruit:avr:32u4 --build-property "compiler.cpp.extra_flags=-DSLIMLORA_UPLINK_PACKET_SIZE=24 -DLORAWAN_OTAA_ENABLED=1 -DEEPROM_OFFSET=192 -DDEBUG_SLIM=1"` e.t.c.
+Example usage with `arduino-cli -v compile ./ -b adafruit:avr:32u4 --build-property "compiler.cpp.extra_flags=-DSLIMLORA_UPLINK_PACKET_SIZE=24 -DEEPROM_OFFSET=192 -DDEBUG_SLIM=1 -UMAC_REQUESTS -DEPOCH_RX2_WINDOW_OFFSET"`
+
+With -U flag you undefine a variable.
 
 ## General Network & LoRaWAN Settings
 

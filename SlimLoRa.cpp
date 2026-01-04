@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 Michales Michaloudes
+ * Copyright (c) 2021-2026 Michales Michaloudes
  * Copyright (c) 2018-2021 Hendrik Hagendorn
  * Copyright (c) 2015-2016 Ideetron B.V. - AES routines
  *
