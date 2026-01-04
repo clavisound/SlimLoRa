@@ -600,6 +600,6 @@ class SlimLoRa {
     void SetNwkSEncKey(uint8_t *key);
 };
 
-#include "user_options.h"//NOWEB
+#include "SlimLoRa_options.h"
 
 #endif
