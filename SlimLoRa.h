@@ -122,9 +122,9 @@
 // TTN does not want this. Helium is not supported.
 //#define EU_DR6 // applicable for EU RU AS CN
 
-// Enable this only if you have changed the clock of your AVR MCU.
-// with clock_prescale_set(clock_div_X);
-//#define CATCH_DIVIDER
+// Comment this only if you don't changed the clock of your AVR MCU.
+// with clock_prescale_set(clock_div_XX);
+#define CATCH_DIVIDER
 
 // Disable CATCH_DIVIDER for non-AVR MCU's
 #if !defined (__AVR__)
