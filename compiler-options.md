@@ -8,6 +8,8 @@ Example usage with `arduino-cli -v compile ./ -b adafruit:avr:32u4 --build-prope
 
 With -U flag you undefine a variable.
 
+With platformIO add: `build_flags = -DDEBUG_SLIM=1` e.t.c.
+
 ## General Network & LoRaWAN Settings
 
 | Define                | Default | Description                                                                                                                                                                                                                                                                          | Example Usage                                |
