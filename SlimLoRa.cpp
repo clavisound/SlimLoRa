@@ -350,6 +350,8 @@ void SlimLoRa::printMAC(){
 	GetNwkSEncKey(nwk_s_key);
 	//GetFNwkSIntKey(); // not used
 	GetAppSKey(app_s_key);
+//	Serial.print(F("\nDevEUI"));
+//	printHex(DevEUI,8);
 #else // ABP
 	Serial.print(F("\nABP DevAddr: "));printDevAddr();
 #endif // LORAWAN_OTAA_ENABLED

@@ -60,7 +60,7 @@
 
 // Debug SlimLoRa library via Serial.print()
 #ifndef DEBUG_SLIM
-#define DEBUG_SLIM   	0  // 1 is basic debugging, 2 more debugging, 0 to disable.
+#define DEBUG_SLIM	0	// is basic debugging, 2 more debugging, 0 to disable.
 #endif
 
 // Identify RX / join window and store LNS DeviceTime and LinkCheck
@@ -152,7 +152,7 @@
 
 // Uncomment this to enable MAC requests for TimeReq and LinkCheck (margin, gateway count)
 // This needs 397 of Program Flash and 9 bytes of RAM
-//#define MAC_REQUESTS
+#define MAC_REQUESTS
 
 // default is 64. That means 51 bytes of LoRaWAN payload for SF10, SF11, SF12.
 // If you send or receive MAC commands along with big payloads

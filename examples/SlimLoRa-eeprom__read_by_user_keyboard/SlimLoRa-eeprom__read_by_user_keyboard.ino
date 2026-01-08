@@ -52,7 +52,7 @@ uint32_t eeprom_size;
 
 void setup() {
   // Open serial communications and wait for port to open:
-  Serial.begin(9600);
+  Serial.begin(4800);
   while (! Serial); // don't start unless we have serial connection
 
   lora.Begin();
