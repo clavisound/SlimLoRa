@@ -1,6 +1,6 @@
 {
   "name": "SlimLoRa",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "LoRaWAN library with OTAA join, ADR support and most important MAC commands for EU868 suitable for AVR's with 32Kbytes. It uses 14kBytes of program flash instead of 52kBytes of RadioLib or 32kBytes of LMIC. Tested avr32u4 / ATmega32u4, SAMD21 and HopeRF 95w (SX1276) on Adafruit Feather, MegaBrick and MightBrick. ABP untested. Session is stored to EEPROM. Testers wanted and PR's for other regions. It supports downlinks.",
   "keywords": "LoRaWAN, rfm95w, hoperf, SX1276, radio, communication",
   "repository":
