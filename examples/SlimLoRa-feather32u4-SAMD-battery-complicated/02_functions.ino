@@ -72,8 +72,8 @@ void checkBatt(){
 void blinkLed(uint16_t times, uint16_t duration, uint8_t pause) { // x, ms, seconds
 
 #ifdef CLOCK_DIVIDER
-  duration >> clockDivider;
-  if ( duration < 15 ) duration = 15;
+  duration = duration >> clockDivider;
+  if ( duration > 15 ) duration = 15;
 #endif
 
   if ( times == 0 ) times = 1; // make sure we have one loop
@@ -88,11 +88,11 @@ void blinkLed(uint16_t times, uint16_t duration, uint8_t pause) { // x, ms, seco
       } else {
         Serial.print(F("."));
       }
-      delay((pause * 1000) >> clockDivider);
+      delay( (pause * 1000) >> clockDivider);
     #else // not DEBUG_INO 
       Watchdog.sleep(duration);               // Sleep for up to 8 seconds (8000ms, 4000, 2000, 1000, 500, 250, 120, 60, 30, 15ms)
       digitalWrite(LED_BUILTIN, LOW);
-      Watchdog.sleep(pause * 1000);           // Sleep for up to 8 seconds (8000ms, 4000, 2000, 1000, 500, 250, 120, 60, 30, 15ms)
+      Watchdog.sleep( ( pause * 1000 ) >> clockDivider);           // Sleep for up to 8 seconds (8000ms, 4000, 2000, 1000, 500, 250, 120, 60, 30, 15ms)
     #endif
     
   }
