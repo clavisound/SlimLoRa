@@ -10,6 +10,8 @@ With -U flag you undefine a variable.
 
 With platformIO add: `build_flags = -DDEBUG_SLIM=1` e.t.c.
 
+Another way: UNTESTED `arduino --pref compiler.cpp.extra_flags=-DSLIMLORA_UPLINK_PACKET_SIZE=14`
+
 ## General Network & LoRaWAN Settings
 
 | Define                | Default | Description                                                                                                                                                                                                                                                                          | Example Usage                                |

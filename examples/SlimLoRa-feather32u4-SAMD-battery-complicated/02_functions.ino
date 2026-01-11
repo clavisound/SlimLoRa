@@ -48,6 +48,10 @@ void checkBatt(){
                                                   // UNVERIFIED: MightyBrick has 11:40 ratio of resistors. Maybe 33kΩ and 120kΩ.
     #endif
     
+#if DEVICE == TRACKERMEGABRICK
+  vbat = 0;
+#endif
+    
     #if DEBUG_INO == 1
       // feather
       Serial.print(F("\nVBat (8bit): ")); Serial.print(vbat);Serial.print(F(", VBat (volt): ")); Serial.print((vbat + 450) * 0.0064453125); // * 2 * 3.3 / 1024
@@ -66,6 +70,12 @@ void checkBatt(){
 
 // function to wait and blink
 void blinkLed(uint16_t times, uint16_t duration, uint8_t pause) { // x, ms, seconds
+
+#ifdef CLOCK_DIVIDER
+  duration >> clockDivider;
+  if ( duration < 15 ) duration = 15;
+#endif
+
   if ( times == 0 ) times = 1; // make sure we have one loop
   for ( times > 0; times--; ) {
     digitalWrite(LED_BUILTIN, HIGH);
@@ -78,12 +88,20 @@ void blinkLed(uint16_t times, uint16_t duration, uint8_t pause) { // x, ms, seco
       } else {
         Serial.print(F("."));
       }
-      delay(pause * 1000);
+      delay((pause * 1000) >> clockDivider);
     #else // not DEBUG_INO 
       Watchdog.sleep(duration);               // Sleep for up to 8 seconds (8000ms, 4000, 2000, 1000, 500, 250, 120, 60, 30, 15ms)
       digitalWrite(LED_BUILTIN, LOW);
       Watchdog.sleep(pause * 1000);           // Sleep for up to 8 seconds (8000ms, 4000, 2000, 1000, 500, 250, 120, 60, 30, 15ms)
     #endif
     
+  }
+}
+
+void switchDR(){
+  if (lora.data_rate_ == 6 ) {
+    lora.SetDataRate(SF7BW125);
+  } else {
+    lora.SetDataRate(SF7BW250);
   }
 }

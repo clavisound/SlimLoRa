@@ -373,6 +373,7 @@
 #define LORAWAN_MIC_SIZE			4
 #define LORAWAN_MAC_AND_FRAME_HEADER		8 // MAC Header is 1 byte. Frame header is 7..22 bytes
 #define LORAWAN_START_OF_FRM_PAYLOAD		9
+#define LORAWAN_MAX_OVERHEAD			43
 
 // LoRaWAN Join packet sizes
 #define LORAWAN_JOIN_REQUEST_SIZE           18
@@ -517,7 +518,7 @@ class SlimLoRa {
 #if DEBUG_SLIM >= 1
 	void printMAC();
 	void printDownlink();
-	uint8_t packet[SLIMLORA_UPLINK_PACKET_SIZE];
+	uint8_t packet[SLIMLORA_DOWNLINK_PAYLOAD_SIZE + LORAWAN_MAX_OVERHEAD];
 	int8_t packet_length;
 	uint8_t f_options_length, payload_length;
 #endif

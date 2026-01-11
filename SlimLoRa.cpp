@@ -1917,9 +1917,8 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 	uint32_t rx_delay;
 
 #if DEBUG_SLIM == 0
-	uint8_t packet[SLIMLORA_DOWNLINK_PAYLOAD_SIZE];
+	uint8_t packet[SLIMLORA_DOWNLINK_PAYLOAD_SIZE + LORAWAN_MAX_OVERHEAD];
 	int8_t packet_length;
-
 	uint8_t f_options_length, payload_length;
 #endif
 
