@@ -1,3 +1,4 @@
+#if NON_BLOCKING
 // SlimLoRaTimers.h
 #ifndef SLIM_LORA_TIMERS_H
 #define SLIM_LORA_TIMERS_H
@@ -95,3 +96,4 @@ void setupRxOneShotTimer(unsigned long duration_micros);
 void stopRxOneShotTimer();
 
 #endif // SLIM_LORA_TIMERS_H
+#endif // NON_BLOCKING
