@@ -4,13 +4,11 @@ This document lists important `#define` directives in `SlimLoRa.h` that you can 
 
 Arduino IDE has the limitation that you can't define in your sketch the library behaviour. First is compiled the library and THEN your sketch. But not everything is lost. You can comppile with arduino-cli with the options you want.
 
-Example usage with `arduino-cli -v compile ./ -b adafruit:avr:32u4 --build-property "compiler.cpp.extra_flags=-DSLIMLORA_UPLINK_PACKET_SIZE=24 -DEEPROM_OFFSET=192 -DDEBUG_SLIM=1 -UMAC_REQUESTS -DEPOCH_RX2_WINDOW_OFFSET"`
+Example usage with `arduino-cli -v compile ./ -b adafruit:avr:32u4 --build-property "compiler.cpp.extra_flags=-DNON_BLOCKING=1 -DSLIMLORA_UPLINK_PACKET_SIZE=24 -DEEPROM_OFFSET=192 -DDEBUG_SLIM=1 -UMAC_REQUESTS -DEPOCH_RX2_WINDOW_OFFSET"`
 
 With -U flag you undefine a variable.
 
 With platformIO add: `build_flags = -DDEBUG_SLIM=1` e.t.c.
-
-Another way: UNTESTED `arduino --pref compiler.cpp.extra_flags=-DSLIMLORA_UPLINK_PACKET_SIZE=14`
 
 ## General Network & LoRaWAN Settings
 
@@ -21,6 +19,8 @@ Another way: UNTESTED `arduino --pref compiler.cpp.extra_flags=-DSLIMLORA_UPLINK
 | `NETWORK`             | `NET_HELIUM` | **Network Selection.** Determines some default RX2 window settings and delays. Valid values are `NET_TTN` (for The Things Network) or `NET_HELIUM` (for Helium Network).                                                                                                      | `#define NETWORK NET_TTN`                      |
 | `LORAWAN_OTAA_ENABLED`| `1`     | **LoRaWAN Over-The-Air Activation.** Set to `1` to enable OTAA, `0` for ABP (Activation By Personalization). OTAA is recommended for most applications. ABP is UNTESTED                                                                                                                          | `#define LORAWAN_OTAA_ENABLED 0`             
 | `LORAWAN_KEEP_SESSION`| `1`     | **Session Data Storage.** Set to `1` to enable storing LoRaWAN session data (keys, frame counters, etc.) to EEPROM. This allows the device to resume a session after a power cycle without re-joining. Disabling saves some Flash/RAM but requires re-joining every boot.      | `#define LORAWAN_KEEP_SESSION 0`             |
+| `NON_BLOCKING`| `0`     | **Non blocking beheviour.** Set to `1` to enable non blocking behaviour. Check example with `NON_BLOCKING` in it's name.      | `#define NON_BLOCKING 1`             |
+| `SLIMLORA_FREE_MICROS`| `500`     | **After 500ms the variable RFstatus will advance and rxTimerTiggered will be set.** Don't go more than 500ms. Consult the DRIFT table in README.md | `#define SLIMLORA_FREE_MICROS`             |
 
 ## Debugging & Optimization
 

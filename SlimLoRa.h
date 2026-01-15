@@ -63,7 +63,7 @@
 #define DEBUG_SLIM	0	// is basic debugging, 2 more debugging, 0 to disable.
 #endif
 
-// Identify RX / join window and store LNS DeviceTime and LinkCheck
+// Store in variable LoRaWANreceived the window of join, RX, MAC or time proccessing.
 // This adds 96 bytes of program flash and 1 byte of RAM. 112 bytes for SAMD.
 //#define SLIM_DEBUG_VARS
 
@@ -72,6 +72,15 @@
 #if defined EPOCH_RX2_WINDOW_OFFSET && !defined SLIM_DEBUG_VARS
 #error You enabled EPOCH_RX2_WINDOW_OFFSET without SLIM_DEBUG_VARS
 #endif
+
+// TODO Enable IRQ code. NOT YET IMPLEMENTED
+// If your RFM module is connected to some IRQ pin in you MCU
+// then the MCU will free until RF module ends his job.
+// Currently working only for TX and RX2 window to not break the timing.
+// In that case you have to solder the IRQ pin of RFM module *and* to specify
+// SlimLoRa with the IRQ pin. Example for feather-32u4
+// SlimLora lora = SlimLoRa(8,7)
+//#define SLIMLORA_IRQ
 
 // Enable LoRaWAN Over-The-Air Activation
 #ifndef LORAWAN_OTAA_ENABLED
@@ -95,9 +104,9 @@
 
 // downlink size payload. You can gain some flash / RAM memory here
 #ifndef SLIMLORA_DOWNLINK_PAYLOAD_SIZE
-#define SLIMLORA_DOWNLINK_PAYLOAD_SIZE	12	// more than 51 bytes are impossible in SF12.
+#define SLIMLORA_DOWNLINK_PAYLOAD_SIZE	21	// more than 51 bytes are impossible in SF12.
 						// SF12 in Europe is 36 bytes (15 byte are MAC commands worst case scenario
-						// I suggest 12 bytes. MAX is around 250 bytes for SF7
+						// I suggest 21 bytes. MAX is around 250 bytes for SF7
 #endif
 
 // LoRaWAN ADR
@@ -172,6 +181,17 @@
 #define ENABLE_CONF_UPLINKS	0 // At the expense of 26 bytes of Program Flash and one byte of SRAM
 #endif
 
+#ifndef NON_BLOCKING
+#define NON_BLOCKING 0 // Set to 1 to enable non-blocking RX, 0 for original blocking behavior
+#endif
+
+#if NON_BLOCKING
+#define SLIMLORA_FREE_MICROS	500 * 1000 // for 500ms SlimLoRa will be inactive.
+					   // Value in μS, this is the time that SlimLoRa will be NON blocking.
+					   // mind you this valuable is changed if you use on AVR ATmega MCU's
+					   // the clock divider.
+#endif
+
 // END OF USER DEFINED OPTIONS
 
 // SlimLoRa needs EEPROM or fails. TODO: && with KEEP_SESSION
@@ -233,6 +253,7 @@
 						// that you gonna burn the EEPROM to use another area
 						// of EEPROM
 	#endif
+
 
 								// EEPROM reliability for AVR's. Around 1.000.000 writes.
 	#define EEPROM_DEVADDR		  0 + EEPROM_OFFSET	// 4 bytes array
@@ -446,6 +467,24 @@
 #define SLIMLORA_DOWNLINK_RX2		0x10
 #define SLIMLORA_LINK_CHECK_ANS		0x20
 #define SLIMLORA_LNS_TIME_ANS		0x40
+// ONE bit spare
+
+// SlimLoRa status
+#define SLIMLORA_RF_NOP			0
+#define SLIMLORA_RF_TX			1
+#define SLIMLORA_RF_RX1_PREPARE		2
+#define SLIMLORA_RF_RX1			3
+#define SLIMLORA_RF_RX2_PREPARE		4
+#define	SLIMLORA_RF_RX2			5
+#define	SLIMLORA_RF_RX2_DONE		6
+#define SLIMLORA_RF_JOIN_REQUEST	7
+#define SLIMLORA_RF_JOIN_RX1		8
+#define SLIMLORA_RF_JOIN_RX2		9
+#define SLIMLORA_RF_JOIN_FAIL		10
+
+#if defined CATCH_DIVIDER && defined (__AVR__)
+    volatile extern uint8_t clockShift; // used to drift timings according to clock frequency if changed via software.
+#endif
 
 typedef struct {
     uint8_t length;
@@ -459,7 +498,11 @@ typedef struct {
 
 class SlimLoRa {
   public:
+#ifdef SLIMLORA_IRQ
+    SlimLoRa(uint8_t pin_nss, uint8_t pin_irq); // TrackerMegaBrick, DIO0 to D2, DIO1 to A2, DIO2 to A1
+#else
     SlimLoRa(uint8_t pin_nss); // TODO: TinyLoRa rfm_dio0 (7), rfm_nss (8), rfm_rst (4), bat pin? EEPROM?
+#endif
     void Begin(void);
     void sleep(void);
     bool HasJoined(void);
@@ -469,8 +512,13 @@ class SlimLoRa {
     void SetDataRate(uint8_t dr);
     uint8_t GetDataRate();
     void SetPower(uint8_t power);
-    bool GetHasJoined();
     void GetDevAddr(uint8_t *dev_addr);
+
+#if LORAWAN_OTAA_ENABLED && ARDUINO_EEPROM >= 0
+#if LORAWAN_KEEP_SESSION
+    bool GetHasJoined();
+#endif // LORAWAN_KEEP_SESSION
+#endif // LORAWAN_OTAA_ENABLED && ARDUINO_EEPROM >= 0
 
     // ADR variables
     bool 	adr_enabled_;
@@ -482,12 +530,20 @@ class SlimLoRa {
     uint16_t rx_frame_counter_;
     uint8_t NbTrans = NBTRANS;	// changed by the LNS or by DEFINE
     uint8_t NbTrans_counter;
+    uint8_t RFstatus;
     uint8_t pseudo_byte_;
     uint8_t tx_power;
 
     uint16_t GetTxFrameCounter();
     void SetTxFrameCounter();
     void SetRxFrameCounter();
+
+#if NON_BLOCKING
+    int8_t ProcessDownlink(uint8_t window);	// public function so user program can have access with
+						// non-blocking version of SlimLoRa
+    uint32_t rx_delay;
+    void setRXdelayTimerAndLeave();
+#endif
 
     // MAC Request variables
 #ifdef MAC_REQUESTS
@@ -541,6 +597,9 @@ class SlimLoRa {
   public:
 #endif
     uint8_t pin_nss_;	// TODO TinyLoRa irg_, rst_ bat_; bat=battery level pin, EEPROM start
+#ifdef SLIMLORA_IRQ
+uint8_t pin_dio0_, pin_dio1_;	// 
+#endif
     uint8_t channel_;
     uint8_t rx1_data_rate_offset_;
     uint8_t rx2_data_rate_ = RX_SECOND_WINDOW;
@@ -580,8 +639,10 @@ class SlimLoRa {
     bool ProcessJoinAccept1_1(uint8_t *rfm_data, uint8_t rfm_data_length);
     int8_t ProcessJoinAccept(uint8_t window);
     void ProcessFrameOptions(uint8_t *options, uint8_t f_options_length);
-    int8_t ProcessDownlink(uint8_t window);
     void Transmit(uint8_t fport, uint8_t *payload, uint8_t payload_length);
+#if NON_BLOCKING == 0
+    int8_t ProcessDownlink(uint8_t window);	// blocking version of SlimLoRa does not need public ProcessDownlinks
+#endif
     void defaultChannel();
     void wait_until(unsigned long microsstamp);
 #if COUNT_TX_DURATION == 1
@@ -590,6 +651,7 @@ class SlimLoRa {
     void CalculateTXms();
 #endif
     void SetCurrentLimit(uint8_t currentLimit);
+    uint8_t calculateRX1offset();
     // Encryption
     void EncryptPayload(uint8_t *payload, uint8_t payload_length, unsigned int frame_counter, uint8_t direction);
     void CalculateMic(const uint8_t *key, uint8_t *data, uint8_t *initial_block, uint8_t *final_mic, uint8_t data_length);
@@ -606,7 +668,6 @@ class SlimLoRa {
 
     // EEPROM
     uint16_t GetRxFrameCounter();
-    void SetRxFrameCounter(uint16_t count);
     uint8_t GetRx1DataRateOffset();
     void SetRx1DataRateOffset(uint8_t value);
     uint8_t GetRx2DataRate();
@@ -617,6 +678,11 @@ class SlimLoRa {
     void SetChMask();
     void GetNbTrans();
     void SetNbTrans();
+
+#if ARDUINO_EEPROM == 0
+    void RestoreChMask();
+    void RestoreNbTrans();
+#endif
 
 #if LORAWAN_KEEP_SESSION
     void SetHasJoined(bool value);
@@ -635,5 +701,6 @@ class SlimLoRa {
     void GetNwkSEncKey(uint8_t *key);
     void SetNwkSEncKey(uint8_t *key);
 };
+
 
 #endif
