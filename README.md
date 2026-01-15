@@ -12,6 +12,14 @@ SlimLoRa needs around 12558 Bytes* (13kBytes). SlimLoRa gives LoRaWAN life to ol
 
 The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks to both of them. I ported the library to Arduino, expanded the most important MAC commands, enabled application downlinks, enabled ACKs for confirmed downlinks, and corrected the channel for SF7BW250.
 
+# Semi non blocking
+
+From Version 0.10.0 SlimLoRa is now little non blocking in the expense that you have to nurse the downlinks. The implementation has room for improvements, I keep it VERY simple. Check the example with name `NON_BLOCKING` at the end. You can check the sensors before RX1 and before RX2 for ~1 second for Helium and for TTN for 5 seconds before RX and 1 second before RX2. To be safe, try to read the sensors in 700ms MAX. Whatever you do with your programm, don't mess with Timer0, don't use any low power mode.
+
+Join is still BLOCKED code.
+
+If you want to maximize the non-blocking time of SlimLoRa you can play with variable: `SLIMLORA_FREE_MICROS` - default `500ms`. After 500ms the variable lora.RFstatus is available to understand RX mode. You can also use variable `rxTimerTriggered` to return to SlimLoRa code.
+
 # Working
 
 - [x] OTAA join with Feather 32u4 EU868 region. Europe only.
@@ -89,6 +97,8 @@ You also need to start I2C and several other EEPROM settings like `Wire.begin();
 
 # TODOs (PRs welcome) - In order of importance.
 
+- [ ] Non blocking with Join. Extra ideas: make `SLIMLORA_FREE_MICROS` proportional to `data_rate_` and to `rx_delay`.
+- [ ] Re-enter to SlimLoRa code with IRQ
 - [ ] MAC command `NEW_CHANNEL_REQ` is not properly implemented. SlimLoRa responds with "fine" to help the LNS stop sending downlinks, but in reality, it does not modify the channels and DRs.
 - [ ] Join back-off
 - [ ] Extern variable for Duty Cycle if the application can provide time.
@@ -130,7 +140,7 @@ If you send a MAC request for Time or CheckLink you can read the variables from 
 
 I have also made some values public, like the frame counter. Now the application can do cool stuff like transmitting verbose data every X frames. So every 20 - 30 uplinks, you can send more data. Yes, this can be done in the app logic, but one less variable is used this way.
 
-# Advanced usage
+# MAC requests
 
 You can have access to epoch time, if before an uplink you issue `lora.TimeCheckLink = 1;` you will have access to `lora.epoch` and `lora.fracSecond` after the LNS responds with the epoch time. The 'complicated' example also has this information.
 
