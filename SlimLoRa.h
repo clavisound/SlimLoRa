@@ -195,7 +195,7 @@
 // END OF USER DEFINED OPTIONS
 
 // SlimLoRa needs EEPROM or fails. TODO: && with KEEP_SESSION
-#if !defined (__AVR__)
+#if !defined (__AVR__) && !defined ARDUINO_EEPROM
 #define ARDUINO_EEPROM 2
 #endif
 
@@ -254,8 +254,6 @@
 						// of EEPROM
 	#endif
 
-
-								// EEPROM reliability for AVR's. Around 1.000.000 writes.
 	#define EEPROM_DEVADDR		  0 + EEPROM_OFFSET	// 4 bytes array
 	#define EEPROM_TX_COUNTER	  4 + EEPROM_OFFSET	// 4 bytes but in practice 2 bytes: future proof 4 bytes
 	#define EEPROM_RX_COUNTER	  8 + EEPROM_OFFSET	// 4 bytes but in practice 2 bytes: future proof 4 bytes
@@ -394,7 +392,7 @@
 #define LORAWAN_MIC_SIZE			4
 #define LORAWAN_MAC_AND_FRAME_HEADER		8 // MAC Header is 1 byte. Frame header is 7..22 bytes
 #define LORAWAN_START_OF_FRM_PAYLOAD		9
-#define LORAWAN_MAX_OVERHEAD			43
+#define LORAWAN_MAX_OVERHEAD			15 // I think 15 is a sane value but 43 is MAX?
 
 // LoRaWAN Join packet sizes
 #define LORAWAN_JOIN_REQUEST_SIZE           18

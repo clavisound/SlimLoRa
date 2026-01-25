@@ -14,11 +14,13 @@ The majority of the work was done by Hendrik Hagendorn and Ideetron B.V. Thanks 
 
 # Semi non blocking
 
-From Version 0.10.0 SlimLoRa is now little non blocking in the expense that you have to nurse the downlinks. The implementation has room for improvements, I keep it VERY simple. Check the example with name `NON_BLOCKING` at the end. You can check the sensors before RX1 and before RX2 for ~1 second for Helium and for TTN for 5 seconds before RX and 1 second before RX2. To be safe, try to read the sensors in 700ms MAX. Whatever you do with your programm, don't mess with Timer0, don't use any low power mode.
+From Version 0.10.0, SlimLoRa is slightly non-blocking, at the expense of requiring you to manage downlinks manually. The implementation has room for improvements; I've kept it VERY simple. Check the example named `NON_BLOCKING` at the end.
 
-Join is still BLOCKED code.
+You can check sensors before RX1 and before RX2 for about 1 second with Helium, and for 5 seconds before RX1 and 1 second before RX2 with TTN. To be safe, try to read sensors within 700ms MAX or within 4700ms only before RX1 in TTN. Whatever you do with your program, don't mess with Timer0 and don't use any low-power mode. SlimLoRa needs the Timer0 intact.
 
-If you want to maximize the non-blocking time of SlimLoRa you can play with variable: `SLIMLORA_FREE_MICROS` - default `500ms`. After 500ms the variable lora.RFstatus is available to understand RX mode. You can also use variable `rxTimerTriggered` to return to SlimLoRa code.
+The join process still uses BLOCKING code.
+
+If you want to maximize the non-blocking time of SlimLoRa, you can adjust the variable `SLIMLORA_FREE_MICROS` (default: 500ms) and poll the variables rxTimerTriggered or lora.RFstatus. By default after 500ms, the variable lora.RFstatus moves state to indicate the next RX mode.
 
 # Working
 
@@ -98,6 +100,7 @@ You also need to start I2C and several other EEPROM settings like `Wire.begin();
 # TODOs (PRs welcome) - In order of importance.
 
 - [ ] Non blocking with Join. Extra ideas: make `SLIMLORA_FREE_MICROS` proportional to `data_rate_` and to `rx_delay`.
+- [ ] Non blocking for ESP and SAMD. Idea: scrap timer. Simplicity is divine.
 - [ ] Re-enter to SlimLoRa code with IRQ
 - [ ] MAC command `NEW_CHANNEL_REQ` is not properly implemented. SlimLoRa responds with "fine" to help the LNS stop sending downlinks, but in reality, it does not modify the channels and DRs.
 - [ ] Join back-off

@@ -356,8 +356,15 @@ void SlimLoRa::printMAC(){
 	GetNwkSEncKey(nwk_s_key);
 	//GetFNwkSIntKey(); // not used
 	GetAppSKey(app_s_key);
-//	Serial.print(F("\nDevEUI"));
-//	printHex(DevEUI,8);
+#if DEBUG_SLIM >= 2
+	Serial.print(F("\nJoinEUI"));
+	printHex(JoinEUI,8);
+	Serial.print(F("\nDevEUI"));
+	printHex(DevEUI,8);
+	Serial.print(F("\nAppKey"));
+	printHex(AppKey,16);
+#endif
+
 #else // ABP
 	Serial.print(F("\nABP DevAddr: "));printDevAddr();
 #endif // LORAWAN_OTAA_ENABLED
@@ -456,6 +463,7 @@ void SlimLoRa::Begin() {
 	rx_frame_counter_ = GetRxFrameCounter();
 	rx2_data_rate_	  = GetRx2DataRate();
 	rx1_delay_micros_ = GetRx1Delay() * MICROS_PER_SECOND;
+	rx1_data_rate_offset_ = GetRx1DataRateOffset();
 #endif
 
 #if DEBUG_SLIM >= 1
@@ -2507,10 +2515,12 @@ uint8_t SlimLoRa::calculateRX1offset(){
 	uint8_t rx1_offset_dr;
 
 		// Add the RX1 offset to RX1
-		// TODO I think this is overkill. Try: rx1_data_rate_offset_ = data_rate_ + rx1_data_rate_offset_
-		rx1_offset_dr = data_rate_ + rx1_data_rate_offset_; // Reversed table index
+		rx1_offset_dr = data_rate_ - rx1_data_rate_offset_; // Reversed table index
 
-		// Check limit.
+		// Check bottom limit. If we have 0xFF, we have overflow DR0 - offset = 255
+		if ( rx1_offset_dr == 0xFF ) rx1_offset_dr = SF12BW125;
+
+		// Check upper limit.
 		#if defined(EU_DR6)
 		if (rx1_offset_dr > SF7BW250) {
 			rx1_offset_dr = SF7BW250;
@@ -2519,6 +2529,10 @@ uint8_t SlimLoRa::calculateRX1offset(){
 			rx1_offset_dr = SF7BW125;
 		#endif
 	}
+
+#if DEBUG_SLIM >= 1
+	Serial.print(F("\n Effective RX1 DR: "));Serial.print(rx1_offset_dr);
+#endif
 		return rx1_offset_dr;
 }
 
