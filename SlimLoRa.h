@@ -195,7 +195,7 @@
 // END OF USER DEFINED OPTIONS
 
 // SlimLoRa needs EEPROM or fails. TODO: && with KEEP_SESSION
-#if !defined (__AVR__) && !defined ARDUINO_EEPROM && KEEP_SESSION == 1
+#if !defined (__AVR__) && !defined ARDUINO_EEPROM && LORAWAN_KEEP_SESSION == 1
 #define ARDUINO_EEPROM 2
 #endif
 
