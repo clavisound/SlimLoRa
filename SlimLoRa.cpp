@@ -2517,8 +2517,8 @@ uint8_t SlimLoRa::calculateRX1offset(){
 		// Add the RX1 offset to RX1
 		rx1_offset_dr = data_rate_ - rx1_data_rate_offset_; // Reversed table index
 
-		// Check bottom limit. If we have 0xFF, we have overflow DR0 - offset = 255
-		if ( rx1_offset_dr == 0xFF ) rx1_offset_dr = SF12BW125;
+		// Check bottom limit. If we have over 200, we have overflow DR0 - offset = 255 - ~248
+		if ( rx1_offset_dr > 200 ) rx1_offset_dr = SF12BW125;
 
 		// Check upper limit.
 		#if defined(EU_DR6)

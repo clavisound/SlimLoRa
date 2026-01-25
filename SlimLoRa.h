@@ -195,12 +195,12 @@
 // END OF USER DEFINED OPTIONS
 
 // SlimLoRa needs EEPROM or fails. TODO: && with KEEP_SESSION
-#if !defined (__AVR__) && !defined ARDUINO_EEPROM
+#if !defined (__AVR__) && !defined ARDUINO_EEPROM && KEEP_SESSION == 1
 #define ARDUINO_EEPROM 2
 #endif
 
 #if (ARDUINO_EEPROM == 1 || ARDUINO_EEPROM == 0) && !defined (__AVR__)
-#error You defined internal ARDUINO_EEPROM but you dont have an AVR / ATmega
+//#error You defined internal ARDUINO_EEPROM but you dont have an AVR / ATmega
 #endif
 
 #if defined SLIMLORA_USE_PROGMEM && !defined (__AVR__)
