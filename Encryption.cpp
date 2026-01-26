@@ -14,7 +14,7 @@
  * @param frame_counter Frame counter for upstream frames.
  * @param direction Direction of message.
  */
-void SlimLoRa::EncryptPayload(uint8_t *payload, uint8_t payload_length, unsigned int frame_counter, uint8_t direction) {
+void SlimLoRa::EncryptPayload(uint8_t *payload, uint8_t payload_length, uint32_t frame_counter, uint8_t direction) {
 	uint8_t block_count = 0;
 	uint8_t incomplete_block_size = 0;
 
@@ -61,9 +61,8 @@ void SlimLoRa::EncryptPayload(uint8_t *payload, uint8_t payload_length, unsigned
 
 		block_a[10] = frame_counter & 0xFF;
 		block_a[11] = frame_counter >> 8;
-
-		block_a[12] = 0x00; // Frame counter upper bytes
-		block_a[13] = 0x00;
+		block_a[12] = frame_counter >> 16; // Frame counter upper bytes
+		block_a[13] = frame_counter >> 24;
 
 		block_a[14] = 0x00;
 
@@ -204,7 +203,7 @@ void SlimLoRa::CalculateMic(const uint8_t *key, uint8_t *data, uint8_t *initial_
  * @param frame_counter Frame counter for uplink frames.
  * @param direction Number of message.
  */
-void SlimLoRa::CalculateMessageMic(uint8_t *data, uint8_t *final_mic, uint8_t data_length, unsigned int frame_counter, uint8_t direction) {
+void SlimLoRa::CalculateMessageMic(uint8_t *data, uint8_t *final_mic, uint8_t data_length, uint32_t frame_counter, uint8_t direction) {
 	uint8_t block_b[16];
 #if LORAWAN_OTAA_ENABLED
 	uint8_t dev_addr[4], nwk_s_key[16];
@@ -234,10 +233,9 @@ void SlimLoRa::CalculateMessageMic(uint8_t *data, uint8_t *final_mic, uint8_t da
 #endif // LORAWAN_OTAA_ENABLED
 
 	block_b[10] = frame_counter & 0xFF;
-	block_b[11] = frame_counter >> 8;
-
-	block_b[12] = 0x00; // Frame counter upper bytes
-	block_b[13] = 0x00;
+	block_b[11] = (frame_counter >> 8) & 0xFF;
+	block_b[12] = (frame_counter >> 16) & 0xFF; // Frame counter upper bytes
+	block_b[13] = (frame_counter >> 24) & 0xFF;
 
 	block_b[14] = 0x00;
 	block_b[15] = data_length;

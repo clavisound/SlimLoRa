@@ -200,7 +200,7 @@
 #endif
 
 #if (ARDUINO_EEPROM == 1 || ARDUINO_EEPROM == 0) && !defined (__AVR__)
-//#error You defined internal ARDUINO_EEPROM but you dont have an AVR / ATmega
+#error You defined internal ARDUINO_EEPROM but you dont have an AVR / ATmega
 #endif
 
 #if defined SLIMLORA_USE_PROGMEM && !defined (__AVR__)
@@ -524,15 +524,15 @@ class SlimLoRa {
     uint8_t	adr_ack_delay_counter_;
 
     uint8_t data_rate_;
-    uint16_t tx_frame_counter_;
-    uint16_t rx_frame_counter_;
+    uint32_t tx_frame_counter_;
+    uint32_t rx_frame_counter_;
     uint8_t NbTrans = NBTRANS;	// changed by the LNS or by DEFINE
     uint8_t NbTrans_counter;
     uint8_t RFstatus;
     uint8_t pseudo_byte_;
     uint8_t tx_power;
 
-    uint16_t GetTxFrameCounter();
+    uint32_t GetTxFrameCounter();
     void SetTxFrameCounter();
     void SetRxFrameCounter();
 
@@ -651,9 +651,9 @@ uint8_t pin_dio0_, pin_dio1_;	//
     void SetCurrentLimit(uint8_t currentLimit);
     uint8_t calculateRX1offset();
     // Encryption
-    void EncryptPayload(uint8_t *payload, uint8_t payload_length, unsigned int frame_counter, uint8_t direction);
+    void EncryptPayload(uint8_t *payload, uint8_t payload_length, uint32_t frame_counter, uint8_t direction);
     void CalculateMic(const uint8_t *key, uint8_t *data, uint8_t *initial_block, uint8_t *final_mic, uint8_t data_length);
-    void CalculateMessageMic(uint8_t *data, uint8_t *final_mic, uint8_t data_length, unsigned int frame_counter, uint8_t direction);
+    void CalculateMessageMic(uint8_t *data, uint8_t *final_mic, uint8_t data_length, uint32_t frame_counter, uint8_t direction);
     void GenerateKeys(const uint8_t *key, uint8_t *key1, uint8_t *key2);
     void ShiftLeftData(uint8_t *data);
     void XorData(uint8_t *new_data, uint8_t *old_data);
@@ -665,7 +665,7 @@ uint8_t pin_dio0_, pin_dio1_;	//
     void AesCalculateRoundKey(uint8_t round, uint8_t *round_key);
 
     // EEPROM
-    uint16_t GetRxFrameCounter();
+    uint32_t GetRxFrameCounter();
     uint8_t GetRx1DataRateOffset();
     void SetRx1DataRateOffset(uint8_t value);
     uint8_t GetRx2DataRate();

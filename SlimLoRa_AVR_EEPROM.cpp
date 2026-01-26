@@ -11,13 +11,15 @@ uint8_t eeprom_lw_app_s_key[16]		EEMEM;
 uint8_t eeprom_lw_f_nwk_s_int_key[16]	EEMEM;
 uint8_t eeprom_lw_s_nwk_s_int_key[16]	EEMEM;
 uint8_t eeprom_lw_nwk_s_enc_key[16]	EEMEM;
+uint32_t eeprom_lw_tx_frame_counter		EEMEM;
+uint32_t eeprom_lw_rx_frame_counter		EEMEM;
 
 #if ARDUINO_EEPROM == 0
 // TxFrameCounter
-uint16_t SlimLoRa::GetTxFrameCounter() {
-	uint16_t value = eeprom_read_word(&eeprom_lw_tx_frame_counter);
+uint32_t SlimLoRa::GetTxFrameCounter() {
+	uint32_t value = eeprom_read_dword(&eeprom_lw_tx_frame_counter);
 
-	if (value == 0xFFFF) {
+	if (value == 0xFFFFFFFF) {
 		return 0;
 	}
 
@@ -25,21 +27,21 @@ uint16_t SlimLoRa::GetTxFrameCounter() {
 }
 
 void SlimLoRa::SetTxFrameCounter() {
-	eeprom_write_word(&eeprom_lw_tx_frame_counter, tx_frame_counter_);
+	eeprom_write_dword(&eeprom_lw_tx_frame_counter, tx_frame_counter_);
 #if DEBUG_SLIM >= 1
 	Serial.print(F("\nWRITE Tx#: "));Serial.print(tx_frame_counter_);
 #endif
 }
 
 // RxFrameCounter
-uint16_t SlimLoRa::GetRxFrameCounter() {
-	uint16_t value = eeprom_read_word(&eeprom_lw_rx_frame_counter);
-	if (value == 0xFFFF) { return 0; }
+uint32_t SlimLoRa::GetRxFrameCounter() {
+	uint32_t value = eeprom_read_dword(&eeprom_lw_rx_frame_counter);
+	if (value == 0xFFFFFFFF) { return 0; }
 	return value;
 }
 
 void SlimLoRa::SetRxFrameCounter() {
-	eeprom_write_word(&eeprom_lw_rx_frame_counter, rx_frame_counter_);
+	eeprom_write_dword(&eeprom_lw_rx_frame_counter, rx_frame_counter_);
 #if DEBUG_SLIM >= 1
 	Serial.print(F("\nWRITE Rx#: "));Serial.print(rx_frame_counter_);
 #endif

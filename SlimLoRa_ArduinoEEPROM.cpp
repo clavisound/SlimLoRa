@@ -1,9 +1,9 @@
 #if ARDUINO_EEPROM >= 1
 // TxFrameCounter
-uint16_t SlimLoRa::GetTxFrameCounter() {
-	uint16_t value;
+uint32_t SlimLoRa::GetTxFrameCounter() {
+	uint32_t value;
 	EEPROM.get(EEPROM_TX_COUNTER, value);
-	if (value == 0xFFFF) {
+	if (value == 0xFFFFFFFF) {
 		return 0;
 	}
 	return value;
@@ -23,10 +23,10 @@ void SlimLoRa::SetTxFrameCounter() {
 }
 
 // RxFrameCounter
-uint16_t SlimLoRa::GetRxFrameCounter() {
-	uint16_t value;
+uint32_t SlimLoRa::GetRxFrameCounter() {
+	uint32_t value;
        	EEPROM.get(EEPROM_RX_COUNTER, value);
-	if (value == 0xFFFF) { return 0; }
+	if (value == 0xFFFFFFFF) { return 0; }
 	return value;
 }
 

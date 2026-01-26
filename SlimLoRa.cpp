@@ -1940,7 +1940,7 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 	uint8_t f_options_length, payload_length;
 #endif
 
-	uint16_t frame_counter;
+	uint32_t frame_counter;
 
 	uint8_t mic[4];
 
@@ -1980,12 +1980,30 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 		goto end;
 	}
 
-	// EVAL for overflow
-	frame_counter = packet[7] << 8 | packet[6];
-	if (frame_counter < rx_frame_counter_) {
+	uint32_t received_fcnt_lsb = (uint32_t)packet[7] << 8 | packet[6];
+	uint32_t reconstructed_fcnt = (rx_frame_counter_ & 0xFFFF0000) | received_fcnt_lsb;
+
+	// Adjust for potential rollover from the network server
+	// If the reconstructed FCNT is less than the device's current FCNT,
+	// and the difference is significant enough to suggest a rollover (e.g., more than half a 16-bit block),
+	// increment the MSBs of the reconstructed FCNT by one block (2^16).
+	// This heuristic assumes the server increments sequentially and doesn't jump huge numbers of FCnt.
+	if (reconstructed_fcnt < rx_frame_counter_ && (rx_frame_counter_ - reconstructed_fcnt) > 0x8000) {
+		reconstructed_fcnt += 0x10000; // Assume MSBs incremented
+	} else if (reconstructed_fcnt > rx_frame_counter_ && (reconstructed_fcnt - rx_frame_counter_) > 0x8000) {
+        // If the reconstructed FCNT is much higher, it might be a new session or a large jump not a rollover backwards.
+        // For now, treat it as invalid to be conservative.
+        // A more robust implementation might include checking multiple MSB blocks or a MAX_FCNT_GAP.
+        result = LORAWAN_ERROR_INVALID_FRAME_COUNTER;
+        goto end;
+    }
+
+	// Check if the reconstructed frame counter is valid
+	if (reconstructed_fcnt < rx_frame_counter_) {
 		result = LORAWAN_ERROR_INVALID_FRAME_COUNTER;
 		goto end;
 	}
+	frame_counter = reconstructed_fcnt; // Assign the 32-bit reconstructed value
 
 #if LORAWAN_OTAA_ENABLED
 	if (!(packet[4] == dev_addr[0] && packet[3] == dev_addr[1]
