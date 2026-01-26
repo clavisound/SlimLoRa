@@ -196,11 +196,11 @@
 
 // SlimLoRa needs EEPROM or ESP32 needs special handling.
 #if !defined (__AVR__) && LORAWAN_KEEP_SESSION == 1
-#define ARDUINO_EEPROM 2
+#define ARDUINO_EEPROM 2	// External EEPROM
 #endif
 
 #if (ARDUINO_EEPROM == 1 || ARDUINO_EEPROM == 0) && !defined (__AVR__)
-#error You defined internal ARDUINO_EEPROM but you dont have an AVR / ATmega
+//#error You defined internal ARDUINO_EEPROM but you dont have an AVR / ATmega
 #endif
 
 #if defined SLIMLORA_USE_PROGMEM && !defined (__AVR__)
