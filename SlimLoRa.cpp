@@ -1941,6 +1941,8 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 #endif
 
 	uint32_t frame_counter;
+	uint32_t received_fcnt_lsb;
+	uint32_t reconstructed_fcnt;
 
 	uint8_t mic[4];
 
@@ -1980,8 +1982,8 @@ int8_t SlimLoRa::ProcessDownlink(uint8_t window) {
 		goto end;
 	}
 
-	uint32_t received_fcnt_lsb = (uint32_t)packet[7] << 8 | packet[6];
-	uint32_t reconstructed_fcnt = (rx_frame_counter_ & 0xFFFF0000) | received_fcnt_lsb;
+	received_fcnt_lsb = (uint32_t)packet[7] << 8 | packet[6];
+	reconstructed_fcnt = (rx_frame_counter_ & 0xFFFF0000) | received_fcnt_lsb;
 
 	// Adjust for potential rollover from the network server
 	// If the reconstructed FCNT is less than the device's current FCNT,
