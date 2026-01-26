@@ -1,15 +1,16 @@
 void printMenu(){
   lora.printMAC();
   Serial.println(F("\nd[number]: setRXdelay (1 to 9 seconds)"));
-  Serial.println(F("i: increase FCnt, k: disable joined, j: enable joined"));
+  Serial.println(F("i[number]: set FCnt, k: disable joined, j: enable joined"));
   Serial.print(F("Z: EraZe original: "));Serial.println(originalOffset);
+  Serial.println(F("eS<num>: set EEPROM offsets. eS<num> for Original, eT<num> for Target."));
   
   // those are in firmware! Patching to hex works? Examine with objdump.
   // Serial.println(F("a: appSkey, e: devEUI, j: joinEUI, n: nwkKey"));
 
   //TODO
   //Serial.println(F("o[number]: rx1 data rate offset, R: rx2 data rate"));
-  //Serial.println(F("e: EEPROM address of data, E [capital]: EEPROM address to COPY data."));
+  //Serial.println(F("E [capital]: EEPROM address to COPY data."));
   Serial.println(F("m: read all MAC values."));
   Serial.println(F("s: swap MAC status."));
   Serial.println(F("F: erase *ALL* EEPROM."));
@@ -17,48 +18,9 @@ void printMenu(){
   Serial.flush();
 }
 
-void eepromOffset(){
-  temp = 0;
-  Serial.println(F("sNUMBER, to define source      offset. Normally 0."));
-  Serial.println(F("dNUMBER, to define destination offset. Normally 240."));
-  Serial.print(F("Source Offset\t: "));Serial.println(originalOffset);
-  Serial.print(F("Destination Offset\t: "));Serial.println(targetOffset);
-
-  while (Serial.available() > 0) {
-    inByte = Serial.read();
-  
-    while(inByte != '\n') {
-      while ( ( inByte == 's' || inByte == 'd' ) && temp == 0 ) {
-        keystrokes[0] = inByte;
-        temp++;
-        break;
-      }
-      if ( ( inByte >= 0 + ASCII_ZERO && inByte <= 9 + ASCII_ZERO ) && temp > 0 ) {
-        keystrokes[temp] = inByte;  
-        temp++;
-      }
-
-      // null character to keystrokes.
-      temp++;
-      keystrokes[temp] = '\0';
-
-      // check if s or d
-      if ( keystrokes[0] == 'd' ) {
-      
-      }
-
-      // grub from 2nd character.
-      // String testString = keystrokes.substring(1);
-    
-  //    originalOffset = testString.toInt();
-      break;
-   } // while return
-  } // while avail
-}
-
-void increaseFCnt(){
+void increaseFCnt(uint16_t newFCntValue){
     delay(100);
-    lora.tx_frame_counter_ = lora.GetTxFrameCounter() + EEPROM_WRITE_TX_COUNT;
+    lora.tx_frame_counter_ = newFCntValue;
     delay(100);
     lora.SetTxFrameCounter();
     Serial.print(F("New FCnt: "));Serial.println(lora.tx_frame_counter_);
@@ -159,4 +121,23 @@ void fullErase(){
     Serial.println(temp);
     Serial.flush();
   }
+}
+
+uint16_t readNumberFromSerial() {
+  uint16_t number = 0;
+  char charIn;
+  while (Serial.available() == 0) {
+    // wait for input
+  }
+  delay(100); // Give time for more characters to arrive
+  while (Serial.available() > 0) {
+    charIn = Serial.read();
+    if (charIn >= '0' && charIn <= '9') {
+      number = number * 10 + (charIn - '0');
+    } else {
+      // Non-digit character (like newline or space) terminates input
+      break;
+    }
+  }
+  return number;
 }

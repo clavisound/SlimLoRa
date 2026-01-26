@@ -72,8 +72,35 @@ void loop()
   while (Serial.available() > 0) {
     inByte = Serial.read();
     if (inByte == 'd') { setRXdelay(); menuPrinted = 0; break; }
-    if (inByte == 'e') { eepromOffset(); menuPrinted = 0; break; }
-    if (inByte == 'i') { increaseFCnt(); menuPrinted = 0; break; }
+    if (inByte == 'e') {
+      Serial.println(F("Enter S<number> for Original Offset or T<number> for Target Offset."));
+      Serial.print(F("Current Source Offset\t: ")); Serial.println(originalOffset);
+      Serial.print(F("Current Destination Offset\t: ")); Serial.println(targetOffset);
+      
+      while (Serial.available() == 0) {
+        // Wait for input
+      }
+      delay(100); // Give time for more characters to arrive
+
+      char subCommand = Serial.read();
+      if (subCommand == 'S') {
+        originalOffset = readNumberFromSerial();
+        Serial.print(F("New Original Offset\t: ")); Serial.println(originalOffset);
+      } else if (subCommand == 'T' || subCommand == 't') { // User requested 'T' to be case-insensitive
+        targetOffset = readNumberFromSerial();
+        Serial.print(F("New Target Offset\t: ")); Serial.println(targetOffset);
+      } else {
+        Serial.println(F("Invalid subcommand for eepromOffset."));
+      }
+      menuPrinted = 0;
+      break;
+    }
+    if (inByte == 'i') {
+      uint16_t fcnt = readNumberFromSerial();
+      increaseFCnt(fcnt);
+      menuPrinted = 0;
+      break;
+    }
     //if(inByte == 'a') { lora.SetAppSKey(key); menuPrinted = 0; break; }
     //if(inByte == 'e') { menuPrinted = 0; break; } // devEUI is in firmware.
     if (inByte == 'k') { lora.SetHasJoined(false); menuPrinted = 0; break; }
