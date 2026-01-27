@@ -171,6 +171,7 @@ void SlimLoRa::SetNbTrans() {
 #endif
 }
 #endif // ARDUINO_EEPROM >= 1
+
        // ARDUINO style EEPROM. I had problems with avr/eeprom.h with debugging.
        // When added Serial.print commands to either sketch or library the avr/eeprom.h
        // for unknown to me reason changes the locations of EEMEM variables.
@@ -336,4 +337,3 @@ void SlimLoRa::SetNwkSEncKey(uint8_t *key) {
 #endif
 }
 #endif // LORAWAN_OTAA_ENABLED && ARDUINO_EEPROM >= 1
-#endif // ARDUINO_EEPROM >= 1
