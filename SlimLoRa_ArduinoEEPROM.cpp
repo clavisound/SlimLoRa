@@ -32,11 +32,12 @@ uint32_t SlimLoRa::GetRxFrameCounter() {
 	return value;
 }
 
-void SlimLoRa::SetRxFrameCounter() {
+void SlimLoRa::SetRxFrameCounter(){
 #if ARDUINO_EEPROM == 2
 	EEPROM.putChanged(EEPROM_RX_COUNTER, rx_frame_counter_);
 #else
 	EEPROM.put(EEPROM_RX_COUNTER, rx_frame_counter_);
+#endif
 #if DEBUG_SLIM >= 1
 	Serial.print(F("\nWRITE Rx#: "));Serial.print(rx_frame_counter_);
 #endif
