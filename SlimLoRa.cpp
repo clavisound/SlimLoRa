@@ -349,6 +349,12 @@ void SlimLoRa::printMAC(){
 #if LORAWAN_OTAA_ENABLED
 	uint8_t dev_addr[4], app_s_key[16], nwk_s_key[16];
 	Serial.print(F("\n\nEEPROM Addr: "));Serial.print(EEPROM_OFFSET);
+	Serial.print(F("\tNet ID: "));
+	Serial.print(EEPROM.read(EEPROM_NETID), HEX);
+	Serial.print(F("-"));
+	Serial.print(EEPROM.read(EEPROM_NETID + 1), HEX);
+	Serial.print(F("-"));
+	Serial.print(EEPROM.read(EEPROM_NETID + 2), HEX);
 	Serial.print(F("\nMAC Join: "));Serial.print(GetHasJoined());
 	Serial.print(F("\ndevNonce DEC\t\t: "));;Serial.print(GetDevNonce() >> 8);Serial.print(GetDevNonce());
 	Serial.print(F("\njoinDevNonce DEC\t: "));Serial.print(GetJoinNonce() >> 24);Serial.print(GetJoinNonce() >> 16);Serial.print(GetJoinNonce() >> 8);Serial.println(GetJoinNonce());

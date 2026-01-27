@@ -29,14 +29,6 @@
 				// NET_HLM: RX2 SF12
 #endif
 
-// TODO: https://github.com/Xinyuan-LilyGO/tbeam-helium-mapper/blob/00cec9c130d4452839dcf933905f5624d9711e41/main/main.cpp#L195
-// Helium requires a FCount reset sometime before hitting 0xFFFF
-// 50,000 makes it obvious it was intentional
-// I think helium needs re-join. TODO: EVAL with chirpstack
-#ifndef MAX_FCOUNT
-// #define MAX_FCOUNT 50000
-#endif
-
 // Make sure this value is the same with TTN console.
 #define NET_TTN_RX_DELAY	5
 

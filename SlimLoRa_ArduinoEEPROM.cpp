@@ -2,8 +2,8 @@
 // TxFrameCounter
 uint32_t SlimLoRa::GetTxFrameCounter() {
 	uint32_t value;
-	EEPROM.get(EEPROM_TX_COUNTER, value);
-	if (value == 0xFFFFFFFF) {
+	EEPROM.get(EEPROM_TX_COUNTER, value );
+	if (value == 0xFFFFFFFF) { // This check might need adjustment if 0xFFFFFFFF is a valid frame counter
 		return 0;
 	}
 	return value;
@@ -12,11 +12,11 @@ uint32_t SlimLoRa::GetTxFrameCounter() {
 void SlimLoRa::SetTxFrameCounter() {
 	// BUG: Why it does not work?
 	//EEPROM.update(EEPROM_TX_COUNTER, tx_frame_counter_);
-	#if ARDUINO_EEPROM == 2
+#if ARDUINO_EEPROM == 2
 	EEPROM.putChanged(EEPROM_TX_COUNTER, tx_frame_counter_);
-	#else
+#else
 	EEPROM.put(EEPROM_TX_COUNTER, tx_frame_counter_);
-	#endif
+#endif
 #if DEBUG_SLIM >= 1
 	Serial.print(F("\nWRITE Tx#: "));Serial.print(tx_frame_counter_);
 #endif
@@ -25,12 +25,17 @@ void SlimLoRa::SetTxFrameCounter() {
 // RxFrameCounter
 uint32_t SlimLoRa::GetRxFrameCounter() {
 	uint32_t value;
-       	EEPROM.get(EEPROM_RX_COUNTER, value);
-	if (value == 0xFFFFFFFF) { return 0; }
+	EEPROM.get(EEPROM_RX_COUNTER, value);
+	if (value == 0xFFFFFFFF) {
+		return 0;
+	}
 	return value;
 }
 
 void SlimLoRa::SetRxFrameCounter() {
+#if ARDUINO_EEPROM == 2
+	EEPROM.putChanged(EEPROM_RX_COUNTER, rx_frame_counter_);
+#else
 	EEPROM.put(EEPROM_RX_COUNTER, rx_frame_counter_);
 #if DEBUG_SLIM >= 1
 	Serial.print(F("\nWRITE Rx#: "));Serial.print(rx_frame_counter_);
@@ -40,7 +45,7 @@ void SlimLoRa::SetRxFrameCounter() {
 // Rx1DataRateOffset
 uint8_t SlimLoRa::GetRx1DataRateOffset() {
 	uint8_t value;
-       	value = EEPROM.read(EEPROM_RX1DR_OFFSET) & 0x7F;	// Get 7 bytes [0-6] strip last bit. Shared byte with EEPROM_JOINED
+	value = EEPROM.read(EEPROM_RX1DR_OFFSET) & 0x7F;	// Get 7 bytes [0-6] strip last bit. Shared byte with EEPROM_JOINED
 	if (value > 0x3F ) {					// since we stripped last bit full value 0xFF is 0x3F: bits: 00111111
 		return 0;
 	}
@@ -65,20 +70,20 @@ uint8_t SlimLoRa::GetRx2DataRate() {
 	if (value == 0x0F) {	// probably erased EEPROM.
 #if LORAWAN_OTAA_ENABLED
 		return SF12BW125;	// default LORAWAN 1.0.3
-	#if NETWORK == NET_TTN		// TTN
+#if NETWORK == NET_TTN		// TTN
 		return SF9BW125;
-	#endif
-	#if NETWORK == NET_HLM		// Helium
+#endif
+#if NETWORK == NET_HLM		// Helium
 		return SF12BW125;
-	#endif
+#endif
 #else	// ABP settings
 		return SF12BW125;	// default LORAWAN 1.0.3
-	#if NETWORK == NET_TTN		// TTN
+#if NETWORK == NET_TTN		// TTN
 		return SF9BW125;
-	#endif
-	#if NETWORK == NET_HLM		// Helium
+#endif
+#if NETWORK == NET_HLM		// Helium
 		return SF12BW125;
-	#endif
+#endif
 #endif // LORAWAN_OTAA_ENABLED
 	}
 	return value;
@@ -97,15 +102,15 @@ void SlimLoRa::SetRx2DataRate(uint8_t value) {
 // Rx1Delay
 uint8_t SlimLoRa::GetRx1Delay() {
 	uint8_t value;
-       	value = EEPROM.read(EEPROM_RX_DELAY) >> 4;	// shared byte with EEPROM_RX2_DATARATE
+	value = EEPROM.read(EEPROM_RX_DELAY) >> 4;	// shared byte with EEPROM_RX2_DATARATE
 	if ( value == 0 || value >= 0xF ) {		// probably erased EEPROM
-		#if NETWORK == NET_TTN
+#if NETWORK == NET_TTN
 		value = NET_TTN_RX_DELAY;		// default for TTN
-		#endif
+#endif
 
-		#if NETWORK == NET_HELIUM
+#if NETWORK == NET_HELIUM
 		value = NET_HELIUM_RX_DELAY;		// default for Helium
-		#endif
+#endif
 	}
 	return value;
 }
@@ -165,13 +170,13 @@ void SlimLoRa::SetNbTrans() {
 #endif
 }
 #endif // ARDUINO_EEPROM >= 1
-// ARDUINO style EEPROM. I had problems with avr/eeprom.h with debugging.
-// When added Serial.print commands to either sketch or library the avr/eeprom.h
-// for unknown to me reason changes the locations of EEMEM variables.
-// Sooooooo... Static addressing. :-(
-//
-// In fact it seems that it's bug on linker
-// https://arduino.stackexchange.com/questions/93873/how-eemem-maps-the-variables-avr-eeprom-h
+       // ARDUINO style EEPROM. I had problems with avr/eeprom.h with debugging.
+       // When added Serial.print commands to either sketch or library the avr/eeprom.h
+       // for unknown to me reason changes the locations of EEMEM variables.
+       // Sooooooo... Static addressing. :-(
+       //
+       // In fact it seems that it's bug on linker
+       // https://arduino.stackexchange.com/questions/93873/how-eemem-maps-the-variables-avr-eeprom-h
 #if LORAWAN_OTAA_ENABLED && ARDUINO_EEPROM >= 1
 #if LORAWAN_KEEP_SESSION
 uint8_t eeprom_lw_has_joined 	= 0;
@@ -209,9 +214,9 @@ void SlimLoRa::SetHasJoined(bool value) {
 		temp &= 0x7F;
 	}
 	EEPROM.write(EEPROM_JOINED, temp);
-	#if DEBUG_SLIM >= 1
+#if DEBUG_SLIM >= 1
 	Serial.print(F("\nWRITE EEPROM: joined: ")); Serial.print(value);Serial.print(F(", RAW value: "));Serial.print(temp, BIN);
-	#endif
+#endif
 }
 #endif // LORAWAN_KEEP_SESSION
 
@@ -330,3 +335,4 @@ void SlimLoRa::SetNwkSEncKey(uint8_t *key) {
 #endif
 }
 #endif // LORAWAN_OTAA_ENABLED && ARDUINO_EEPROM >= 1
+#endif // ARDUINO_EEPROM >= 1

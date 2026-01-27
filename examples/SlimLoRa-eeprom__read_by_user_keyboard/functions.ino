@@ -1,29 +1,39 @@
 void printMenu(){
   lora.printMAC();
-  Serial.println(F("\nd[number]: setRXdelay (1 to 9 seconds)"));
-  Serial.println(F("i[number]: set FCnt, k: disable joined, j: enable joined"));
-  Serial.print(F("Z: EraZe original: "));Serial.println(originalOffset);
-  Serial.println(F("eS<num>: set EEPROM offsets. eS<num> for Original, eT<num> for Target."));
+  Serial.print(F("\n\n >>> Commands to modify EEPROM <<< "));
+  Serial.print(F("\n\nf[number]: set TX frame counter"));
+  Serial.print(F("\nr[number]: set RX frame counter"));
+  Serial.print(F("\n\nk: disable joined\nj: enable joined"));
+  Serial.print(F("\n\nZ: EraZe SlimLoRa Session starting from EEPROM location: "));Serial.println(originalOffset);Serial.print(F("You can change this location with eS<num>"));
+  Serial.print(F("\neS<number>: set EEPROM source\neT<number> for Target."));
+  Serial.print(F("\n\nd<number>: setRXdelay (1 to 9 seconds)"));
   
   // those are in firmware! Patching to hex works? Examine with objdump.
   // Serial.println(F("a: appSkey, e: devEUI, j: joinEUI, n: nwkKey"));
 
   //TODO
-  //Serial.println(F("o[number]: rx1 data rate offset, R: rx2 data rate"));
-  //Serial.println(F("E [capital]: EEPROM address to COPY data."));
-  Serial.println(F("m: read all MAC values."));
-  Serial.println(F("s: swap MAC status."));
-  Serial.println(F("F: erase *ALL* EEPROM."));
-  //Serial.print(F("\tEEPROM size: "));Serial.print(eeprom_size);
+  //Serial.print(F("\no[number]: rx1 data rate offset, R: rx2 data rate"));
+  Serial.print(F("\n\nm: read all MAC values."));
+  Serial.print(F("\ns: swap sessions: "));Serial.print(originalOffset);Serial.print(F(" and: "));Serial.print(targetOffset);
+  Serial.print(F("\nF: erase *ALL* EEPROM."));
+  Serial.print(F("\tEEPROM size: "));Serial.println(eeprom_size);
   Serial.flush();
 }
 
-void increaseFCnt(uint16_t newFCntValue){
+void increaseFCnt(uint32_t newFCntValue){
     delay(100);
     lora.tx_frame_counter_ = newFCntValue;
     delay(100);
     lora.SetTxFrameCounter();
     Serial.print(F("New FCnt: "));Serial.println(lora.tx_frame_counter_);
+}
+
+void increaseRxFCnt(uint32_t newFCntValue){
+    delay(100);
+    lora.rx_frame_counter_ = newFCntValue;
+    delay(100);
+    lora.SetRxFrameCounter();
+    Serial.print(F("New RxFCnt: "));Serial.println(lora.rx_frame_counter_);
 }
 
 void appSkey(){
@@ -123,8 +133,8 @@ void fullErase(){
   }
 }
 
-uint16_t readNumberFromSerial() {
-  uint16_t number = 0;
+uint32_t readNumberFromSerial() {
+  uint32_t number = 0;
   char charIn;
   while (Serial.available() == 0) {
     // wait for input

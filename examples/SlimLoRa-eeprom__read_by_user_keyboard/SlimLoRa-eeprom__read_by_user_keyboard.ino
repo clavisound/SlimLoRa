@@ -27,7 +27,7 @@
 #include "SlimLoRa.h"
 
 #define DEVICE 'feather'
-#define TOTALBYTES EEPROM_END // EEPROM_END grabbed from SlimLoRa.h
+#define TOTALBYTES 90
 
 #define ASCII_ZERO  48
 
@@ -95,9 +95,15 @@ void loop()
       menuPrinted = 0;
       break;
     }
-    if (inByte == 'i') {
-      uint16_t fcnt = readNumberFromSerial();
+    if (inByte == 'f') {
+      uint32_t fcnt = readNumberFromSerial();
       increaseFCnt(fcnt);
+      menuPrinted = 0;
+      break;
+    }
+    if (inByte == 'r') {
+      uint32_t rxcnt = readNumberFromSerial();
+      increaseRxFCnt(rxcnt);
       menuPrinted = 0;
       break;
     }
