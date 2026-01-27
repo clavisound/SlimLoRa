@@ -82,9 +82,9 @@ Solutions with AVR style.
 - Solution #3: Don't enable keep session.
 - Solution #4: use Arduino style EEPROM in `SlimLoRa.h`
 
-## SAMD EEPROM
+## SAMD and ESP32 EEPROM
 
-SAMD series don't have EEPROM like ATmegas, so if you have an external I2C EEPROM you can define in `SlimLoRa.h`: `#define ARDUINO_EEPROM 2` to enable the external EEPROM. In that case, you need the [SparkFun External EEPROM](https://github.com/sparkfun/SparkFun_External_EEPROM_Arduino_Library/) library. Make sure that other values like `#define SLIMLORA_EEPROM_MEMORY_TYPE` and others are properly defined. Check the example SlimLoRa-battery-feather32u4-SAMD-complicated.
+SAMD and ESP32 don't have EEPROM like ATmegas. If you enabled `KEEP_SESION 1` SlimLoRa.h forces `ARDUINO_EEPROM 2`. You need an external I2C EEPROM that works with [SparkFun External EEPROM](https://github.com/sparkfun/SparkFun_External_EEPROM_Arduino_Library/).
 
 You also need to start I2C and several other EEPROM settings like `Wire.begin();
   Wire.setClock(400000);
