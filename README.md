@@ -90,6 +90,10 @@ You also need to start I2C and several other EEPROM settings like `Wire.begin();
   Wire.setClock(400000);
   EEPROM.setMemoryType(SLIMLORA_EEPROM_MEMORY_TYPE);`
 
+# How to Use
+
+I think it's better to compile with arduino-cli so you don't need with every update to re-edit SlimLoRa.h. Check compiler-options.md file for details. Or use platformio.
+
 # Semi-Working
 
 - [x] `ADR_ACK_LIMIT`, must follow the directive on p. 17 based on `ADR_ACK_DELAY`

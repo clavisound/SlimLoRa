@@ -1,14 +1,14 @@
 # SlimLoRa User-Configurable Defines
 
-This document lists important `#define` directives in `SlimLoRa.h` that you can modify to customize the library's behavior, features, and resource usage. These settings should typically be defined in your main sketch (.ino file) *before* including `SlimLoRa.h`, or by directly editing `SlimLoRa.h`.
+This document lists important `#define` directives in `SlimLoRa.h` that you can modify to customize the library's behavior, features, and resource usage. These settings should typically be defined in `SlimLoRa.h` but I find it impractical. With every update you loose your settings. So I purpose to use platfromio or arduino-cli.
 
 Arduino IDE has the limitation that you can't define in your sketch the library behaviour. First is compiled the library and THEN your sketch. But not everything is lost. You can comppile with arduino-cli with the options you want.
 
 Example usage with `arduino-cli -v compile ./ -b adafruit:avr:32u4 --build-property "compiler.cpp.extra_flags=-DNON_BLOCKING=1 -DSLIMLORA_UPLINK_PACKET_SIZE=24 -DEEPROM_OFFSET=192 -DDEBUG_SLIM=1 -UMAC_REQUESTS -DEPOCH_RX2_WINDOW_OFFSET"`
 
-With -U flag you undefine a variable.
-
 With platformIO add: `build_flags = -DDEBUG_SLIM=1` e.t.c.
+
+With -U flag you undefine a variable. You can upload again with `arduino-cli upload ./ -b adafruit:avr:feather32u4 -p /dev/ttyACM0` and if you need monitor: `arduino-cli monitor -p /dev/ttyACM0 -c 9600`
 
 ## General Network & LoRaWAN Settings
 
