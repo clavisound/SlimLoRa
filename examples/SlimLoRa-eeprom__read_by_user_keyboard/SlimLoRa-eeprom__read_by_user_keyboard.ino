@@ -27,7 +27,7 @@
 #include "SlimLoRa.h"
 
 #define DEVICE 'feather'
-#define TOTALBYTES EEPROM_END // EEPROM_END grabbed from SlimLoRa.h
+#define TOTALBYTES 90
 
 #define ASCII_ZERO  48
 
