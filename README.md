@@ -1,8 +1,8 @@
 ![CI](https://github.com/clavisound/SlimLoRa/actions/workflows/main.yml/badge.svg) [![Arduino CI](https://github.com/clavisound/SlimLoRa/actions/workflows/arduino-cli.yml/badge.svg)](https://github.com/clavisound/SlimLoRa/actions/workflows/arduino-cli.yml)
 
-# SlimLoRa - Probably the easiest and smallest footprint LoRaWAN library for Arduino library and EU868.
+# SlimLoRa - Probably the easiest and smallest footprint LoRaWAN library for Arduino and EU868.
 
-This library is probably the most easy to use LoRaWAN library. The target is LoRaWAN-1.0.3 specification. It supports OTAA / Join, most important MAC commands - like DR, power, NBtrans, downlinks for user application and session is stored to EEPROM. Applications downlinks are static selectable via `#define` in `SlimLoRa.h`. Default is 11 bytes. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs ~52kBytes of program flash, ~64kBytes for SAMD), or LMIC (around 36kBytes of program flash). Another library you may like is the [Plain and Simple LoRaWAN Library](https://gitlab.com/iot-lab-org/stm32_lora_psll).
+This library is probably the most easy to use LoRaWAN library. The target is LoRaWAN-1.0.3 specification. It supports OTAA / Join, most important MAC commands - like DR, power, NBtrans, downlinks for user application. Session is stored to EEPROM. Applications downlinks are static, selectable via `#define` in `SlimLoRa.h`. Default is 11 bytes. If you want a complete LoRaWAN library try [Radiolib](https://github.com/jgromes/RadioLib/) (needs ~52kBytes of program flash, ~64kBytes for SAMD), or LMIC (around 36kBytes of program flash). Another library you may like is the [Plain and Simple LoRaWAN Library](https://gitlab.com/iot-lab-org/stm32_lora_psll).
 
 SlimLoRa needs around 12558 Bytes* (13kBytes). SlimLoRa gives LoRaWAN life to old μCUs like the ATmega 328 with 32kBytes of flash. For SAMD with an external I2C EEPROM, it needs ~32kB. The price of 32-bits?
 
@@ -52,6 +52,8 @@ If you want to maximize the non-blocking time of SlimLoRa, you can adjust the va
 - [x] NbTrans - edit SlimLoRa.h to configure.
 - [x] Most important MAC commands - more to follow
 - [x] Session saved to EEPROM. You only need to join once in the lifetime of the device.
+- [x] 32-bit Frame Counter.
+- [x] Semi non-blocking ability between TX > RX1 and RX1 > RX2.
 
 # MAC commands supported.
 
@@ -79,8 +81,7 @@ Solutions with AVR style.
 
 - Solution #1: Erase ALL the EEPROM after uploading the new firmware.
 - Solution #2: Hint: You can track the EEPROM addresses with: `avr-objdump -D` on the .eemem section.
-- Solution #3: Don't enable keep session.
-- Solution #4: use Arduino style EEPROM in `SlimLoRa.h`
+- Solution #3: use Arduino style EEPROM not AVR style EEPROM in `SlimLoRa.h`
 
 ## SAMD and ESP32 EEPROM
 
@@ -123,17 +124,13 @@ I think it's better to compile with arduino-cli so you don't need with every upd
 
 # Clock Divider support
 
-If you downclock your AVR MCU with `clock_prescale_set(clock_div_4)` SlimLoRa can adapt the RX timing window to receive the downlinks. Even with `clock_prescale_set(clock_div_32)` at 500KHz, a MegaBrick joins at SF7. Uncomment `#define CATCH_DIVIDER` to enable this function.
+If you downclock your AVR MCU with `clock_prescale_set(clock_div_4)` SlimLoRa can adapt the RX timing window to receive the downlinks. Even with `clock_prescale_set(clock_div_32)` at 500KHz, a [MegaBrick](https://www.tindie.com/products/lps/lorawan-megabrick/) joins at SF7. Uncomment `#define CATCH_DIVIDER` to enable this function.
 
 # Undoable on AVR and Deep Sleep
 
 - [x] Respect Duty Cycle
 Since the AVR's timer0 freezes during Deep Sleep, SlimLoRa is unable to keep track of time.
 - [x] Respect Join Back-off (not faster than 36 seconds). Must be handled by the application. In the case of Deep Sleep, SlimLoRa can't keep track of the time.
-
-# Maybe good ideas
-
-- [ ] 32-bit Frame Counter.
 
 # How to use it (mini-tutorial)
 

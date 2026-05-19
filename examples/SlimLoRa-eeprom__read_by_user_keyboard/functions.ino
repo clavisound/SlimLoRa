@@ -1,39 +1,82 @@
+bool isDigit(uint8_t c) {
+  return (c >= ASCII_ZERO && c <= 9 + ASCII_ZERO);
+}
+
+uint8_t asciiToByte(uint8_t c) {
+  return c - ASCII_ZERO;
+}
+
+uint32_t readNumberFromSerial() {
+  uint32_t val = 0;
+  bool started = false;
+  
+  while (true) {
+    while (Serial.available() == 0); // Blocking wait for input
+    inByte = Serial.read();
+    
+    if (isDigit(inByte)) {
+      val = val * 10 + asciiToByte(inByte);
+      started = true;
+      Serial.print((char)inByte); // echo back
+    } else if (started) {
+      break;
+    }
+  }
+  Serial.println();
+  return val;
+}
+
+void setTxFrameCount(){
+  Serial.print(F("New TxFrameCounter: "));
+  lora.tx_frame_counter_ = readNumberFromSerial();
+  lora.SetTxFrameCounter();
+  Serial.print(F("Set to: ")); Serial.println(lora.tx_frame_counter_);
+}
+
 void printMenu(){
   lora.printMAC();
-  Serial.print(F("\n\n >>> Commands to modify EEPROM <<< "));
-  Serial.print(F("\n\nf[number]: set TX frame counter"));
-  Serial.print(F("\nr[number]: set RX frame counter"));
-  Serial.print(F("\n\nk: disable joined\nj: enable joined"));
-  Serial.print(F("\n\nZ: EraZe SlimLoRa Session starting from EEPROM location: "));Serial.println(originalOffset);Serial.print(F("You can change this location with eS<num>"));
-  Serial.print(F("\neS<number>: set EEPROM source\neT<number> for Target."));
-  Serial.print(F("\n\nd<number>: setRXdelay (1 to 9 seconds)"));
+  Serial.println(F("\nd[number]: setRXdelay (1 to 9 seconds)"));
+  Serial.println(F("i: increase FCnt, I[number]: set TxFrameCounter"));
+  Serial.println(F("k: disable joined, j: enable joined"));
+  Serial.print(F("Z: EraZe original: "));Serial.println(originalOffset);
   
   // those are in firmware! Patching to hex works? Examine with objdump.
   // Serial.println(F("a: appSkey, e: devEUI, j: joinEUI, n: nwkKey"));
 
   //TODO
-  //Serial.print(F("\no[number]: rx1 data rate offset, R: rx2 data rate"));
-  Serial.print(F("\n\nm: read all MAC values."));
-  Serial.print(F("\ns: swap sessions: "));Serial.print(originalOffset);Serial.print(F(" and: "));Serial.print(targetOffset);
-  Serial.print(F("\nF: erase *ALL* EEPROM."));
-  Serial.print(F("\tEEPROM size: "));Serial.println(eeprom_size);
+  //Serial.println(F("o[number]: rx1 data rate offset, R: rx2 data rate"));
+  //Serial.println(F("e: EEPROM address of data, E [capital]: EEPROM address to COPY data."));
+  Serial.println(F("m: read all MAC values."));
+  Serial.println(F("s: swap MAC status."));
+  Serial.println(F("F: erase *ALL* EEPROM."));
+  //Serial.print(F("\tEEPROM size: "));Serial.print(eeprom_size);
   Serial.flush();
 }
 
-void increaseFCnt(uint32_t newFCntValue){
+void eepromOffset(){
+  Serial.println(F("sNUMBER, to define source      offset. Normally 0."));
+  Serial.println(F("dNUMBER, to define destination offset. Normally 240."));
+  Serial.print(F("Source Offset\t: "));Serial.println(originalOffset);
+  Serial.print(F("Destination Offset\t: "));Serial.println(targetOffset);
+
+  while (Serial.available() == 0); // wait for input
+  inByte = Serial.read();
+
+  if (inByte == 's') {
+    Serial.print(F("New Source: "));
+    originalOffset = readNumberFromSerial();
+  } else if (inByte == 'd') {
+    Serial.print(F("New Destination: "));
+    targetOffset = readNumberFromSerial();
+  }
+}
+
+void increaseFCnt(){
     delay(100);
-    lora.tx_frame_counter_ = newFCntValue;
+    lora.tx_frame_counter_ = lora.GetTxFrameCounter() + EEPROM_WRITE_TX_COUNT;
     delay(100);
     lora.SetTxFrameCounter();
     Serial.print(F("New FCnt: "));Serial.println(lora.tx_frame_counter_);
-}
-
-void increaseRxFCnt(uint32_t newFCntValue){
-    delay(100);
-    lora.rx_frame_counter_ = newFCntValue;
-    delay(100);
-    lora.SetRxFrameCounter();
-    Serial.print(F("New RxFCnt: "));Serial.println(lora.rx_frame_counter_);
 }
 
 void appSkey(){
@@ -131,23 +174,4 @@ void fullErase(){
     Serial.println(temp);
     Serial.flush();
   }
-}
-
-uint32_t readNumberFromSerial() {
-  uint32_t number = 0;
-  char charIn;
-  while (Serial.available() == 0) {
-    // wait for input
-  }
-  delay(100); // Give time for more characters to arrive
-  while (Serial.available() > 0) {
-    charIn = Serial.read();
-    if (charIn >= '0' && charIn <= '9') {
-      number = number * 10 + (charIn - '0');
-    } else {
-      // Non-digit character (like newline or space) terminates input
-      break;
-    }
-  }
-  return number;
 }
