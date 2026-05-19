@@ -125,7 +125,7 @@
 
 // Comment this only if you don't changed the clock of your AVR MCU.
 // with clock_prescale_set(clock_div_XX);
-#define CATCH_DIVIDER
+//#define CATCH_DIVIDER
 
 // Disable CATCH_DIVIDER for non-AVR MCU's
 #if !defined (__AVR__)
