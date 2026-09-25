@@ -496,3 +496,45 @@ void SlimLoRa::AesCalculateRoundKey(uint8_t round, uint8_t *round_key) {
 		}
 	}
 }
+
+// Helper function for CMAC
+void SlimLoRa::CalculateCmac(const uint8_t *key, uint8_t *data, uint8_t data_length, uint8_t *out16) {
+    uint8_t key1[16] = {0}, key2[16] = {0};
+    uint8_t old_data[16] = {0}, new_data[16] = {0};
+    uint8_t block_count = data_length / 16;
+    uint8_t incomplete_block_size = data_length % 16;
+    if (incomplete_block_size != 0) block_count++;
+
+    GenerateKeys(key, key1, key2);
+
+    if (data_length == 0) {                 // CMAC(K,"") = AES(K,K1)
+        memcpy(old_data, key1, 16);
+        AesEncrypt(key, old_data);
+        memcpy(out16, old_data, 16);
+        return;
+    }
+
+    uint8_t block_counter = 1;
+    while (block_counter < block_count) {   // all but last block
+        for (uint8_t i = 0; i < 16; i++) { new_data[i] = *data++; }
+        XorData(new_data, old_data);
+        AesEncrypt(key, new_data);
+        memcpy(old_data, new_data, 16);
+        block_counter++;
+    }
+
+    if (incomplete_block_size == 0) {       // last full block
+        for (uint8_t i = 0; i < 16; i++) { new_data[i] = *data++; }
+        XorData(new_data, key1);
+    } else {                                // padded last block
+        for (uint8_t i = 0; i < 16; i++) {
+            if (i < incomplete_block_size)      new_data[i] = *data++;
+            else if (i == incomplete_block_size) new_data[i] = 0x80;
+            else                                 new_data[i] = 0x00;
+        }
+        XorData(new_data, key2);
+    }
+    XorData(new_data, old_data);
+    AesEncrypt(key, new_data);
+    memcpy(out16, new_data, 16);
+}

@@ -1560,6 +1560,8 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 	uint8_t freqMSB, freqMID, freqLSB;
 	uint8_t freqNewMSB, freqNewMID, freqNewLSB;
 
+	status = 0;
+
 #ifdef SLIM_DEBUG_VARS
 	LoRaWANreceived |= SLIMLORA_MAC_PROCESSING; // MAC command
 #endif
@@ -1608,7 +1610,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 					ChMask = 0xFF;
 					#endif
 
-					status = 0x1; // enable ChMask ACK
+					status = 0x01; // enable ChMask ACK
 				}
 
 
@@ -1624,12 +1626,12 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 					Serial.print(F("\nChMask BIN\t: "));Serial.println(ChMask, BIN);
 					#endif
 
-					status = 0x1; // enable ChMask ACK
+					status = 0x01; // enable ChMask ACK
 				}
 
 				// report error
 				if ( new_rx2_dr != 0 && new_rx2_dr != 6 ) {
-					status = 0x0; // disable ChMask ACK
+					status = 0x00; // disable ChMask ACK
 				}
 
 				// Grab NbTrans from LNS
@@ -1653,7 +1655,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 				#else
 				if (new_rx2_dr == 0xF || (new_rx2_dr >= SF12BW125 && new_rx2_dr <= SF7BW125)) { // Reversed table index
 				#endif
-					status |= 0x2;	// DR ACK
+					status |= 0x02;	// DR ACK
 				}
 				// tx_power = 15 or less than 7
 				// TODO: other regions.
@@ -1698,7 +1700,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 			case LORAWAN_FOPT_RX_PARAM_SETUP_REQ:
 				// TODO p. 27
 				// Handle erroneous values from network.
-				status = 0x1;
+				status = 0x01;
 
 				new_rx1_dr_offset 	= (options[i + 1] & 0x70) >> 4;
 				new_rx2_dr 		= options[i + 1] & 0xF;
@@ -1714,7 +1716,7 @@ void SlimLoRa::ProcessFrameOptions(uint8_t *options, uint8_t f_options_length) {
 					status |= 0x2;
 				}
 
-				if (status == 0x7) {
+				if (status == 0x07) {
 					rx1_data_rate_offset_ = new_rx1_dr_offset;
 					SetRx1DataRateOffset(rx1_data_rate_offset_);
 

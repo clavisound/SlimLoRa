@@ -580,6 +580,7 @@ class SlimLoRa {
 #ifdef DYNAMIC_ADR_ACK_LIMIT
 	uint8_t adr_ack_limit = LORAWAN_ADR_ACK_LIMIT;
 #endif
+    void CalculateCmac(const uint8_t *key, uint8_t *data, uint8_t data_length, uint8_t *out16);
 
 #if DEBUG_SLIM == 0 // if not debuging, those are private. If debugging everything is public
   private:
